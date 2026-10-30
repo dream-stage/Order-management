@@ -1,0 +1,2931 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>受注管理システム - Order Flow</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons for modern icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+    body {
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header (2段構成) -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- 1段目: タイトル・ロゴ & 収支サマリー -->
+      <div class="h-14 flex items-center justify-between border-b border-slate-100">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+            <i class="ph ph-receipt text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-base font-bold text-slate-900 leading-tight">受注管理システム</h1>
+            <p class="text-[11px] text-slate-500 font-medium">案件・受注収支管理システム</p>
+          </div>
+        </div>
+
+        <!-- Quick Action Stats (収支サマリー) -->
+        <div class="flex items-center space-x-2 sm:space-x-4 text-xs font-medium bg-slate-50 py-1.5 px-3.5 rounded-xl border border-slate-200 shadow-2xs">
+          <span>件数: <strong id="totalOrdersCount" class="text-indigo-600 font-bold ml-1">0</strong></span>
+          <span class="text-slate-300">|</span>
+          <span>請求計: <strong id="totalBilling" class="text-slate-800 font-bold ml-1">¥0</strong></span>
+          <span class="text-slate-300">|</span>
+          <span>支払計: <strong id="totalCost" class="text-slate-600 font-bold ml-1">¥0</strong></span>
+          <span class="text-slate-300">|</span>
+          <span class="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md border border-emerald-200/60 font-semibold">
+            粗利: <strong id="totalProfit" class="text-emerald-700 font-bold ml-1">¥0</strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- 2段目: 各種管理・操作ツールバー -->
+      <div class="h-12 flex items-center justify-between gap-2 overflow-x-auto custom-scrollbar py-1">
+        <div class="flex items-center space-x-2">
+          <!-- 自動同期ステータスバッジ（常時自動通信中） -->
+          <div class="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg transition shadow-xs whitespace-nowrap" id="autoSyncLiveBadge">
+            <span class="relative flex h-2 w-2 mr-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+            </span>
+            <span id="autoSyncText">自動同期: 稼働中</span>
+          </div>
+          <!-- スプレッドシート連携設定ボタン -->
+          <button onclick="openSheetsModal()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-slate-700 transition shadow-xs whitespace-nowrap">
+            <i class="ph ph-gear mr-1.5 text-sm text-slate-500"></i>
+            <span>連携設定</span>
+            <span id="sheetsStatusBadge" class="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-200 text-emerald-800 font-bold">常時接続中</span>
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <!-- 企業・店舗リスト管理ボタン -->
+          <button onclick="openMasterModal()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-indigo-700 transition shadow-xs whitespace-nowrap">
+            <i class="ph ph-buildings mr-1.5 text-sm"></i>
+            <span>企業・店舗リスト管理</span>
+          </button>
+          <!-- 担当者リスト管理ボタン -->
+          <button onclick="openStaffModal()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg text-violet-700 transition shadow-xs whitespace-nowrap">
+            <i class="ph ph-users mr-1.5 text-sm"></i>
+            <span>担当者リスト管理</span>
+          </button>
+          <!-- CSV出力ボタン -->
+          <button onclick="exportCSV()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-slate-700 transition shadow-xs whitespace-nowrap">
+            <i class="ph ph-download-simple mr-1.5 text-sm"></i>
+            <span>CSV出力</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Column: Order Input Box (受注登録ボックス) -->
+    <div class="lg:col-span-5 xl:col-span-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sticky top-24">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+            <h2 class="font-bold text-slate-800 text-base">新規案件入力ボックス</h2>
+          </div>
+        </div>
+
+        <form id="orderForm" onsubmit="handleFormSubmit(event)" class="space-y-3">
+          <!-- 委託元 & 依頼元 -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">委託元 <span class="text-rose-500">*</span></label>
+              <div class="space-y-1.5">
+                <select id="consignorSelect" onchange="onConsignorSelectChange(this.value)" required
+                  class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="">委託元を選択</option>
+                  <option value="PUSH">PUSH</option>
+                  <option value="ユナイト">ユナイト</option>
+                  <option value="ポッシブル">ポッシブル</option>
+                  <option value="__NEW__">＋ 新規追加 (直接入力)</option>
+                </select>
+                <input type="text" id="consignorCustomInput" placeholder="委託元名を入力"
+                  class="hidden w-full text-xs bg-white border border-indigo-300 rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">依頼元 <span class="text-rose-500">*</span></label>
+              <div class="space-y-1.5">
+                <select id="clientSelect" onchange="onClientSelectChange(this.value)" required
+                  class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="">依頼元を選択</option>
+                  <option value="アツ姫">アツ姫</option>
+                  <option value="オフミー">オフミー</option>
+                  <option value="ジザイ">ジザイ</option>
+                  <option value="ジャンボリ">ジャンボリ</option>
+                  <option value="でちゃう">でちゃう</option>
+                  <option value="パチ7">パチ7</option>
+                  <option value="パチタウン(DMM)">パチタウン(DMM)</option>
+                  <option value="PUSH">PUSH</option>
+                  <option value="ポッシブル">ポッシブル</option>
+                  <option value="ホール">ホール</option>
+                  <option value="__NEW__">＋ 新規追加 (直接入力)</option>
+                </select>
+                <input type="text" id="clientCustomInput" placeholder="依頼元名を入力"
+                  class="hidden w-full text-xs bg-white border border-indigo-300 rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
+              </div>
+            </div>
+          </div>
+
+          <!-- 実施日 -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">実施日 <span class="text-rose-500">*</span></label>
+            <input type="date" id="orderDate" required
+              class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none font-medium">
+          </div>
+
+          <!-- ステータス -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ステータス</label>
+            <select id="status" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+              <option value="confirmed">確定</option>
+              <option value="tentative">仮案件</option>
+              <option value="cancelled">バラシ</option>
+            </select>
+          </div>
+
+          <!-- エリア選択 -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">エリア選択 <span class="text-rose-500">*</span></label>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="areaSelect" onchange="onAreaChange(this.value)"
+                class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option value="">エリア候補選択</option>
+                <option value="福岡">福岡</option>
+                <option value="佐賀">佐賀</option>
+                <option value="長崎">長崎</option>
+                <option value="熊本">熊本</option>
+                <option value="大分">大分</option>
+                <option value="宮崎">宮崎</option>
+                <option value="鹿児島">鹿児島</option>
+                <option value="沖縄">沖縄</option>
+              </select>
+              <input type="text" id="areaInput" placeholder="エリア名 (直接入力可)" required
+                class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+            </div>
+          </div>
+
+          <!-- 企業名選択 -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">企業名選択 <span class="text-rose-500">*</span></label>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="companySelect" onchange="onCompanyChange(this.value)"
+                class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option value="">企業候補選択</option>
+              </select>
+              <input type="text" id="companyInput" placeholder="企業名 (直接入力可)" required
+                class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+            </div>
+          </div>
+
+          <!-- 店舗名選択 -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">店舗名選択 <span class="text-rose-500">*</span></label>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="storeSelect" onchange="onStoreChange(this.value)"
+                class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option value="">店舗候補選択</option>
+              </select>
+              <input type="text" id="storeInput" placeholder="店舗名 (直接入力可)" required
+                class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+            </div>
+          </div>
+
+          <!-- 種別 -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">種別 <span class="text-rose-500">*</span></label>
+            <select id="typeInput" required
+              class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
+              <option value="ディレクター">ディレクター</option>
+              <option value="アテンド">アテンド</option>
+              <option value="取材">取材</option>
+              <option value="販売会">販売会</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+
+          <!-- 演者名または取材名 & 担当者 -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">演者名または取材名</label>
+              <input type="text" id="performerOrEvent" placeholder="例: ○○さん / 激突取材"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">担当者</label>
+              <div class="space-y-1.5">
+                <select id="managerSelect" onchange="onManagerSelectChange(this.value)"
+                  class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="">担当者を選択</option>
+                  <!-- JSで動的に追加されます -->
+                  <option value="__CUSTOM__">＋ 直接入力</option>
+                </select>
+                <input type="text" id="managerName" placeholder="社内担当者名を入力"
+                  class="hidden w-full text-xs bg-white border border-indigo-300 rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
+              </div>
+            </div>
+          </div>
+
+          <!-- 請求金額 & 支払金額 -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">請求金額 (円)</label>
+              <div class="relative">
+                <span class="absolute left-2.5 top-2 text-xs text-slate-400">¥</span>
+                <input type="number" id="billingAmount" min="0" step="1000" placeholder="0"
+                  class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none font-semibold text-slate-800">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">支払金額 (円)</label>
+              <div class="relative">
+                <span class="absolute left-2.5 top-2 text-xs text-slate-400">¥</span>
+                <input type="number" id="paymentAmount" min="0" step="1000" placeholder="0"
+                  class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none font-semibold text-slate-800">
+              </div>
+            </div>
+          </div>
+
+          <!-- 交通費 & 特記事項 -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-1">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">交通費</label>
+              <select id="transportationCost"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
+                <option value="実費">実費</option>
+                <option value="込み">込み</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">特記事項</label>
+              <input type="text" id="notes" placeholder="特記事項があれば記入"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+            </div>
+          </div>
+
+          <!-- 登録ボタン -->
+          <button type="submit"
+            class="w-full mt-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white text-xs font-semibold rounded-xl shadow-md shadow-indigo-100 transition flex items-center justify-center space-x-2">
+            <i class="ph ph-plus-circle text-base"></i>
+            <span>受注ボックスに登録</span>
+          </button>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Right Column: Orders Display & Sort Controller (一覧・並び替え) -->
+    <div class="lg:col-span-7 xl:col-span-8 flex flex-col space-y-4">
+
+      <!-- View & Sort Navigation Bar -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <!-- 表示モード選択 -->
+        <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl self-start md:self-auto">
+          <button id="tabDateSort" onclick="setViewMode('date')"
+            class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 bg-white text-indigo-600 shadow-sm">
+            <i class="ph ph-calendar-check text-sm"></i>
+            <span>実施日順・リスト表示</span>
+          </button>
+          <button id="tabAreaGroup" onclick="setViewMode('area')"
+            class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5">
+            <i class="ph ph-map-pin text-sm"></i>
+            <span>エリア順・グループ表示</span>
+          </button>
+        </div>
+
+        <!-- 絞り込み & 並び順切り替え -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- 検索フィルター -->
+          <div class="relative flex-1 sm:w-44">
+            <i class="ph ph-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-sm"></i>
+            <input type="text" id="searchInput" oninput="handleSearch()" placeholder="検索 (委託/依頼/企業/店舗等)"
+              class="w-full text-xs pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500">
+          </div>
+
+          <!-- 日付ソート昇順・降順 (日付モード時のみ有効) -->
+          <div id="dateSortControls" class="flex items-center space-x-1">
+            <button onclick="setDateSortOrder('asc')" id="btnSortAsc"
+              class="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-600 flex items-center space-x-1">
+              <i class="ph ph-sort-ascending"></i>
+              <span>実施日 昇順</span>
+            </button>
+            <button onclick="setDateSortOrder('desc')" id="btnSortDesc"
+              class="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 flex items-center space-x-1">
+              <i class="ph ph-sort-descending"></i>
+              <span>実施日 降順</span>
+            </button>
+          </div>
+
+          <!-- エリア選択フィルター -->
+          <select id="filterAreaSelect" onchange="renderOrders()"
+            class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 outline-none">
+            <option value="ALL">全エリア</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Orders Content Area -->
+      <div id="ordersContainer" class="space-y-4">
+        <!-- 動的にJavaScriptでレンダリングされます -->
+      </div>
+
+      <!-- Empty State Container -->
+      <div id="emptyState" class="hidden bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
+        <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-3xl">
+          <i class="ph ph-clipboard-text"></i>
+        </div>
+        <h3 class="text-sm font-bold text-slate-700">該当する受注データがありません</h3>
+        <p class="text-xs text-slate-400 mt-1">左側のフォームから新しい案件を入力するか、検索条件をクリアしてください。</p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Edit Order Modal -->
+  <div id="editModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-100 p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="text-base font-bold text-slate-800">案件情報の編集</h3>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      <form id="editForm" onsubmit="handleEditSubmit(event)" class="space-y-3">
+        <input type="hidden" id="editOrderId">
+        
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">委託元</label>
+            <div class="space-y-1">
+              <select id="editConsignorSelect" onchange="onEditConsignorSelectChange(this.value)"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 outline-none">
+                <option value="PUSH">PUSH</option>
+                <option value="ユナイト">ユナイト</option>
+                <option value="ポッシブル">ポッシブル</option>
+                <option value="__NEW__">＋ その他・直接入力</option>
+              </select>
+              <input type="text" id="editConsignorCustom" class="hidden w-full text-xs bg-white border border-indigo-300 rounded-xl px-3 py-1.5 outline-none" placeholder="委託元名">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">依頼元</label>
+            <div class="space-y-1">
+              <select id="editClientSelect" onchange="onEditClientSelectChange(this.value)"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 outline-none">
+                <option value="アツ姫">アツ姫</option>
+                <option value="オフミー">オフミー</option>
+                <option value="ジザイ">ジザイ</option>
+                <option value="ジャンボリ">ジャンボリ</option>
+                <option value="でちゃう">でちゃう</option>
+                <option value="パチ7">パチ7</option>
+                <option value="パチタウン(DMM)">パチタウン(DMM)</option>
+                <option value="PUSH">PUSH</option>
+                <option value="ポッシブル">ポッシブル</option>
+                <option value="ホール">ホール</option>
+                <option value="__NEW__">＋ その他・直接入力</option>
+              </select>
+              <input type="text" id="editClientCustom" class="hidden w-full text-xs bg-white border border-indigo-300 rounded-xl px-3 py-1.5 outline-none" placeholder="依頼元名">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">実施日</label>
+          <input type="date" id="editDate" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ステータス</label>
+          <select id="editStatus" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 outline-none">
+            <option value="confirmed">確定</option>
+            <option value="tentative">仮案件</option>
+            <option value="cancelled">バラシ</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">エリア</label>
+            <input type="text" id="editArea" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">企業名</label>
+            <input type="text" id="editCompany" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">店舗名</label>
+            <input type="text" id="editStore" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">種別</label>
+            <select id="editType" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 outline-none">
+              <option value="ディレクター">ディレクター</option>
+              <option value="アテンド">アテンド</option>
+              <option value="取材">取材</option>
+              <option value="販売会">販売会</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">演者名または取材名</label>
+            <input type="text" id="editPerformer" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">担当者</label>
+            <div class="space-y-1.5">
+              <select id="editManagerSelect" onchange="onEditManagerSelectChange(this.value)"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 outline-none">
+                <option value="">担当者を選択</option>
+                <!-- JSで動的生成 -->
+                <option value="__CUSTOM__">＋ 直接入力</option>
+              </select>
+              <input type="text" id="editManager" class="hidden w-full text-xs bg-white border border-indigo-300 rounded-xl px-3 py-1.5 outline-none font-medium" placeholder="社内担当者名を入力">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">請求金額 (円)</label>
+            <input type="number" id="editBilling" min="0" step="1000" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">支払金額 (円)</label>
+            <input type="number" id="editPayment" min="0" step="1000" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div class="col-span-1">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">交通費</label>
+            <select id="editTransportation" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 outline-none font-medium">
+              <option value="実費">実費</option>
+              <option value="込み">込み</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">特記事項</label>
+            <input type="text" id="editNotes" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none" placeholder="特記事項があれば記入">
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">キャンセル</button>
+          <button type="submit" class="px-4 py-2 text-xs font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm">変更を保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- In-app Toast / Notification -->
+  <div id="toastMessage" class="fixed bottom-6 right-6 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none z-50 flex items-center bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg space-x-2 text-sm">
+    <i id="toastIcon" class="ph ph-check-circle text-emerald-400 text-lg"></i>
+    <span id="toastText">操作が完了しました</span>
+  </div>
+
+  <!-- Master Data Management Modal (企業名・店舗名リスト作成画面) -->
+  <div id="masterModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-slate-100 p-6 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+            <i class="ph ph-tree-structure"></i>
+          </span>
+          <div>
+            <h3 class="text-base font-bold text-slate-800">企業名・店舗名リスト管理</h3>
+            <p class="text-xs text-slate-500">エリアごとに企業と店舗の選択肢を登録・編集できます</p>
+          </div>
+        </div>
+        <button onclick="closeMasterModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+
+      <!-- Area Selection Tabs in Modal -->
+      <div class="flex items-center space-x-1.5 overflow-x-auto pb-2 border-b border-slate-100 custom-scrollbar mb-4 shrink-0" id="masterAreaTabs">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Content Layout: Companies & Stores -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-4 pr-1">
+        
+        <!-- Left: Company List for Selected Area -->
+        <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col h-full min-h-[300px]">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold text-slate-700 flex items-center">
+              <i class="ph ph-buildings mr-1 text-indigo-500"></i>登録企業一覧
+            </h4>
+            <span id="masterCurrentAreaBadge" class="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-md">福岡</span>
+          </div>
+
+          <!-- Add Company Input -->
+          <div class="flex space-x-1 mb-2">
+            <input type="text" id="newCompanyNameInput" placeholder="新しい企業名を入力"
+              class="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500">
+            <button onclick="addCompanyToMaster()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center">
+              <i class="ph ph-plus mr-1"></i>追加
+            </button>
+          </div>
+
+          <!-- Companies List Container -->
+          <div id="masterCompanyList" class="flex-1 overflow-y-auto space-y-1.5 custom-scrollbar pr-1 max-h-64">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Right: Stores List for Selected Company -->
+        <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col h-full min-h-[300px]">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold text-slate-700 flex items-center">
+              <i class="ph ph-storefront mr-1 text-emerald-500"></i>配下店舗一覧
+            </h4>
+            <span id="masterCurrentCompanyBadge" class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md truncate max-w-[120px]">企業未選択</span>
+          </div>
+
+          <!-- Add Store Input -->
+          <div class="flex space-x-1 mb-2">
+            <input type="text" id="newStoreNameInput" placeholder="新しい店舗名を入力"
+              class="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500">
+            <button onclick="addStoreToMaster()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center">
+              <i class="ph ph-plus mr-1"></i>追加
+            </button>
+          </div>
+
+          <!-- Stores List Container -->
+          <div id="masterStoreList" class="flex-1 overflow-y-auto space-y-1.5 custom-scrollbar pr-1 max-h-64">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between shrink-0">
+        <button onclick="resetMasterToDefault()" class="text-xs text-rose-500 hover:text-rose-700 font-medium underline flex items-center">
+          <i class="ph ph-arrow-counter-clockwise mr-1"></i>初期リストに戻す
+        </button>
+        <div class="flex items-center space-x-2">
+          <span class="text-[11px] text-emerald-600 font-medium flex items-center">
+            <i class="ph ph-check-circle mr-1"></i>変更はシートへ自動保存されます
+          </span>
+          <button onclick="closeMasterModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl">
+            完了
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Staff Management Modal (担当者リスト管理モーダル) -->
+  <div id="staffModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-100 p-6 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center text-lg">
+            <i class="ph ph-users"></i>
+          </span>
+          <div>
+            <h3 class="text-base font-bold text-slate-800">担当者リスト管理</h3>
+            <p class="text-xs text-slate-500">案件に割り当てる社内担当者を登録・整理できます</p>
+          </div>
+        </div>
+        <button onclick="closeStaffModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+
+      <!-- Add Staff Input -->
+      <div class="flex space-x-1.5 mb-3">
+        <input type="text" id="newStaffNameInput" placeholder="新しい担当者名を入力 (例: 佐藤)"
+          class="flex-1 text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-violet-500">
+        <button onclick="addStaffMember()" class="px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl shadow-xs flex items-center shrink-0">
+          <i class="ph ph-plus mr-1"></i>追加
+        </button>
+      </div>
+
+      <!-- Staff List Container -->
+      <div id="staffListContainer" class="flex-1 overflow-y-auto space-y-1.5 custom-scrollbar pr-1 max-h-72">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Footer -->
+      <div class="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between gap-2 shrink-0">
+        <button onclick="resetStaffToDefault()" class="text-xs text-rose-500 hover:text-rose-700 font-medium underline flex items-center">
+          <i class="ph ph-arrow-counter-clockwise mr-1"></i>初期リストに戻す
+        </button>
+        <div class="flex items-center space-x-2">
+          <span class="text-[11px] text-violet-600 font-medium flex items-center">
+            <i class="ph ph-check-circle mr-1"></i>変更は自動同期されます
+          </span>
+          <button onclick="closeStaffModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl">
+            完了
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Sheets Integration Modal (スプレッドシート連携モーダル) -->
+  <div id="sheetsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-slate-100 p-6 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+            <i class="ph ph-file-csv"></i>
+          </span>
+          <div>
+            <h3 class="text-base font-bold text-slate-800">Googleスプレッドシート連携設定</h3>
+            <p class="text-xs text-slate-500">案件登録時にスプレッドシートへ自動でデータを出力・同期します</p>
+          </div>
+        </div>
+        <button onclick="closeSheetsModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
+        <!-- Webhook URL 設定入力 -->
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2">
+          <label class="block text-xs font-bold text-slate-700">
+            Google Apps Script (GAS) WebアプリURL
+          </label>
+          <div class="flex space-x-2">
+            <input type="url" id="gasEndpointUrl" placeholder="https://script.google.com/macros/s/.../exec"
+              class="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500">
+            <button onclick="saveGasUrl()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm">
+              設定保存
+            </button>
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <label class="inline-flex items-center text-xs text-slate-600 cursor-pointer">
+              <input type="checkbox" id="autoSyncSheetsCheckbox" onchange="toggleAutoSync(this.checked)" class="rounded text-emerald-600 focus:ring-emerald-500 mr-1.5">
+              <span>受注ボックス登録時に自動でスプレッドシートへ送信する</span>
+            </label>
+            <button onclick="testSheetsConnection()" class="text-xs text-emerald-600 hover:text-emerald-800 font-medium underline flex items-center">
+              <i class="ph ph-paper-plane-tilt mr-1"></i>接続テスト
+            </button>
+          </div>
+        </div>
+
+        <!-- 一括再同期 -->
+        <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold text-slate-800">現在登録されている全案件の一括送信</p>
+            <p class="text-[11px] text-slate-500">端末内の全案件データをスプレッドシートへ一括書き込みします</p>
+          </div>
+          <button onclick="syncAllToSheets()" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center">
+            <i class="ph ph-arrows-clockwise mr-1.5"></i>
+            <span>全件シート同期</span>
+          </button>
+        </div>
+
+        <!-- 本番運用準備: テストデータ初期化 -->
+        <div class="p-3 bg-rose-50/50 border border-rose-200 rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold text-rose-800">本番開始用: 既存テストデータのクリア</p>
+            <p class="text-[11px] text-rose-600">テスト入力した案件を全件削除して本番入力用（0件）にします</p>
+          </div>
+          <button type="button" onclick="openClearConfirmModal()" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center">
+            <i class="ph ph-trash mr-1.5"></i>
+            <span>テストデータをクリア</span>
+          </button>
+        </div>
+
+        <!-- Google Apps Script コピペ用コード案内 -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700">Google Apps Script (GAS) コード</span>
+            <button onclick="copyGasScript()" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center">
+              <i class="ph ph-copy mr-1"></i>コードをコピー
+            </button>
+          </div>
+          <pre id="gasScriptCode" class="bg-slate-900 text-slate-200 p-3 rounded-lg text-[10px] overflow-x-auto custom-scrollbar font-mono leading-relaxed select-all">function getTargetSpreadsheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    var file = SpreadsheetApp.getActive();
+    if (file) ss = file;
+  }
+  return ss;
+}
+
+// スプレッドシートを開いた時に専用メニューを上部に追加
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('受注管理メニュー')
+    .addItem('マスタシートを今すぐ作成/初期化', 'initAllSheetsManual')
+    .addToUi();
+}
+
+function initAllSheetsManual() {
+  var ss = getTargetSpreadsheet();
+  if (!ss) {
+    SpreadsheetApp.getUi().alert('スプレッドシートを取得できませんでした。');
+    return;
+  }
+  initRequiredSheets(ss);
+  SpreadsheetApp.getUi().alert('「受注管理」「企業店舗マスタ」「担当者マスタ」の作成・初期化が完了しました！');
+}
+
+function initRequiredSheets(ss) {
+  if (!ss) {
+    ss = getTargetSpreadsheet();
+  }
+  if (!ss) {
+    throw new Error("スプレッドシートが見つかりません。スプレッドシートの「拡張機能」>「Apps Script」から実行されているか確認してください。");
+  }
+
+  // ① 受注管理シート
+  var orderSheet = ss.getSheetByName("受注管理");
+  if (!orderSheet) {
+    orderSheet = ss.insertSheet("受注管理");
+    orderSheet.appendRow([
+      "管理ID", "委託元", "依頼元", "実施日", "ステータス", 
+      "エリア", "企業名", "店舗名", "種別", "演者名/取材名", 
+      "担当者", "請求金額", "支払金額", "粗利益", "交通費", "特記事項", "同期日時"
+    ]);
+    orderSheet.getRange(1, 1, 1, 17).setBackground("#f1f5f9").setFontWeight("bold");
+  }
+
+  // ② 担当者マスタシート（存在しなければ即座に自動生成）
+  var staffSheet = ss.getSheetByName("担当者マスタ");
+  if (!staffSheet) {
+    staffSheet = ss.insertSheet("担当者マスタ");
+    staffSheet.appendRow(["担当者名", "更新日時"]);
+    staffSheet.getRange(1, 1, 1, 2).setBackground("#ede9fe").setFontWeight("bold");
+    var defaultStaff = ["佐藤", "田中", "高橋", "渡辺", "伊藤"];
+    var nowStr = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss");
+    var sRows = defaultStaff.map(function(s) { return [s, nowStr]; });
+    staffSheet.getRange(2, 1, sRows.length, 2).setValues(sRows);
+  }
+
+  // ③ 企業店舗マスタシート
+  var masterSheet = ss.getSheetByName("企業店舗マスタ");
+  if (!masterSheet) {
+    masterSheet = ss.insertSheet("企業店舗マスタ");
+    masterSheet.appendRow(["エリア", "企業名", "店舗名", "更新日時"]);
+    masterSheet.getRange(1, 1, 1, 4).setBackground("#e2e8f0").setFontWeight("bold");
+  }
+}
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (tErr) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Lock timeout" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  try {
+    var ss = getTargetSpreadsheet();
+    initRequiredSheets(ss); // 全シートの存在を自動確認・作成
+
+    var payload = JSON.parse(e.postData.contents);
+    
+    // ① 企業・店舗マスタの同期処理
+    if (payload.action === 'sync_master') {
+      var mSheet = ss.getSheetByName("企業店舗マスタ");
+      mSheet.clear();
+      mSheet.appendRow(["エリア", "企業名", "店舗名", "更新日時"]);
+      mSheet.getRange(1, 1, 1, 4).setBackground("#e2e8f0").setFontWeight("bold");
+      
+      var now = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss");
+      var mData = payload.masterData || {};
+      var rows = [];
+      
+      var areaOrder = ["福岡", "佐賀", "長崎", "熊本", "大分", "宮崎", "鹿児島", "沖縄"];
+      var allAreas = Object.keys(mData).sort(function(a, b) {
+        var idxA = areaOrder.indexOf(a);
+        var idxB = areaOrder.indexOf(b);
+        if (idxA === -1 && idxB === -1) return a.localeCompare(b, 'ja');
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+      });
+      
+      allAreas.forEach(function(area) {
+        var compObj = mData[area] || {};
+        var comps = Object.keys(compObj).sort(function(a, b) { return a.localeCompare(b, 'ja'); });
+        comps.forEach(function(comp) {
+          var stores = compObj[comp] || [];
+          if (stores.length === 0) {
+            rows.push([area, comp, "(店舗なし)", now]);
+          } else {
+            stores.forEach(function(st) {
+              rows.push([area, comp, st, now]);
+            });
+          }
+        });
+      });
+      
+      if (rows.length > 0) {
+        mSheet.getRange(2, 1, rows.length, 4).setValues(rows);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", count: rows.length }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ② 担当者マスタのシート作成・同期処理
+    if (payload.action === 'sync_staff' || payload.action === 'create_staff_sheet') {
+      var staffSheet = ss.getSheetByName("担当者マスタ");
+      staffSheet.clear();
+      staffSheet.appendRow(["担当者名", "更新日時"]);
+      staffSheet.getRange(1, 1, 1, 2).setBackground("#ede9fe").setFontWeight("bold");
+      
+      var nowStaff = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss");
+      var sList = payload.staffList || ["佐藤", "田中", "高橋", "渡辺", "伊藤"];
+      var sRows = [];
+      sList.forEach(function(st) {
+        if (st && st.trim() !== '') {
+          sRows.push([st.trim(), nowStaff]);
+        }
+      });
+      if (sRows.length > 0) {
+        staffSheet.getRange(2, 1, sRows.length, 2).setValues(sRows);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", count: sRows.length }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // ③ 受注データの同期処理
+    var orderSheet = ss.getSheetByName("受注管理");
+    
+    // 全件クリア処理
+    if (payload.action === 'clear_all_orders') {
+      if (orderSheet.getLastRow() > 1) {
+        orderSheet.getRange(2, 1, orderSheet.getLastRow() - 1, 17).clearContent();
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", count: 0 }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var data = payload.orders || payload;
+    var items = Array.isArray(data) ? data : [data];
+    var timestamp = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss");
+    
+    // 一括同期（全件送信）の場合は既存データをヘッダー以外クリアして完全再書き込み
+    if (payload.action === 'sync_all_orders' || Array.isArray(payload.orders)) {
+      if (orderSheet.getLastRow() > 1) {
+        orderSheet.getRange(2, 1, orderSheet.getLastRow() - 1, 17).clearContent();
+      }
+    }
+    
+    items.forEach(function(item) {
+      var billing = Number(item.billing) || 0;
+      var payment = Number(item.payment) || 0;
+      var profit = billing - payment;
+      var statusJa = item.status === 'confirmed' ? '確定' : (item.status === 'tentative' ? '仮案件' : 'バラシ');
+      
+      orderSheet.appendRow([
+        item.id || "",
+        item.consignor || item.clientSource || "",
+        item.client || "",
+        item.date || "",
+        statusJa,
+        item.area || "",
+        item.company || "",
+        item.store || "",
+        item.type || "",
+        item.performer || "",
+        item.manager || "",
+        billing,
+        payment,
+        profit,
+        item.transportation || "込み",
+        item.notes || "",
+        timestamp
+      ]);
+    });
+    
+    // 追記後に「実施日順(昇順) → 都道府県番号順」で自動ソート
+    var lastRow = orderSheet.getLastRow();
+    if (lastRow > 2) {
+      var prefOrderList = ["福岡", "佐賀", "長崎", "熊本", "大分", "宮崎", "鹿児島", "沖縄"];
+      var allRows = orderSheet.getRange(2, 1, lastRow - 1, 17).getValues();
+      allRows.sort(function(a, b) {
+        var dateA = Utilities.formatDate(new Date(a[3]), "Asia/Tokyo", "yyyy-MM-dd");
+        var dateB = Utilities.formatDate(new Date(b[3]), "Asia/Tokyo", "yyyy-MM-dd");
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        var cleanA = (a[5] || "").toString().replace(/[都道府県]/g, "").trim();
+        var cleanB = (b[5] || "").toString().replace(/[都道府県]/g, "").trim();
+        var idxA = prefOrderList.indexOf(cleanA);
+        var idxB = prefOrderList.indexOf(cleanB);
+        if (idxA === -1) idxA = 999;
+        if (idxB === -1) idxB = 999;
+        if (idxA !== idxB) return idxA - idxB;
+        return (a[5] || "").toString().localeCompare((b[5] || "").toString(), "ja");
+      });
+      orderSheet.getRange(2, 1, allRows.length, 17).setValues(allRows);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: items.length }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function doGet(e) {
+  try {
+    var ss = getTargetSpreadsheet();
+    initRequiredSheets(ss); // 全シートの存在を自動確認・作成
+    
+    var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'get_orders';
+
+    // 接続維持用のping確認
+    if (action === 'ping') {
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", time: Date.now() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ④ 受注案件一覧の取得
+    if (action === 'get_orders') {
+      var oSheet = ss.getSheetByName("受注管理");
+      if (!oSheet || oSheet.getLastRow() <= 1) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "success", data: [] }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var rows = oSheet.getRange(2, 1, oSheet.getLastRow() - 1, 17).getValues();
+      var orderList = [];
+      rows.forEach(function(r) {
+        if (!r[3] && !r[7]) return;
+        var statusStr = r[4] ? r[4].toString() : '';
+        var statusKey = 'confirmed';
+        if (statusStr === '仮案件') statusKey = 'tentative';
+        else if (statusStr === 'バラシ') statusKey = 'cancelled';
+
+        var formattedDate = "";
+        if (r[3] instanceof Date) {
+          formattedDate = Utilities.formatDate(r[3], "Asia/Tokyo", "yyyy-MM-dd");
+        } else if (r[3]) {
+          formattedDate = r[3].toString().replace(/\//g, '-');
+        }
+
+        orderList.push({
+          id: r[0] ? r[0].toString() : 'ORD-' + Date.now(),
+          consignor: r[1] ? r[1].toString() : '',
+          client: r[2] ? r[2].toString() : '',
+          date: formattedDate,
+          status: statusKey,
+          area: r[5] ? r[5].toString() : '',
+          company: r[6] ? r[6].toString() : '',
+          store: r[7] ? r[7].toString() : '',
+          type: r[8] ? r[8].toString() : '',
+          performer: r[9] ? r[9].toString() : '',
+          manager: r[10] ? r[10].toString() : '',
+          billing: Number(r[11]) || 0,
+          payment: Number(r[12]) || 0,
+          transportation: r[14] ? r[14].toString() : '込み',
+          notes: r[15] ? r[15].toString() : ''
+        });
+      });
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", data: orderList }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 担当者マスタの取得
+    if (action === 'get_staff') {
+      var sSheet = ss.getSheetByName("担当者マスタ");
+      if (!sSheet || sSheet.getLastRow() <= 1) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "success", data: [] }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var sRows = sSheet.getRange(2, 1, sSheet.getLastRow() - 1, 1).getValues();
+      var staffRes = [];
+      sRows.forEach(function(r) {
+        if (r[0] && r[0].toString().trim() !== '' && staffRes.indexOf(r[0].toString().trim()) === -1) {
+          staffRes.push(r[0].toString().trim());
+        }
+      });
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", data: staffRes }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 企業店舗マスタの取得
+    var mSheet = ss.getSheetByName("企業店舗マスタ");
+    if (!mSheet || mSheet.getLastRow() <= 1) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", data: {} }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var rows = mSheet.getRange(2, 1, mSheet.getLastRow() - 1, 3).getValues();
+    var result = {};
+    rows.forEach(function(row) {
+      var area = row[0];
+      var comp = row[1];
+      var store = row[2];
+      if (!area || !comp) return;
+      if (!result[area]) result[area] = {};
+      if (!result[area][comp]) result[area][comp] = [];
+      if (store && store !== "(店舗なし)" && result[area][comp].indexOf(store) === -1) {
+        result[area][comp].push(store);
+      }
+    });
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", data: result }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+</pre>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="pt-3 border-t border-slate-100 mt-3 flex justify-end">
+        <button onclick="closeSheetsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clear Confirmation Custom Modal (ブラウザブロックを回避する専用確認ダイアログ) -->
+  <div id="clearConfirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-rose-100 p-6 text-center space-y-4">
+      <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-2xl">
+        <i class="ph ph-warning-octagon"></i>
+      </div>
+      <div>
+        <h4 class="text-base font-bold text-slate-800">全テストデータをクリアしますか？</h4>
+        <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+          現在登録されている案件データをすべて消去し、0件にします。<br>
+          <span class="text-rose-600 font-semibold">※ スプレッドシート上の受注データも一括消去されます。</span>
+        </p>
+      </div>
+      <div class="flex items-center justify-center space-x-2 pt-2">
+        <button type="button" onclick="closeClearConfirmModal()" class="w-1/2 py-2 px-3 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+          キャンセル
+        </button>
+        <button type="button" onclick="executeClearAllOrders()" class="w-1/2 py-2 px-3 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition">
+          完全に消去する
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // エリア一覧の定義 (福岡 -> 佐賀 -> 長崎 -> 熊本 -> 大分 -> 宮崎 -> 鹿児島 -> 沖縄)
+    const AREA_LIST = ['福岡', '佐賀', '長崎', '熊本', '大分', '宮崎', '鹿児島', '沖縄'];
+
+    // 全国都道府県コード順（JIS X 0401 都道府県番号順：01北海道〜47沖縄）
+    const PREFECTURE_ORDER = [
+      '北海道', '青森', '岩手', '宮城', '秋田', '山形', '福島',
+      '茨城', '栃木', '群馬', '埼玉', '千葉', '東京', '神奈川',
+      '新潟', '富山', '石川', '福井', '山梨', '長野', '岐阜', '静岡', '愛知', '三重',
+      '滋賀', '京都', '大阪', '兵庫', '奈良', '和歌山',
+      '鳥取', '島根', '岡山', '広島', '山口',
+      '徳島', '香川', '愛媛', '高知',
+      '福岡', '佐賀', '長崎', '熊本', '大分', '宮崎', '鹿児島', '沖縄'
+    ];
+
+    // 都道府県番号順のインデックス比較ヘルパー（「福岡県」等の表記ゆれにも対応）
+    function getPrefectureIndex(areaName) {
+      if (!areaName) return 999;
+      const cleanName = areaName.replace(/[都|道|府|県]$/, '').trim();
+      const idx = PREFECTURE_ORDER.indexOf(cleanName);
+      return idx !== -1 ? idx : 900 + areaName.localeCompare(cleanName, 'ja');
+    }
+
+    // 初期企業・店舗マスターデータ定義
+    const defaultMasterData = {
+      '福岡': {
+        'フェイスグループ': ['メガフェイス1500宗像', 'フェイス777遠賀', 'メガフェイス960飯塚', 'メガフェイス1250田川'],
+        '玉屋': ['玉屋本店', '玉屋新宮店', '玉屋室見店', '玉屋太宰府店'],
+        'ワンダーランド': ['ワンダーランド百年橋店', 'ワンダーランド福岡東店', 'ワンダーランド小戸店'],
+        'プラザ': ['プラザ本店', 'プラザ博多', 'プラザ荒江店', 'プラザ長浜店']
+      },
+      '佐賀': {
+        'フェイスグループ': ['フェイス701巨勢', 'フェイス850佐賀'],
+        'ビーム': ['ビーム原田', 'ビーム唐津'],
+        'ユーコーラッキー': ['ユーコーラッキー鳥栖店']
+      },
+      '長崎': {
+        'まるみつ': ['まるみつ中央橋店', 'まるみつ佐世保店', 'まるみつ稲佐店'],
+        'ケイズ': ['ケイズプラザ佐世保店']
+      },
+      '熊本': {
+        'コア21グループ': ['コア21下通店', 'コア21帯山店', 'コア21健軍店', 'コア21菊陽店'],
+        'つかさ': ['つかさ南高江店', 'つかさ田崎店', 'つかさ清水店'],
+        '大劇': ['大劇長嶺店', '大劇通町店']
+      },
+      '大分': {
+        'エーワン': ['エーワン萩原店', 'エーワン別府店'],
+        'サミット': ['サミット別府店']
+      },
+      '宮崎': {
+        '湖月': ['湖月大淀店', '湖月南宮崎店'],
+        'オーパス': ['オーパス延岡店', 'オーパス日向店']
+      },
+      '鹿児島': {
+        'モリナガ': ['モリナガ天文館店', 'モリナガ草牟田店', 'モリナガ谷山店'],
+        'T-MAX': ['T-MAX高見馬場店', 'T-MAX新栄店'],
+        'ナンニチ': ['ナンニチ志布志店', 'ナンニチ国分店']
+      },
+      '沖縄': {
+        'サンシャイングループ': ['サンシャイン具志川店', 'サンシャイン牧港店', 'サンシャイン泡瀬店'],
+        'アムズ': ['アムズガーデン小禄店', 'アムズガーデン古波蔵店']
+      }
+    };
+
+    // LocalStorage キー
+    const STORAGE_KEY = 'order_manager_orders_v2';
+    const MASTER_STORAGE_KEY = 'order_manager_master_data_v1';
+    const STAFF_STORAGE_KEY = 'order_manager_staff_list_v1';
+    const SHEETS_CONFIG_KEY = 'order_manager_sheets_config_v1';
+    const PENDING_SYNC_QUEUE_KEY = 'order_manager_pending_queue_v1';
+
+    // 初期担当者リスト
+    const defaultStaffList = ['佐藤', '田中', '高橋', '渡辺', '伊藤'];
+    let staffList = [];
+
+    // 内部データ状態
+    let orders = [];
+    let pendingSyncQueue = []; // 未送信キュー
+    let currentView = 'date'; // 'date' | 'area'
+    let dateSortDirection = 'asc'; // 'asc' | 'desc'
+    let searchQuery = '';
+
+    // スプレッドシート連携設定
+    let sheetsConfig = {
+      endpointUrl: '',
+      autoSync: true
+    };
+
+    let masterData = {};
+    let modalSelectedArea = '福岡';
+    let modalSelectedCompany = '';
+
+    // 初期起動
+    window.addEventListener('DOMContentLoaded', () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('orderDate').value = today;
+
+      loadMasterData();
+      loadStaffData();
+      loadSheetsConfig();
+      loadOrdersFromStorage();
+      loadPendingQueue();
+
+      if (sheetsConfig.endpointUrl) {
+        // スプレッドシート連携URLがある場合は起動時に全て（案件・マスタ・担当者）を完全自動同期
+        autoSyncAllDataFromSheets(true);
+        processPendingQueue();
+        startAutoSyncInterval();
+      } else {
+        refreshAreaFilterOptions();
+        renderOrders();
+      }
+
+      // ウィンドウにフォーカスが戻った時（別タブやスプレッドシート直接編集からの復帰時）に自動で最新化
+      window.addEventListener('focus', () => {
+        if (sheetsConfig.endpointUrl && navigator.onLine) {
+          autoSyncAllDataFromSheets(false);
+        }
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && sheetsConfig.endpointUrl && navigator.onLine) {
+          autoSyncAllDataFromSheets(false);
+        }
+      });
+
+      // オンライン復帰イベント監視
+      window.addEventListener('online', () => {
+        showToast('インターネット接続が復旧しました。自動同期します...');
+        processPendingQueue();
+        if (sheetsConfig.endpointUrl) {
+          autoSyncAllDataFromSheets(false);
+        }
+      });
+    });
+
+    // 定期バックグラウンド自動同期（30秒ごとに自動でシートと突合・同期）
+    let autoSyncTimer = null;
+    function startAutoSyncInterval() {
+      if (autoSyncTimer) clearInterval(autoSyncTimer);
+      autoSyncTimer = setInterval(() => {
+        if (sheetsConfig.endpointUrl && navigator.onLine) {
+          autoSyncAllDataFromSheets(false);
+        }
+      }, 30 * 1000); // 30秒おき
+    }
+
+    // スプレッドシートから全データ（案件・企業店舗・担当者）を一括自動読込
+    async function autoSyncAllDataFromSheets(isInitial = false) {
+      if (!sheetsConfig.endpointUrl || !navigator.onLine) return;
+
+      const liveBadge = document.getElementById('autoSyncText');
+      if (liveBadge) liveBadge.textContent = '自動同期: 通信中...';
+
+      try {
+        // 1. 案件の同期
+        const ordRes = await fetch(sheetsConfig.endpointUrl + '?action=get_orders');
+        const ordJson = await ordRes.json();
+        if (ordJson.status === 'success' && Array.isArray(ordJson.data)) {
+          if (ordJson.data.length > 0) {
+            orders = ordJson.data;
+            saveOrdersToStorage();
+            refreshAreaFilterOptions();
+            renderOrders();
+          }
+        }
+
+        // 2. 企業店舗マスタの自動取得
+        const mastRes = await fetch(sheetsConfig.endpointUrl + '?action=get_master');
+        const mastJson = await mastRes.json();
+        if (mastJson.status === 'success' && mastJson.data && Object.keys(mastJson.data).length > 0) {
+          masterData = mastJson.data;
+          saveMasterData();
+          const currentArea = document.getElementById('areaInput').value;
+          if (currentArea) onAreaChange(currentArea);
+        }
+
+        // 3. 担当者マスタの自動取得
+        const staffRes = await fetch(sheetsConfig.endpointUrl + '?action=get_staff');
+        const staffJson = await staffRes.json();
+        if (staffJson.status === 'success' && Array.isArray(staffJson.data) && staffJson.data.length > 0) {
+          staffList = staffJson.data;
+          saveStaffData();
+        }
+
+        updateSheetsBadge(true);
+        if (liveBadge) liveBadge.textContent = '自動同期: 稼働中';
+        if (isInitial) {
+          showToast(`スプレッドシートと自動同期完了 (${orders.length} 件)`);
+        }
+      } catch (err) {
+        console.warn('AutoSync Background Error:', err);
+        updateSheetsBadge(false);
+        if (liveBadge) liveBadge.textContent = '自動同期: 一時待機中';
+      }
+    }
+
+    // --- 担当者管理ロジック ---
+    function loadStaffData() {
+      try {
+        const raw = localStorage.getItem(STAFF_STORAGE_KEY);
+        if (raw) {
+          staffList = JSON.parse(raw);
+        } else {
+          staffList = [...defaultStaffList];
+          saveStaffData();
+        }
+      } catch (e) {
+        staffList = [...defaultStaffList];
+      }
+      refreshStaffSelectOptions();
+    }
+
+    function saveStaffData() {
+      try {
+        localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(staffList));
+      } catch (e) {
+        console.error('Staff save error:', e);
+      }
+      refreshStaffSelectOptions();
+    }
+
+    function refreshStaffSelectOptions() {
+      const managerSelect = document.getElementById('managerSelect');
+      const editManagerSelect = document.getElementById('editManagerSelect');
+      
+      const optionsHtml = '<option value="">担当者を選択</option>' +
+        staffList.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('') +
+        '<option value="__CUSTOM__">＋ 直接入力</option>';
+      
+      if (managerSelect) managerSelect.innerHTML = optionsHtml;
+      if (editManagerSelect) editManagerSelect.innerHTML = optionsHtml;
+    }
+
+    function onManagerSelectChange(val) {
+      const input = document.getElementById('managerName');
+      if (val === '__CUSTOM__') {
+        input.classList.remove('hidden');
+        input.value = '';
+        input.focus();
+      } else {
+        input.classList.add('hidden');
+        input.value = val;
+      }
+    }
+
+    function onEditManagerSelectChange(val) {
+      const input = document.getElementById('editManager');
+      if (val === '__CUSTOM__') {
+        input.classList.remove('hidden');
+        input.value = '';
+        input.focus();
+      } else {
+        input.classList.add('hidden');
+        input.value = val;
+      }
+    }
+
+    function openStaffModal() {
+      renderStaffList();
+      document.getElementById('staffModal').classList.remove('hidden');
+    }
+
+    function closeStaffModal() {
+      document.getElementById('staffModal').classList.add('hidden');
+    }
+
+    function renderStaffList() {
+      const container = document.getElementById('staffListContainer');
+      if (staffList.length === 0) {
+        container.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">担当者が登録されていません</div>';
+        return;
+      }
+
+      container.innerHTML = staffList.map((name, index) => `
+        <div class="flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-xs text-slate-700 transition">
+          <div class="flex items-center space-x-2">
+            <span class="w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-bold">
+              ${escapeHtml(name.charAt(0))}
+            </span>
+            <span class="font-semibold text-slate-800">${escapeHtml(name)}</span>
+          </div>
+          <button onclick="deleteStaffMember(${index})" class="text-slate-400 hover:text-rose-600 p-1 rounded transition" title="削除">
+            <i class="ph ph-trash text-sm"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function addStaffMember() {
+      const input = document.getElementById('newStaffNameInput');
+      const name = input.value.trim();
+      if (!name) return;
+
+      if (staffList.includes(name)) {
+        showToast('同名の担当者が既に存在します', true);
+        return;
+      }
+
+      staffList.push(name);
+      saveStaffData();
+      input.value = '';
+      renderStaffList();
+      showToast(`担当者「${name}」を追加しました`);
+      // スプレッドシートへ自動保存
+      syncStaffToSheets();
+    }
+
+    function deleteStaffMember(index) {
+      if (staffList[index] !== undefined) {
+        const deleted = staffList.splice(index, 1);
+        saveStaffData();
+        renderStaffList();
+        showToast(`担当者「${deleted[0]}」を削除しました`);
+        // スプレッドシートへ自動保存
+        syncStaffToSheets();
+      }
+    }
+
+    function resetStaffToDefault() {
+      staffList = [...defaultStaffList];
+      saveStaffData();
+      renderStaffList();
+      showToast('担当者リストを初期状態に戻しました');
+      // スプレッドシートへ自動保存
+      syncStaffToSheets();
+    }
+
+    function deleteStaffMember(index) {
+      if (staffList[index] !== undefined) {
+        const deleted = staffList.splice(index, 1);
+        saveStaffData();
+        renderStaffList();
+        showToast(`担当者「${deleted[0]}」を削除しました`);
+      }
+    }
+
+    function resetStaffToDefault() {
+      staffList = [...defaultStaffList];
+      saveStaffData();
+      renderStaffList();
+      showToast('担当者リストを初期状態に戻しました');
+    }
+
+    // --- 連動セレクトボックス制御 ---
+    function onAreaChange(area) {
+      document.getElementById('areaInput').value = area;
+      const compSelect = document.getElementById('companySelect');
+      const storeSelect = document.getElementById('storeSelect');
+      
+      compSelect.innerHTML = '<option value="">企業候補選択</option>';
+      storeSelect.innerHTML = '<option value="">店舗候補選択</option>';
+      document.getElementById('companyInput').value = '';
+      document.getElementById('storeInput').value = '';
+
+      if (area && masterData[area]) {
+        Object.keys(masterData[area]).forEach(comp => {
+          compSelect.innerHTML += `<option value="${escapeHtml(comp)}">${escapeHtml(comp)}</option>`;
+        });
+      }
+    }
+
+    function onCompanyChange(company) {
+      document.getElementById('companyInput').value = company;
+      const area = document.getElementById('areaInput').value;
+      const storeSelect = document.getElementById('storeSelect');
+      
+      storeSelect.innerHTML = '<option value="">店舗候補選択</option>';
+      document.getElementById('storeInput').value = '';
+
+      if (area && masterData[area] && masterData[area][company]) {
+        masterData[area][company].forEach(st => {
+          storeSelect.innerHTML += `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`;
+        });
+      }
+    }
+
+    function onStoreChange(store) {
+      document.getElementById('storeInput').value = store;
+    }
+
+    // --- 委託元選択制御 ---
+    function onConsignorSelectChange(val) {
+      const customInput = document.getElementById('consignorCustomInput');
+      if (val === '__NEW__') {
+        customInput.classList.remove('hidden');
+        customInput.required = true;
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+        customInput.required = false;
+        customInput.value = '';
+      }
+    }
+
+    function onEditConsignorSelectChange(val) {
+      const customInput = document.getElementById('editConsignorCustom');
+      if (val === '__NEW__') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+        customInput.value = '';
+      }
+    }
+
+    // --- 依頼元選択制御 ---
+    const CLIENT_PRESETS = [
+      'アツ姫',
+      'オフミー',
+      'ジザイ',
+      'ジャンボリ',
+      'でちゃう',
+      'パチ7',
+      'パチタウン(DMM)',
+      'PUSH',
+      'ポッシブル',
+      'ホール'
+    ];
+
+    function onClientSelectChange(val) {
+      const customInput = document.getElementById('clientCustomInput');
+      if (val === '__NEW__') {
+        customInput.classList.remove('hidden');
+        customInput.required = true;
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+        customInput.required = false;
+        customInput.value = '';
+      }
+    }
+
+    function onEditClientSelectChange(val) {
+      const customInput = document.getElementById('editClientCustom');
+      if (val === '__NEW__') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+        customInput.value = '';
+      }
+    }
+
+    // --- マスタデータ管理 (LocalStorage & モーダル) ---
+    function loadMasterData() {
+      try {
+        const raw = localStorage.getItem(MASTER_STORAGE_KEY);
+        if (raw) {
+          masterData = JSON.parse(raw);
+        } else {
+          masterData = JSON.parse(JSON.stringify(defaultMasterData));
+          saveMasterData();
+        }
+      } catch (e) {
+        masterData = JSON.parse(JSON.stringify(defaultMasterData));
+      }
+    }
+
+    function saveMasterData() {
+      try {
+        localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(masterData));
+      } catch (e) {
+        console.error('Master data save error:', e);
+      }
+    }
+
+    function resetMasterToDefault() {
+      masterData = JSON.parse(JSON.stringify(defaultMasterData));
+      saveMasterData();
+      renderMasterAreaTabs();
+      selectMasterArea(modalSelectedArea);
+      // 入力フォーム側の選択肢もリフレッシュ
+      const currentArea = document.getElementById('areaInput').value;
+      if (currentArea) onAreaChange(currentArea);
+      showToast('リストを初期状態にリセットしました');
+    }
+
+    function openMasterModal() {
+      const currentFormArea = document.getElementById('areaInput').value;
+      if (currentFormArea && AREA_LIST.includes(currentFormArea)) {
+        modalSelectedArea = currentFormArea;
+      } else {
+        modalSelectedArea = '福岡';
+      }
+      renderMasterAreaTabs();
+      selectMasterArea(modalSelectedArea);
+      document.getElementById('masterModal').classList.remove('hidden');
+    }
+
+    function closeMasterModal() {
+      document.getElementById('masterModal').classList.add('hidden');
+      // 入力フォームのセレクトボックスをリフレッシュ
+      const currentArea = document.getElementById('areaInput').value;
+      const currentComp = document.getElementById('companyInput').value;
+      if (currentArea) {
+        onAreaChange(currentArea);
+        if (currentComp) {
+          document.getElementById('companySelect').value = currentComp;
+          onCompanyChange(currentComp);
+        }
+      }
+    }
+
+    function renderMasterAreaTabs() {
+      const tabs = document.getElementById('masterAreaTabs');
+      tabs.innerHTML = AREA_LIST.map(area => `
+        <button onclick="selectMasterArea('${area}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${modalSelectedArea === area ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+          ${area}
+        </button>
+      `).join('');
+    }
+
+    function selectMasterArea(area) {
+      modalSelectedArea = area;
+      renderMasterAreaTabs();
+      document.getElementById('masterCurrentAreaBadge').textContent = area;
+
+      if (!masterData[area]) {
+        masterData[area] = {};
+      }
+
+      const companies = Object.keys(masterData[area]);
+      if (companies.length > 0) {
+        modalSelectedCompany = companies[0];
+      } else {
+        modalSelectedCompany = '';
+      }
+      renderMasterCompanyList();
+      renderMasterStoreList();
+    }
+
+    function selectMasterCompany(comp) {
+      modalSelectedCompany = comp;
+      renderMasterCompanyList();
+      renderMasterStoreList();
+    }
+
+    function renderMasterCompanyList() {
+      const list = document.getElementById('masterCompanyList');
+      const companies = Object.keys(masterData[modalSelectedArea] || {});
+
+      if (companies.length === 0) {
+        list.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">登録企業がありません</div>`;
+        return;
+      }
+
+      list.innerHTML = companies.map(comp => {
+        const isSelected = comp === modalSelectedCompany;
+        const storeCount = (masterData[modalSelectedArea][comp] || []).length;
+        return `
+          <div class="flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition ${isSelected ? 'bg-indigo-50 border-indigo-300 text-indigo-900 font-bold' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'}"
+               onclick="selectMasterCompany('${escapeHtml(comp)}')">
+            <div class="flex items-center space-x-1.5 truncate">
+              <i class="ph ph-buildings ${isSelected ? 'text-indigo-600' : 'text-slate-400'}"></i>
+              <span class="truncate">${escapeHtml(comp)}</span>
+              <span class="text-[10px] text-slate-400">(${storeCount})</span>
+            </div>
+            <button onclick="deleteMasterCompany(event, '${escapeHtml(comp)}')" class="text-slate-400 hover:text-rose-600 p-1 rounded transition" title="削除">
+              <i class="ph ph-trash"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderMasterStoreList() {
+      const list = document.getElementById('masterStoreList');
+      const badge = document.getElementById('masterCurrentCompanyBadge');
+
+      if (!modalSelectedCompany) {
+        badge.textContent = '企業未選択';
+        list.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">左側の企業を選択してください</div>`;
+        return;
+      }
+
+      badge.textContent = modalSelectedCompany;
+      const stores = masterData[modalSelectedArea][modalSelectedCompany] || [];
+
+      if (stores.length === 0) {
+        list.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">店舗が登録されていません</div>`;
+        return;
+      }
+
+      list.innerHTML = stores.map((store, index) => `
+        <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 text-xs text-slate-700">
+          <div class="flex items-center space-x-1.5 truncate">
+            <i class="ph ph-storefront text-emerald-500"></i>
+            <span class="truncate">${escapeHtml(store)}</span>
+          </div>
+          <button onclick="deleteMasterStore(${index})" class="text-slate-400 hover:text-rose-600 p-1 rounded transition" title="削除">
+            <i class="ph ph-trash"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function addCompanyToMaster() {
+      const input = document.getElementById('newCompanyNameInput');
+      const companyName = input.value.trim();
+      if (!companyName) return;
+
+      if (!masterData[modalSelectedArea]) {
+        masterData[modalSelectedArea] = {};
+      }
+
+      if (masterData[modalSelectedArea][companyName]) {
+        showToast('同名の企業が既に存在します', true);
+        return;
+      }
+
+      masterData[modalSelectedArea][companyName] = [];
+      saveMasterData();
+      input.value = '';
+      modalSelectedCompany = companyName;
+      renderMasterCompanyList();
+      renderMasterStoreList();
+      showToast(`企業「${companyName}」を追加しました`);
+      // スプレッドシートへ自動保存
+      syncMasterToSheets();
+    }
+
+    function deleteMasterCompany(event, comp) {
+      event.stopPropagation();
+      if (!masterData[modalSelectedArea] || !masterData[modalSelectedArea][comp]) return;
+
+      delete masterData[modalSelectedArea][comp];
+      saveMasterData();
+
+      const remaining = Object.keys(masterData[modalSelectedArea]);
+      modalSelectedCompany = remaining.length > 0 ? remaining[0] : '';
+      renderMasterCompanyList();
+      renderMasterStoreList();
+      showToast(`企業「${comp}」を削除しました`);
+      // スプレッドシートへ自動保存
+      syncMasterToSheets();
+    }
+
+    function addStoreToMaster() {
+      if (!modalSelectedCompany) {
+        showToast('先に企業を選択してください', true);
+        return;
+      }
+
+      const input = document.getElementById('newStoreNameInput');
+      const storeName = input.value.trim();
+      if (!storeName) return;
+
+      const stores = masterData[modalSelectedArea][modalSelectedCompany] || [];
+      if (stores.includes(storeName)) {
+        showToast('同名の店舗が既に存在します', true);
+        return;
+      }
+
+      stores.push(storeName);
+      masterData[modalSelectedArea][modalSelectedCompany] = stores;
+      saveMasterData();
+      input.value = '';
+      renderMasterCompanyList();
+      renderMasterStoreList();
+      showToast(`店舗「${storeName}」を追加しました`);
+      // スプレッドシートへ自動保存
+      syncMasterToSheets();
+    }
+
+    function deleteMasterStore(index) {
+      if (!modalSelectedCompany) return;
+      const stores = masterData[modalSelectedArea][modalSelectedCompany];
+      if (!stores || !stores[index]) return;
+
+      const deleted = stores.splice(index, 1);
+      saveMasterData();
+      renderMasterCompanyList();
+      renderMasterStoreList();
+      showToast(`店舗「${deleted[0]}」を削除しました`);
+      // スプレッドシートへ自動保存
+      syncMasterToSheets();
+    }
+
+    function deleteMasterCompany(event, comp) {
+      event.stopPropagation();
+      if (!masterData[modalSelectedArea] || !masterData[modalSelectedArea][comp]) return;
+
+      delete masterData[modalSelectedArea][comp];
+      saveMasterData();
+
+      const remaining = Object.keys(masterData[modalSelectedArea]);
+      modalSelectedCompany = remaining.length > 0 ? remaining[0] : '';
+      renderMasterCompanyList();
+      renderMasterStoreList();
+      showToast(`企業「${comp}」を削除しました`);
+    }
+
+    function addStoreToMaster() {
+      if (!modalSelectedCompany) {
+        showToast('先に企業を選択してください', true);
+        return;
+      }
+
+      const input = document.getElementById('newStoreNameInput');
+      const storeName = input.value.trim();
+      if (!storeName) return;
+
+      const stores = masterData[modalSelectedArea][modalSelectedCompany] || [];
+      if (stores.includes(storeName)) {
+        showToast('同名の店舗が既に存在します', true);
+        return;
+      }
+
+      stores.push(storeName);
+      masterData[modalSelectedArea][modalSelectedCompany] = stores;
+      saveMasterData();
+      input.value = '';
+      renderMasterCompanyList();
+      renderMasterStoreList();
+      showToast(`店舗「${storeName}」を追加しました`);
+    }
+
+    function deleteMasterStore(index) {
+      if (!modalSelectedCompany) return;
+      const stores = masterData[modalSelectedArea][modalSelectedCompany];
+      if (!stores || !stores[index]) return;
+
+      const deleted = stores.splice(index, 1);
+      saveMasterData();
+      renderMasterCompanyList();
+      renderMasterStoreList();
+      showToast(`店舗「${deleted[0]}」を削除しました`);
+    }
+
+    // 本番運用開始用: テストデータ一括クリア（専用モーダル制御）
+    function openClearConfirmModal() {
+      if (orders.length === 0) {
+        showToast('現在登録されている案件データはありません（既に0件です）');
+        return;
+      }
+      document.getElementById('clearConfirmModal').classList.remove('hidden');
+    }
+
+    function closeClearConfirmModal() {
+      document.getElementById('clearConfirmModal').classList.add('hidden');
+    }
+
+    async function executeClearAllOrders() {
+      closeClearConfirmModal();
+      
+      // 1. ローカルメモリ & LocalStorage を即時クリア
+      orders = [];
+      saveOrdersToStorage();
+      pendingSyncQueue = [];
+      savePendingQueue();
+      
+      refreshAreaFilterOptions();
+      renderOrders();
+
+      // 2. スプレッドシート側の「受注管理」データもクリア送信
+      if (sheetsConfig.endpointUrl) {
+        showToast('スプレッドシートの案件データをクリア中...');
+        try {
+          await fetch(sheetsConfig.endpointUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'clear_all_orders' })
+          });
+          showToast('全データをクリアしました。本番入力の準備が完了しました！');
+        } catch (e) {
+          console.warn('Clear remote error:', e);
+          showToast('画面上のデータはクリアされました');
+        }
+      } else {
+        showToast('案件データをすべてクリアしました');
+      }
+
+      closeSheetsModal();
+    }
+
+    // 受注登録処理
+    function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const consignorVal = document.getElementById('consignorSelect').value;
+      const consignorCustom = document.getElementById('consignorCustomInput').value.trim();
+      const consignor = consignorVal === '__NEW__' ? consignorCustom : consignorVal;
+
+      const clientVal = document.getElementById('clientSelect').value;
+      const clientCustom = document.getElementById('clientCustomInput').value.trim();
+      const client = clientVal === '__NEW__' ? clientCustom : clientVal;
+
+      const date = document.getElementById('orderDate').value;
+      const area = document.getElementById('areaInput').value.trim();
+      const company = document.getElementById('companyInput').value.trim();
+      const store = document.getElementById('storeInput').value.trim();
+      const type = document.getElementById('typeInput').value.trim();
+      const performer = document.getElementById('performerOrEvent').value.trim() || '指定なし';
+      const managerSelectVal = document.getElementById('managerSelect').value;
+      const managerNameVal = document.getElementById('managerName').value.trim();
+      const manager = (managerSelectVal === '__CUSTOM__' ? managerNameVal : managerSelectVal) || '未定';
+      const billing = parseInt(document.getElementById('billingAmount').value, 10) || 0;
+      const payment = parseInt(document.getElementById('paymentAmount').value, 10) || 0;
+      const status = document.getElementById('status').value;
+      const transportation = document.getElementById('transportationCost').value || '込み';
+      const notes = document.getElementById('notes').value.trim();
+
+      if (!consignor || !client || !date || !area || !company || !store || !type) {
+        showToast('必須項目 (委託元・依頼元・実施日・エリア・企業・店舗・種別) を入力してください', true);
+        return;
+      }
+
+      const newOrder = {
+        id: 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+        consignor,
+        client,
+        date,
+        area,
+        company,
+        store,
+        type,
+        performer,
+        manager,
+        billing,
+        payment,
+        status,
+        transportation,
+        notes
+      };
+
+      orders.unshift(newOrder);
+      saveOrdersToStorage();
+
+      // スプレッドシート自動同期（設定されている場合）
+      if (sheetsConfig.endpointUrl && sheetsConfig.autoSync) {
+        sendToGoogleSheets(newOrder, false);
+      }
+
+      // 入力フォームクリア (委託元・依頼元・日付・エリア・交通費は連続登録のため保持)
+      document.getElementById('storeInput').value = '';
+      document.getElementById('storeSelect').value = '';
+      document.getElementById('performerOrEvent').value = '';
+      document.getElementById('billingAmount').value = '';
+      document.getElementById('paymentAmount').value = '';
+      document.getElementById('notes').value = '';
+
+      refreshAreaFilterOptions();
+      renderOrders();
+      showToast(`登録完了: ${store} (${performer})`);
+    }
+
+    // --- Googleスプレッドシート連携処理 ---
+    function loadSheetsConfig() {
+      try {
+        const raw = localStorage.getItem(SHEETS_CONFIG_KEY);
+        if (raw) {
+          sheetsConfig = Object.assign(sheetsConfig, JSON.parse(raw));
+        }
+        // バックアップ用キーからも再確認してURLの消失を防止
+        if (!sheetsConfig.endpointUrl) {
+          const backupUrl = localStorage.getItem(SHEETS_CONFIG_KEY + '_backup_url');
+          if (backupUrl) {
+            sheetsConfig.endpointUrl = backupUrl;
+          }
+        }
+      } catch (e) {
+        console.error('Sheets config load error:', e);
+      }
+      updateSheetsBadge();
+    }
+
+    function saveSheetsConfigToStorage() {
+      try {
+        localStorage.setItem(SHEETS_CONFIG_KEY, JSON.stringify(sheetsConfig));
+        if (sheetsConfig.endpointUrl) {
+          localStorage.setItem(SHEETS_CONFIG_KEY + '_backup_url', sheetsConfig.endpointUrl);
+        }
+        updateSheetsBadge();
+      } catch (e) {
+        console.error('Sheets config save error:', e);
+      }
+    }
+
+    function loadPendingQueue() {
+      try {
+        const raw = localStorage.getItem(PENDING_SYNC_QUEUE_KEY);
+        if (raw) pendingSyncQueue = JSON.parse(raw);
+      } catch (e) {
+        pendingSyncQueue = [];
+      }
+    }
+
+    function savePendingQueue() {
+      try {
+        localStorage.setItem(PENDING_SYNC_QUEUE_KEY, JSON.stringify(pendingSyncQueue));
+      } catch (e) {
+        console.error('Pending queue save error:', e);
+      }
+    }
+
+    function updateSheetsBadge(isConnected = null) {
+      const badge = document.getElementById('sheetsStatusBadge');
+      if (!badge) return;
+      if (sheetsConfig.endpointUrl) {
+        if (isConnected === false) {
+          badge.textContent = '再接続中';
+          badge.className = 'ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-white font-bold animate-pulse';
+        } else {
+          badge.textContent = '常時接続中';
+          badge.className = 'ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-600 text-white font-bold';
+        }
+      } else {
+        badge.textContent = '未設定';
+        badge.className = 'ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 text-slate-600 font-bold';
+      }
+    }
+
+    function startConnectionHeartbeat() {
+      // 5分おきに接続をチェック＆未送信データの自動同期を実施
+      setInterval(() => {
+        if (sheetsConfig.endpointUrl && navigator.onLine) {
+          processPendingQueue();
+        }
+      }, 5 * 60 * 1000);
+    }
+
+    function openSheetsModal() {
+      document.getElementById('gasEndpointUrl').value = sheetsConfig.endpointUrl || '';
+      document.getElementById('autoSyncSheetsCheckbox').checked = sheetsConfig.autoSync !== false;
+      document.getElementById('sheetsModal').classList.remove('hidden');
+    }
+
+    function closeSheetsModal() {
+      document.getElementById('sheetsModal').classList.add('hidden');
+    }
+
+    function saveGasUrl() {
+      const url = document.getElementById('gasEndpointUrl').value.trim();
+      sheetsConfig.endpointUrl = url;
+      saveSheetsConfigToStorage();
+      if (url) {
+        processPendingQueue();
+        showToast('スプレッドシート連携を常時接続に設定しました');
+      } else {
+        showToast('URL設定を解除しました');
+      }
+    }
+
+    function toggleAutoSync(checked) {
+      sheetsConfig.autoSync = checked;
+      saveSheetsConfigToStorage();
+    }
+
+    // Google Apps Scriptへ送信（自動リトライ＆指数バックオフ）
+    async function sendToGoogleSheets(data, isBatch = false, retryCount = 0) {
+      if (!sheetsConfig.endpointUrl) return;
+
+      const maxRetries = 3;
+      try {
+        await fetch(sheetsConfig.endpointUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        updateSheetsBadge(true);
+        if (isBatch) {
+          showToast('スプレッドシートへ全件送信しました');
+        } else {
+          showToast('スプレッドシートに追記同期しました');
+        }
+      } catch (err) {
+        console.warn(`Sheets Sync Attempt ${retryCount + 1} failed:`, err);
+        updateSheetsBadge(false);
+
+        if (retryCount < maxRetries) {
+          // 指数バックオフで自動再試行 (1.5秒, 3秒, 6秒)
+          const delay = Math.pow(2, retryCount) * 1500;
+          setTimeout(() => {
+            sendToGoogleSheets(data, isBatch, retryCount + 1);
+          }, delay);
+        } else {
+          // リトライ上限を超えた場合はキューに退避して後で再送
+          pendingSyncQueue.push({ data, isBatch, timestamp: Date.now() });
+          savePendingQueue();
+          showToast('一時的な通信障害です。復帰時に自動再送します', true);
+        }
+      }
+    }
+
+    // 未送信キューの処理
+    async function processPendingQueue() {
+      if (!sheetsConfig.endpointUrl || pendingSyncQueue.length === 0 || !navigator.onLine) return;
+
+      const queue = [...pendingSyncQueue];
+      pendingSyncQueue = [];
+      savePendingQueue();
+
+      for (const item of queue) {
+        try {
+          await fetch(sheetsConfig.endpointUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item.data)
+          });
+        } catch (e) {
+          // 再度失敗したものは戻す
+          pendingSyncQueue.push(item);
+          savePendingQueue();
+          break;
+        }
+      }
+      if (pendingSyncQueue.length === 0) {
+        updateSheetsBadge(true);
+      }
+    }
+
+    // 接続テスト
+    async function testSheetsConnection() {
+      const url = document.getElementById('gasEndpointUrl').value.trim();
+      if (!url) {
+        showToast('先にWebアプリURLを入力してください', true);
+        return;
+      }
+
+      showToast('テストデータを送信中...');
+      try {
+        const testItem = {
+          id: 'TEST-' + Date.now(),
+          consignor: 'テスト委託元',
+          client: 'テスト依頼元',
+          date: new Date().toISOString().split('T')[0],
+          area: '福岡',
+          company: '接続テスト企業',
+          store: '接続確認用店舗',
+          type: '取材',
+          performer: '接続テスト',
+          manager: '管理者',
+          billing: 10000,
+          payment: 5000,
+          status: 'confirmed',
+          transportation: '込み',
+          notes: '受注管理システムからの接続テスト送信'
+        };
+
+        await fetch(url, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(testItem)
+        });
+
+        updateSheetsBadge(true);
+        showToast('スプレッドシートへテスト送信しました。シートをご確認ください！');
+      } catch (e) {
+        updateSheetsBadge(false);
+        showToast('接続に失敗しました。URLをご確認ください', true);
+      }
+    }
+
+    // 全件一括送信
+    function syncAllToSheets() {
+      if (!sheetsConfig.endpointUrl) {
+        showToast('先にスプレッドシートのWebアプリURLを設定してください', true);
+        return;
+      }
+      if (orders.length === 0) {
+        showToast('送信する案件データがありません', true);
+        return;
+      }
+
+      // 送信前に「実施日順（昇順） → 都道府県番号順」でソート
+      const sortedOrders = [...orders].sort((a, b) => {
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        const idxA = getPrefectureIndex(a.area);
+        const idxB = getPrefectureIndex(b.area);
+        if (idxA !== idxB) return idxA - idxB;
+        return (a.area || '').localeCompare(b.area || '', 'ja');
+      });
+
+      showToast(`全 ${sortedOrders.length} 件を整列して送信中...`);
+      sendToGoogleSheets({
+        action: 'sync_all_orders',
+        orders: sortedOrders
+      }, true);
+    }
+
+    // --- スプレッドシートから案件データを取得・同期 ---
+    async function fetchOrdersFromSheets(isInitial = false) {
+      if (!sheetsConfig.endpointUrl) {
+        if (!isInitial) {
+          showToast('先にスプレッドシート連携設定からURLを登録してください', true);
+          openSheetsModal();
+        }
+        return;
+      }
+
+      showToast('スプレッドシートから最新案件を取得中...');
+      try {
+        const response = await fetch(sheetsConfig.endpointUrl + '?action=get_orders');
+        const resJson = await response.json();
+        if (resJson.status === 'success' && Array.isArray(resJson.data)) {
+          if (resJson.data.length > 0) {
+            orders = resJson.data;
+            saveOrdersToStorage();
+            refreshAreaFilterOptions();
+            renderOrders();
+            showToast(`スプレッドシートと同期完了 (${orders.length} 件)`);
+          } else {
+            showToast('スプレッドシートに案件データがありませんでした');
+          }
+        } else {
+          showToast('データ形式が正しくありませんでした', true);
+        }
+      } catch (err) {
+        console.error('Fetch Orders Error:', err);
+        if (!isInitial) {
+          showToast('シートからの読込に失敗しました (GASデプロイ設定をご確認ください)', true);
+        }
+      }
+    }
+
+    // --- 担当者マスタのスプレッドシート連携 ---
+    async function syncStaffToSheets() {
+      if (!sheetsConfig.endpointUrl) {
+        showToast('先にスプレッドシート連携設定からURLを登録してください', true);
+        openSheetsModal();
+        return;
+      }
+
+      showToast('担当者マスタをスプレッドシートへ送信中...');
+      try {
+        await fetch(sheetsConfig.endpointUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'sync_staff',
+            staffList: staffList
+          })
+        });
+        showToast('担当者マスタをスプレッドシートへ保存しました');
+      } catch (err) {
+        console.error('Staff Sync Error:', err);
+        showToast('スプレッドシートへの担当者マスタ保存に失敗しました', true);
+      }
+    }
+
+    async function fetchStaffFromSheets() {
+      if (!sheetsConfig.endpointUrl) {
+        showToast('先にスプレッドシート連携設定からURLを登録してください', true);
+        openSheetsModal();
+        return;
+      }
+
+      showToast('スプレッドシートから担当者マスタを取得中...');
+      try {
+        const response = await fetch(sheetsConfig.endpointUrl + '?action=get_staff');
+        const resJson = await response.json();
+        if (resJson.status === 'success' && Array.isArray(resJson.data) && resJson.data.length > 0) {
+          staffList = resJson.data;
+          saveStaffData();
+          renderStaffList();
+          showToast('スプレッドシートから担当者マスタを読み込みました');
+        } else {
+          showToast('スプレッドシートに担当者データが見つかりませんでした', true);
+        }
+      } catch (err) {
+        console.error('Fetch Staff Error:', err);
+        showToast('担当者マスタの読込に失敗しました (CORSまたは未デプロイ)', true);
+      }
+    }
+
+    // --- 企業・店舗マスタのスプレッドシート連携 ---
+    async function syncMasterToSheets() {
+      if (!sheetsConfig.endpointUrl) {
+        showToast('先にスプレッドシート連携設定からURLを登録してください', true);
+        openSheetsModal();
+        return;
+      }
+
+      showToast('企業・店舗マスタをスプレッドシートへ送信中...');
+      try {
+        await fetch(sheetsConfig.endpointUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'sync_master',
+            masterData: masterData
+          })
+        });
+        showToast('企業店舗マスタをスプレッドシートへ保存しました');
+      } catch (err) {
+        console.error('Master Sync Error:', err);
+        showToast('スプレッドシートへのマスタ保存に失敗しました', true);
+      }
+    }
+
+    async function fetchMasterFromSheets() {
+      if (!sheetsConfig.endpointUrl) {
+        showToast('先にスプレッドシート連携設定からURLを登録してください', true);
+        openSheetsModal();
+        return;
+      }
+
+      showToast('スプレッドシートからマスタを取得中...');
+      try {
+        const response = await fetch(sheetsConfig.endpointUrl + '?action=get_master');
+        const resJson = await response.json();
+        if (resJson.status === 'success' && resJson.data && Object.keys(resJson.data).length > 0) {
+          masterData = resJson.data;
+          saveMasterData();
+          renderMasterAreaTabs();
+          selectMasterArea(modalSelectedArea);
+          showToast('スプレッドシートから企業・店舗マスタを読み込みました');
+        } else {
+          showToast('スプレッドシートにマスタデータが見つかりませんでした', true);
+        }
+      } catch (err) {
+        console.error('Fetch Master Error:', err);
+        showToast('マスタの読込に失敗しました (CORSまたは未デプロイ)', true);
+      }
+    }
+
+    // GASコードのコピー
+    function copyGasScript() {
+      const code = document.getElementById('gasScriptCode').innerText;
+      const textarea = document.createElement('textarea');
+      textarea.value = code;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('GASコードをクリップボードにコピーしました');
+      } catch (e) {
+        showToast('コピーに失敗しました', true);
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // 表示モード切り替え
+    function setViewMode(mode) {
+      currentView = mode;
+      const tabDate = document.getElementById('tabDateSort');
+      const tabArea = document.getElementById('tabAreaGroup');
+      const sortControls = document.getElementById('dateSortControls');
+
+      if (mode === 'date') {
+        tabDate.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 bg-white text-indigo-600 shadow-sm";
+        tabArea.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5";
+        sortControls.classList.remove('hidden');
+      } else {
+        tabArea.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 bg-white text-indigo-600 shadow-sm";
+        tabDate.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5";
+        sortControls.classList.add('hidden');
+      }
+
+      renderOrders();
+    }
+
+    // 日付昇順・降順
+    function setDateSortOrder(direction) {
+      dateSortDirection = direction;
+      const btnAsc = document.getElementById('btnSortAsc');
+      const btnDesc = document.getElementById('btnSortDesc');
+
+      if (direction === 'asc') {
+        btnAsc.className = 'px-2.5 py-1.5 text-xs font-medium rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-600 flex items-center space-x-1';
+        btnDesc.className = 'px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 flex items-center space-x-1';
+      } else {
+        btnDesc.className = 'px-2.5 py-1.5 text-xs font-medium rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-600 flex items-center space-x-1';
+        btnAsc.className = 'px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 flex items-center space-x-1';
+      }
+
+      renderOrders();
+    }
+
+    function handleSearch() {
+      searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+      renderOrders();
+    }
+
+    // フィルタリング処理
+    function getFilteredOrders() {
+      const selectedArea = document.getElementById('filterAreaSelect').value;
+
+      return orders.filter(order => {
+        if (selectedArea !== 'ALL' && order.area !== selectedArea) {
+          return false;
+        }
+
+        if (searchQuery) {
+          const matchTarget = `${order.consignor || ''} ${order.client || ''} ${order.clientSource || ''} ${order.date} ${order.area} ${order.company} ${order.store} ${order.type} ${order.performer} ${order.manager} ${order.transportation || ''} ${order.notes}`.toLowerCase();
+          if (!matchTarget.includes(searchQuery)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    }
+
+    // メイン描画関数
+    function renderOrders() {
+      const container = document.getElementById('ordersContainer');
+      const emptyState = document.getElementById('emptyState');
+      const filtered = getFilteredOrders();
+
+      updateHeaderStats();
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      if (currentView === 'date') {
+        renderDateSortedView(container, filtered);
+      } else {
+        renderAreaGroupedView(container, filtered);
+      }
+    }
+
+    // ① 実施日順・リスト表示 (実施日 -> エリア順)
+    function renderDateSortedView(container, items) {
+      const sorted = [...items].sort((a, b) => {
+        const dateCompare = dateSortDirection === 'asc'
+          ? a.date.localeCompare(b.date)
+          : b.date.localeCompare(a.date);
+
+        // 日付が同じ場合は都道府県番号順（JISコード順：福岡40〜沖縄47）で上から並べる
+        if (dateCompare !== 0) return dateCompare;
+        const idxA = getPrefectureIndex(a.area);
+        const idxB = getPrefectureIndex(b.area);
+        if (idxA !== idxB) return idxA - idxB;
+        return (a.area || '').localeCompare(b.area || '', 'ja');
+      });
+
+      const groupedByDate = {};
+      sorted.forEach(item => {
+        if (!groupedByDate[item.date]) groupedByDate[item.date] = [];
+        groupedByDate[item.date].push(item);
+      });
+
+      let html = '';
+      for (const [date, orderList] of Object.entries(groupedByDate)) {
+        // 同一日付内のカード群を確実に都道府県番号順（福岡→佐賀→長崎→熊本→大分→宮崎→鹿児島→沖縄）でソート
+        orderList.sort((a, b) => {
+          const idxA = getPrefectureIndex(a.area);
+          const idxB = getPrefectureIndex(b.area);
+          if (idxA !== idxB) return idxA - idxB;
+          return (a.area || '').localeCompare(b.area || '', 'ja');
+        });
+
+        const dateObj = new Date(date + 'T00:00:00');
+        const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()];
+        const isToday = isDateToday(date);
+
+        html += `
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="bg-slate-50/80 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i class="ph ph-calendar text-indigo-600 font-bold"></i>
+                <span class="font-bold text-slate-800 text-sm tracking-wide">${date} (${dayOfWeek})</span>
+                ${isToday ? '<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-100 text-indigo-700">本日</span>' : ''}
+              </div>
+              <span class="text-xs text-slate-500 font-medium">${orderList.length} 件</span>
+            </div>
+            <div class="divide-y divide-slate-100">
+              ${orderList.map(order => createOrderCardHtml(order, false)).join('')}
+            </div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    // ② エリア順・グループ表示 (エリア順 -> エリア内は実施日順)
+    function renderAreaGroupedView(container, items) {
+      const groupedByArea = {};
+      items.forEach(item => {
+        const areaName = item.area || '未設定エリア';
+        if (!groupedByArea[areaName]) groupedByArea[areaName] = [];
+        groupedByArea[areaName].push(item);
+      });
+
+      // 都道府県コード番号順（福岡40 -> 佐賀41 -> 長崎42 -> 熊本43 -> 大分44 -> 宮崎45 -> 鹿児島46 -> 沖縄47）でソート
+      const sortedAreas = Object.keys(groupedByArea).sort((a, b) => {
+        const idxA = getPrefectureIndex(a);
+        const idxB = getPrefectureIndex(b);
+        if (idxA !== idxB) return idxA - idxB;
+        return a.localeCompare(b, 'ja');
+      });
+
+      let html = '';
+      sortedAreas.forEach(area => {
+        const areaOrders = groupedByArea[area].sort((a, b) => a.date.localeCompare(b.date));
+        const prefIdx = getPrefectureIndex(area);
+        const prefCodeBadge = prefIdx >= 0 && prefIdx < PREFECTURE_ORDER.length 
+          ? `<span class="text-[10px] font-bold text-indigo-500 bg-white/80 px-1.5 py-0.5 rounded border border-indigo-200">No.${prefIdx + 1}</span>` 
+          : '';
+
+        html += `
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="bg-indigo-50/60 px-4 py-2.5 border-b border-indigo-100 flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+                  <i class="ph ph-map-pin"></i>
+                </span>
+                <span class="font-bold text-slate-900 text-sm tracking-wide">${escapeHtml(area)}</span>
+                ${prefCodeBadge}
+              </div>
+              <span class="text-xs font-semibold text-indigo-700 bg-indigo-100/70 px-2.5 py-1 rounded-full">
+                計 ${areaOrders.length} 件
+              </span>
+            </div>
+            <div class="divide-y divide-slate-100">
+              ${areaOrders.map(order => createOrderCardHtml(order, true)).join('')}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // カードHTML生成
+    function createOrderCardHtml(order, showDateBadge = false) {
+      const statusBadge = getStatusBadge(order.status);
+      const isCancelled = order.status === 'cancelled';
+      const billing = Number(order.billing) || 0;
+      const payment = Number(order.payment) || 0;
+      const profit = billing - payment;
+      const transportation = order.transportation || '込み';
+
+      // 既存データの互換性ハンドリング
+      const consignorText = order.consignor || order.clientSource || '';
+      const clientText = order.client || '';
+
+      // 交通費バッジ（込み: スレート、実費: オレンジ系）
+      const transBadge = transportation === '実費'
+        ? '<span class="inline-flex items-center text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded"><i class="ph ph-train mr-1 text-amber-600"></i>交通費: 実費</span>'
+        : '<span class="inline-flex items-center text-[11px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded"><i class="ph ph-train mr-1 text-slate-400"></i>交通費: 込み</span>';
+
+      return `
+        <div class="p-4 hover:bg-slate-50/70 transition flex flex-col md:flex-row md:items-center justify-between gap-3 group ${isCancelled ? 'bg-slate-50/90 opacity-75' : ''}">
+          <div class="flex-1 min-w-0">
+            <!-- 上段: 委託元、依頼元、実施日/エリア、種別、演者/取材名、交通費、ステータス -->
+            <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+              ${consignorText ? `
+                <span class="text-[11px] font-semibold text-slate-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center">
+                  <i class="ph ph-handshake mr-1 text-amber-600"></i>委託: ${escapeHtml(consignorText)}
+                </span>` : ''
+              }
+              ${clientText ? `
+                <span class="text-[11px] font-semibold text-slate-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md flex items-center">
+                  <i class="ph ph-user-circle mr-1 text-blue-600"></i>依頼: ${escapeHtml(clientText)}
+                </span>` : ''
+              }
+              ${showDateBadge ? `
+                <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md flex items-center">
+                  <i class="ph ph-calendar mr-1"></i>${order.date}
+                </span>` : `
+                <span class="text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center">
+                  <i class="ph ph-map-pin mr-1 text-slate-400"></i>${escapeHtml(order.area)}
+                </span>`
+              }
+              <span class="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                ${escapeHtml(order.type)}
+              </span>
+              ${order.performer ? `
+              <span class="text-[11px] text-indigo-800 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md flex items-center font-medium">
+                <i class="ph ph-microphone-stage mr-1 text-indigo-500"></i>${escapeHtml(order.performer)}
+              </span>` : ''}
+              ${transBadge}
+              ${statusBadge}
+            </div>
+
+            <!-- 中段: 店舗名 (メイン) & 企業名 -->
+            <div class="flex flex-col sm:flex-row sm:items-baseline sm:space-x-3 mb-1">
+              <h4 class="font-bold text-slate-900 text-sm truncate ${isCancelled ? 'line-through text-slate-500' : ''}">${escapeHtml(order.store)}</h4>
+              <span class="text-xs text-slate-500 font-medium truncate">
+                <i class="ph ph-buildings mr-0.5"></i>${escapeHtml(order.company)}
+              </span>
+            </div>
+
+            <!-- 下段: 担当者・金額・メモ -->
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 mt-1">
+              <span class="inline-flex items-center text-slate-500">
+                <i class="ph ph-user mr-1 text-slate-400"></i>担当: <strong class="text-slate-700 ml-1 font-semibold">${escapeHtml(order.manager || '未定')}</strong>
+              </span>
+              <span class="inline-flex items-center">
+                請求: <strong class="text-slate-800 ml-1 font-semibold ${isCancelled ? 'line-through text-slate-400' : ''}">¥${billing.toLocaleString()}</strong>
+              </span>
+              <span class="inline-flex items-center">
+                支払: <strong class="text-slate-600 ml-1 font-semibold ${isCancelled ? 'line-through text-slate-400' : ''}">¥${payment.toLocaleString()}</strong>
+              </span>
+              <span class="inline-flex items-center ${isCancelled ? 'text-slate-400 line-through' : (profit >= 0 ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold')}">
+                粗利: ¥${profit.toLocaleString()}
+              </span>
+              ${order.notes ? `
+                <span class="text-slate-400 truncate max-w-xs flex items-center">
+                  <i class="ph ph-note mr-1"></i>${escapeHtml(order.notes)}
+                </span>` : ''}
+            </div>
+          </div>
+
+          <!-- アクション群 -->
+          <div class="flex items-center space-x-1.5 md:self-center shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+            <!-- クイックステータス変更 -->
+            <select onchange="updateOrderStatus('${order.id}', this.value)"
+              class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 hover:bg-white outline-none cursor-pointer font-medium">
+              <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>確定</option>
+              <option value="tentative" ${order.status === 'tentative' ? 'selected' : ''}>仮案件</option>
+              <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>バラシ</option>
+            </select>
+
+            <button onclick="openEditModal('${order.id}')"
+              class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="編集">
+              <i class="ph ph-pencil-simple text-base"></i>
+            </button>
+            <button onclick="deleteOrder('${order.id}')"
+              class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="削除">
+              <i class="ph ph-trash text-base"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // ステータス表示バッジ生成
+    function getStatusBadge(status) {
+      if (status === 'confirmed') {
+        return '<span class="inline-flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>確定</span>';
+      } else if (status === 'tentative') {
+        return '<span class="inline-flex items-center text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>仮案件</span>';
+      } else {
+        return '<span class="inline-flex items-center text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>バラシ</span>';
+      }
+    }
+
+    function updateOrderStatus(id, newStatus) {
+      const target = orders.find(o => o.id === id);
+      if (target) {
+        target.status = newStatus;
+        saveOrdersToStorage();
+        renderOrders();
+        showToast('進捗ステータスを更新しました');
+        // シート連携中かつ自動同期ONなら同期
+        if (sheetsConfig.endpointUrl && sheetsConfig.autoSync) {
+          syncAllToSheets();
+        }
+      }
+    }
+
+    function deleteOrder(id) {
+      const target = orders.find(o => o.id === id);
+      if (!target) return;
+
+      orders = orders.filter(o => o.id !== id);
+      saveOrdersToStorage();
+      refreshAreaFilterOptions();
+      renderOrders();
+      showToast('案件を削除しました');
+      // シート連携中かつ自動同期ONならシートも更新
+      if (sheetsConfig.endpointUrl && sheetsConfig.autoSync) {
+        syncAllToSheets();
+      }
+    }
+
+    // 編集モーダル制御
+    function openEditModal(id) {
+      const order = orders.find(o => o.id === id);
+      if (!order) return;
+
+      const consignor = order.consignor || order.clientSource || '';
+      const editSelect = document.getElementById('editConsignorSelect');
+      const editCustom = document.getElementById('editConsignorCustom');
+
+      if (['PUSH', 'ユナイト', 'ポッシブル'].includes(consignor)) {
+        editSelect.value = consignor;
+        editCustom.classList.add('hidden');
+        editCustom.value = '';
+      } else {
+        editSelect.value = '__NEW__';
+        editCustom.classList.remove('hidden');
+        editCustom.value = consignor;
+      }
+
+      const client = order.client || '';
+      const editClientSelect = document.getElementById('editClientSelect');
+      const editClientCustom = document.getElementById('editClientCustom');
+
+      if (CLIENT_PRESETS.includes(client)) {
+        editClientSelect.value = client;
+        editClientCustom.classList.add('hidden');
+        editClientCustom.value = '';
+      } else {
+        editClientSelect.value = '__NEW__';
+        editClientCustom.classList.remove('hidden');
+        editClientCustom.value = client;
+      }
+
+      document.getElementById('editOrderId').value = order.id;
+      document.getElementById('editDate').value = order.date;
+      document.getElementById('editArea').value = order.area;
+      document.getElementById('editCompany').value = order.company;
+      document.getElementById('editStore').value = order.store;
+      document.getElementById('editType').value = order.type;
+      document.getElementById('editPerformer').value = order.performer || '';
+
+      const editManagerSelect = document.getElementById('editManagerSelect');
+      const editManagerInput = document.getElementById('editManager');
+      if (order.manager && staffList.includes(order.manager)) {
+        editManagerSelect.value = order.manager;
+        editManagerInput.classList.add('hidden');
+        editManagerInput.value = order.manager;
+      } else if (order.manager && order.manager !== '未定') {
+        editManagerSelect.value = '__CUSTOM__';
+        editManagerInput.classList.remove('hidden');
+        editManagerInput.value = order.manager;
+      } else {
+        editManagerSelect.value = '';
+        editManagerInput.classList.add('hidden');
+        editManagerInput.value = '';
+      }
+
+      document.getElementById('editBilling').value = order.billing || 0;
+      document.getElementById('editPayment').value = order.payment || 0;
+      document.getElementById('editStatus').value = order.status;
+      document.getElementById('editTransportation').value = order.transportation || '込み';
+      document.getElementById('editNotes').value = order.notes || '';
+
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    function handleEditSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('editOrderId').value;
+      const target = orders.find(o => o.id === id);
+      if (!target) return;
+
+      const editSelectVal = document.getElementById('editConsignorSelect').value;
+      const editCustomVal = document.getElementById('editConsignorCustom').value.trim();
+      target.consignor = editSelectVal === '__NEW__' ? editCustomVal : editSelectVal;
+
+      const editClientSelectVal = document.getElementById('editClientSelect').value;
+      const editClientCustomVal = document.getElementById('editClientCustom').value.trim();
+      target.client = editClientSelectVal === '__NEW__' ? editClientCustomVal : editClientSelectVal;
+
+      target.date = document.getElementById('editDate').value;
+      target.area = document.getElementById('editArea').value.trim();
+      target.company = document.getElementById('editCompany').value.trim();
+      target.store = document.getElementById('editStore').value.trim();
+      target.type = document.getElementById('editType').value.trim();
+      target.performer = document.getElementById('editPerformer').value.trim();
+      const editMSelectVal = document.getElementById('editManagerSelect').value;
+      const editMCustomVal = document.getElementById('editManager').value.trim();
+      target.manager = (editMSelectVal === '__CUSTOM__' ? editMCustomVal : editMSelectVal) || '未定';
+      target.billing = parseInt(document.getElementById('editBilling').value, 10) || 0;
+      target.payment = parseInt(document.getElementById('editPayment').value, 10) || 0;
+      target.status = document.getElementById('editStatus').value;
+      target.transportation = document.getElementById('editTransportation').value || '込み';
+      target.notes = document.getElementById('editNotes').value.trim();
+
+      saveOrdersToStorage();
+      closeEditModal();
+      refreshAreaFilterOptions();
+      renderOrders();
+      showToast('案件情報を更新しました');
+      // シート連携中かつ自動同期ONならシートも更新
+      if (sheetsConfig.endpointUrl && sheetsConfig.autoSync) {
+        syncAllToSheets();
+      }
+    }
+
+    // エリア一覧フィルター更新
+    function refreshAreaFilterOptions() {
+      const select = document.getElementById('filterAreaSelect');
+      const currentSelected = select.value;
+
+      const uniqueAreas = Array.from(new Set(orders.map(o => o.area).filter(Boolean))).sort((a, b) => {
+        const idxA = getPrefectureIndex(a);
+        const idxB = getPrefectureIndex(b);
+        if (idxA !== idxB) return idxA - idxB;
+        return a.localeCompare(b, 'ja');
+      });
+
+      let html = '<option value="ALL">全エリア</option>';
+      uniqueAreas.forEach(area => {
+        html += `<option value="${escapeHtml(area)}">${escapeHtml(area)}</option>`;
+      });
+      select.innerHTML = html;
+
+      if (uniqueAreas.includes(currentSelected)) {
+        select.value = currentSelected;
+      } else {
+        select.value = 'ALL';
+      }
+    }
+
+    // ヘッダー統計・収支集計の更新
+    function updateHeaderStats() {
+      const totalCount = orders.length;
+      const totalBilling = orders.reduce((sum, o) => sum + (Number(o.billing) || 0), 0);
+      const totalCost = orders.reduce((sum, o) => sum + (Number(o.payment) || 0), 0);
+      const profit = totalBilling - totalCost;
+
+      document.getElementById('totalOrdersCount').textContent = totalCount;
+      document.getElementById('totalBilling').textContent = '¥' + totalBilling.toLocaleString();
+      document.getElementById('totalCost').textContent = '¥' + totalCost.toLocaleString();
+      document.getElementById('totalProfit').textContent = '¥' + profit.toLocaleString();
+    }
+
+    // CSVエクスポート
+    function exportCSV() {
+      if (orders.length === 0) {
+        showToast('出力するデータがありません', true);
+        return;
+      }
+
+      const headers = ['管理ID', '委託元', '依頼元', '実施日', 'エリア', '企業名', '店舗名', '種別', '演者名または取材名', '担当者', '請求金額', '支払金額', '粗利益', 'ステータス', '交通費', '特記事項'];
+      const rows = orders.map(o => {
+        const billing = Number(o.billing) || 0;
+        const payment = Number(o.payment) || 0;
+        const profit = billing - payment;
+        return [
+          `"${o.id}"`,
+          `"${(o.consignor || o.clientSource || '').replace(/"/g, '""')}"`,
+          `"${(o.client || '').replace(/"/g, '""')}"`,
+          `"${o.date}"`,
+          `"${o.area}"`,
+          `"${(o.company || '').replace(/"/g, '""')}"`,
+          `"${(o.store || '').replace(/"/g, '""')}"`,
+          `"${(o.type || '').replace(/"/g, '""')}"`,
+          `"${(o.performer || '').replace(/"/g, '""')}"`,
+          `"${(o.manager || '').replace(/"/g, '""')}"`,
+          billing,
+          payment,
+          profit,
+          `"${o.status}"`,
+          `"${(o.transportation || '込み').replace(/"/g, '""')}"`,
+          `"${(o.notes || '').replace(/"/g, '""')}"`
+        ];
+      });
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `orders_accounts_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('CSVファイルをダウンロードしました');
+    }
+
+    // LocalStorage
+    function saveOrdersToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+      } catch (e) {
+        console.error('LocalStorage save error:', e);
+      }
+    }
+
+    function loadOrdersFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          orders = JSON.parse(raw);
+        }
+      } catch (e) {
+        console.error('LocalStorage load error:', e);
+        orders = [];
+      }
+    }
+
+    // トースト通知
+    let toastTimeout;
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toastMessage');
+      const toastText = document.getElementById('toastText');
+      const toastIcon = document.getElementById('toastIcon');
+
+      clearTimeout(toastTimeout);
+      toastText.textContent = message;
+
+      if (isError) {
+        toastIcon.className = 'ph ph-warning-circle text-rose-400 text-lg';
+      } else {
+        toastIcon.className = 'ph ph-check-circle text-emerald-400 text-lg';
+      }
+
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 2500);
+    }
+
+    function isDateToday(dateString) {
+      const today = new Date().toISOString().split('T')[0];
+      return dateString === today;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
