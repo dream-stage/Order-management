@@ -150,19 +150,25 @@
           </div>
 
           <!-- 企業名 & 店舗名 -->
-          <div class="space-y-2 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200/80">
+          <div class="space-y-2.5 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200/80">
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">企業名</label>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-700">① 企業名</label>
+                <span class="text-[10px] text-indigo-600 font-semibold">先に企業を選択</span>
+              </div>
               <select id="companySelect" onchange="onCompanySelectChange(); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium">
                 <option value="" class="text-slate-400">-- 企業候補から選択 --</option>
               </select>
-              <input type="text" id="companyInput" placeholder="直接入力または選択した企業名"
+              <input type="text" id="companyInput" oninput="onCompanyInputChange()" placeholder="直接入力または選択した企業名"
                 class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">店舗名</label>
-              <select id="storeSelect" onchange="onStoreSelectChange(); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium">
-                <option value="" class="text-slate-400">-- 店舗候補から選択 --</option>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-700">② 店舗名</label>
+                <span id="storeFilterHintBadge" class="text-[10px] text-slate-400 font-medium">企業選択後に店舗を表示</span>
+              </div>
+              <select id="storeSelect" disabled onchange="onStoreSelectChange(); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium disabled:cursor-not-allowed transition-colors">
+                <option value="" class="text-slate-400">-- 先に上の「企業名」を選択してください --</option>
               </select>
               <input type="text" id="storeInput" placeholder="直接入力または選択した店舗名"
                 class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
@@ -668,7 +674,7 @@
       </div>
 
       <div class="space-y-2 mb-3">
-        <input type="text" id="newMasterCompanyInput" placeholder="企業名を入力（例: 株式会社マルハン）"
+        <input type="text" id="newMasterCompanyInput" placeholder="企業名を入力（例: マルハン）"
           class="hidden w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
         <div class="flex space-x-2">
           <input type="text" id="newMasterItemInput" placeholder="新しい項目を入力"
@@ -1635,12 +1641,12 @@ function doPost(e) {
       consignors: ['ユナイト', 'PUSH'],
       clients: ['アツ姫', 'でちゃう', 'パチ7', 'スロパチステーション'],
       companies: [
-        { company: '株式会社マルハン', store: 'マルハン小山店' },
-        { company: '株式会社マルハン', store: 'マルハン鹿児島新港店' },
-        { company: '株式会社ワンダーランド', store: 'ワンダーランド臼杵店' },
-        { company: '株式会社ワンダーランド', store: 'ワンダーランド大分皆春店' },
-        { company: '株式会社つかさ', store: 'つかさ菊陽店' },
-        { company: '株式会社ユーコーラッキー', store: 'EVO37宮崎' }
+        { company: 'マルハン', store: 'マルハン小山店' },
+        { company: 'マルハン', store: 'マルハン鹿児島新港店' },
+        { company: 'ワンダーランド', store: 'ワンダーランド臼杵店' },
+        { company: 'ワンダーランド', store: 'ワンダーランド大分皆春店' },
+        { company: 'つかさ', store: 'つかさ菊陽店' },
+        { company: 'ユーコーラッキー', store: 'EVO37宮崎' }
       ],
       managers: [
         '荒金 尚子', '新城 大志', '松本 亮', '東 善寛', '山本 朱美',
@@ -1682,6 +1688,13 @@ function doPost(e) {
     function formatCurrency(num) {
       const n = Number(num) || 0;
       return '¥' + Math.round(n).toLocaleString('ja-JP');
+    }
+
+    function formatCompanyShortName(name) {
+      return String(name || '')
+        .replace(/^(?:株式会社|有限会社|合同会社|合資会社|合名会社|（株）|\(株\)|㈱|（有）|\(有\)|㈲)\s*/g, '')
+        .replace(/\s*(?:株式会社|有限会社|合同会社|合資会社|合名会社|（株）|\(株\)|㈱|（有）|\(有\)|㈲)$/g, '')
+        .trim();
     }
 
     function getLocalTodayYMD() {
@@ -1926,10 +1939,17 @@ function doPost(e) {
         if (rawMasters) {
           const parsedM = JSON.parse(rawMasters);
           if (parsedM && typeof parsedM === 'object') {
+            const normalizedCompanies = Array.isArray(parsedM.companies)
+              ? parsedM.companies.map(c => ({
+                  company: formatCompanyShortName(c.company),
+                  store: String(c.store || '').trim()
+                }))
+              : [...DEFAULT_MASTERS.companies];
+
             masters = {
               consignors: Array.isArray(parsedM.consignors) ? parsedM.consignors : [...DEFAULT_MASTERS.consignors],
               clients: Array.isArray(parsedM.clients) ? parsedM.clients : [...DEFAULT_MASTERS.clients],
-              companies: Array.isArray(parsedM.companies) ? parsedM.companies : [...DEFAULT_MASTERS.companies],
+              companies: normalizedCompanies,
               managers: Array.isArray(parsedM.managers) ? parsedM.managers : [...DEFAULT_MASTERS.managers],
               performers: Array.isArray(parsedM.performers) ? parsedM.performers : [...DEFAULT_MASTERS.performers]
             };
@@ -1985,9 +2005,13 @@ function doPost(e) {
           changed = true;
         }
         if (o.storeName) {
-          const exists = masters.companies.some(c => c.store === o.storeName);
-          if (!exists) {
-            masters.companies.push({ company: o.companyName || '', store: o.storeName });
+          const shortComp = formatCompanyShortName(o.companyName);
+          const existingItem = masters.companies.find(c => c.store === o.storeName);
+          if (!existingItem) {
+            masters.companies.push({ company: shortComp, store: o.storeName });
+            changed = true;
+          } else if (!existingItem.company && shortComp) {
+            existingItem.company = shortComp;
             changed = true;
           }
         }
@@ -2000,16 +2024,49 @@ function doPost(e) {
     // =========================================================================
     function populateStoreDropdown(filterCompany = '') {
       const storeSel = document.getElementById('storeSelect');
+      const hintBadge = document.getElementById('storeFilterHintBadge');
       if (!storeSel) return;
+
+      const trimmedCompany = formatCompanyShortName(filterCompany);
       const currentVal = storeSel.value;
-      const list = filterCompany
-        ? masters.companies.filter(item => item.company === filterCompany)
-        : masters.companies;
+
+      if (!trimmedCompany) {
+        storeSel.disabled = true;
+        storeSel.classList.remove('bg-white', 'border-indigo-300', 'text-slate-800');
+        storeSel.classList.add('bg-slate-100', 'border-slate-200', 'text-slate-400');
+        storeSel.innerHTML = '<option value="" class="text-slate-400">-- 先に上の「企業名」を選択してください --</option>';
+        storeSel.value = '';
+        if (hintBadge) {
+          hintBadge.textContent = '企業選択後に店舗を表示';
+          hintBadge.className = 'text-[10px] text-slate-400 font-medium';
+        }
+        updateSelectColor(storeSel);
+        return;
+      }
+
+      const list = masters.companies.filter(item => formatCompanyShortName(item.company) === trimmedCompany);
       const uniqueStores = [...new Set(list.map(item => item.store).filter(Boolean))];
-      storeSel.innerHTML = '<option value="" class="text-slate-400">-- 店舗候補から選択 --</option>' +
+
+      storeSel.disabled = false;
+      storeSel.classList.remove('bg-slate-100', 'border-slate-200', 'text-slate-400');
+      storeSel.classList.add('bg-white', 'border-indigo-300', 'text-slate-800');
+
+      const placeholderText = uniqueStores.length > 0
+        ? `-- ${trimmedCompany} の店舗を選択 (${uniqueStores.length}件) --`
+        : `-- ${trimmedCompany} の登録店舗なし（下の欄へ直接入力） --`;
+
+      storeSel.innerHTML = `<option value="" class="text-slate-400">${escapeHtml(placeholderText)}</option>` +
         uniqueStores.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+
       if (uniqueStores.includes(currentVal)) {
         storeSel.value = currentVal;
+      } else {
+        storeSel.value = '';
+      }
+
+      if (hintBadge) {
+        hintBadge.textContent = `${trimmedCompany}（${uniqueStores.length}店舗）`;
+        hintBadge.className = 'text-[10px] text-indigo-600 font-bold';
       }
       updateSelectColor(storeSel);
     }
@@ -2037,8 +2094,8 @@ function doPost(e) {
         }
       });
 
-      // 企業名
-      const uniqueCompanies = [...new Set(masters.companies.map(c => c.company).filter(Boolean))];
+      // 企業名（株式会社などを除いた名称のみ表示）
+      const uniqueCompanies = [...new Set(masters.companies.map(c => formatCompanyShortName(c.company)).filter(Boolean))];
       const compSel = document.getElementById('companySelect');
       if (compSel) {
         compSel.innerHTML = '<option value="" class="text-slate-400">-- 企業候補から選択 --</option>' +
@@ -2119,11 +2176,32 @@ function doPost(e) {
     function onCompanySelectChange() {
       const sel = document.getElementById('companySelect');
       const inp = document.getElementById('companyInput');
+      const storeInp = document.getElementById('storeInput');
       if (!sel || !inp) return;
-      if (sel.value) {
-        inp.value = sel.value;
-      }
+
+      inp.value = sel.value || '';
       populateStoreDropdown(sel.value);
+
+      // 企業変更時、現在入力されている店舗名が新しい企業に属さない場合はクリア
+      if (storeInp && storeInp.value) {
+        const belongs = masters.companies.some(c => c.company === sel.value && c.store === storeInp.value);
+        if (!belongs) {
+          storeInp.value = '';
+        }
+      }
+    }
+
+    function onCompanyInputChange() {
+      const sel = document.getElementById('companySelect');
+      const inp = document.getElementById('companyInput');
+      if (!inp) return;
+      const typed = formatCompanyShortName(inp.value);
+      if (sel) {
+        const matchedOption = [...sel.options].find(opt => opt.value === typed);
+        sel.value = matchedOption ? typed : '';
+        updateSelectColor(sel);
+      }
+      populateStoreDropdown(typed);
     }
 
     function onStoreSelectChange() {
@@ -2135,10 +2213,11 @@ function doPost(e) {
       if (sel.value) {
         storeInp.value = sel.value;
         const found = masters.companies.find(c => c.store === sel.value);
-        if (found && found.company) {
-          if (compInp) compInp.value = found.company;
+        const shortComp = found ? formatCompanyShortName(found.company) : '';
+        if (shortComp) {
+          if (compInp) compInp.value = shortComp;
           if (compSel) {
-            compSel.value = found.company;
+            compSel.value = shortComp;
             updateSelectColor(compSel);
           }
         }
@@ -2318,6 +2397,7 @@ function doPost(e) {
       document.getElementById('typeInput').classList.add('hidden');
       document.getElementById('typeInput').required = false;
       document.getElementById('managerName').classList.add('hidden');
+      populateStoreDropdown('');
       ['status', 'consignorSelect', 'clientSelect', 'typeSelect', 'companySelect', 'storeSelect', 'performerSelect', 'managerSelect', 'transportationCost'].forEach(id => {
         updateSelectColor(document.getElementById(id));
       });
@@ -2860,7 +2940,7 @@ function doPost(e) {
       }
 
       if (currentMasterTab === 'company') {
-        const compVal = document.getElementById('newMasterCompanyInput').value.trim();
+        const compVal = formatCompanyShortName(document.getElementById('newMasterCompanyInput').value);
         masters.companies.push({ company: compVal, store: itemVal });
         document.getElementById('newMasterCompanyInput').value = '';
       } else if (currentMasterTab === 'manager') {
@@ -3515,4 +3595,4 @@ function doPost(e) {
     });
   </script>
 </body>
-</html>[^\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+</html>
