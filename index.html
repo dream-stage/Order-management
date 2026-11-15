@@ -828,14 +828,35 @@
               class="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
             <div class="flex items-center space-x-2">
               <button type="button" onclick="saveGasUrl()" class="text-xs font-bold px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition whitespace-nowrap">
-                新しいURLを保存
+                URLを保存
               </button>
               <button type="button" onclick="clearGasUrl()" class="text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-xl border border-slate-200 transition whitespace-nowrap">
-                古いURLをクリア
+                クリア
               </button>
             </div>
           </div>
-          <p class="text-[11px] text-slate-400 mt-1">※古いURLが残っている場合は「古いURLをクリア」を押してから、新しく発行したWebアプリURLを貼り付けて保存してください。</p>
+          <p class="text-[11px] text-slate-400 mt-1">※一度保存するとブラウザに自動記憶され、次回起動時も自動でスプレッドシートと接続します。</p>
+        </div>
+
+        <!-- 恒久固定化（HTML埋め込み書き出し）ボックス -->
+        <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-bold text-indigo-950 flex items-center">
+              <i class="ph ph-push-pin mr-1.5 text-indigo-600 text-sm"></i>URLをアプリ本体に固定して再設定を完全に不要にする
+            </span>
+            <span id="embeddedUrlStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-600 border border-indigo-200">未固定</span>
+          </div>
+          <p class="text-[11px] text-indigo-900 leading-relaxed">
+            GitHubや別端末・シークレットブラウザで開く際も毎回URLを入力せずに済むよう、<strong>現在のURLをHTMLコード内に直接書き込んだ状態</strong>でコピーまたはファイル保存できます。
+          </p>
+          <div class="flex flex-wrap items-center gap-2 pt-0.5">
+            <button type="button" onclick="copyConfiguredHtml()" class="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+              <i class="ph ph-copy mr-1"></i>URL埋め込み済みHTMLをコピー
+            </button>
+            <button type="button" onclick="downloadConfiguredHtml()" class="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg bg-white hover:bg-indigo-100 text-indigo-700 border border-indigo-300 transition">
+              <i class="ph ph-download-simple mr-1"></i>HTMLファイルとして保存
+            </button>
+          </div>
         </div>
 
         <div class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -1600,6 +1621,9 @@ function doPost(e) {
     // =========================================================================
     // 1. 状態・ストレージ定数と初期マスターデータ
     // =========================================================================
+    // ▼ ここにGAS WebアプリURLを直接記入すると、どの端末・ブラウザで開いても自動連携されます
+    const DEFAULT_GAS_URL = '';
+
     const STORAGE_KEYS = {
       ORDERS: 'order_manager_orders_v1',
       MASTERS: 'order_manager_masters_v1',
@@ -1608,36 +1632,43 @@ function doPost(e) {
     };
 
     const DEFAULT_MASTERS = {
-      consignor: ['ユナイト', 'PUSH'],
-      client: ['アツ姫', 'でちゃう', 'パチ7', 'スロパチステーション', 'ジャンバリ'],
-      company: ['株式会社マルハン', '株式会社ワンダーランド', '株式会社つかさ', '株式会社玉屋'],
-      store: [
+      consignors: ['ユナイト', 'PUSH'],
+      clients: ['アツ姫', 'でちゃう', 'パチ7', 'スロパチステーション'],
+      companies: [
         { company: '株式会社マルハン', store: 'マルハン小山店' },
+        { company: '株式会社マルハン', store: 'マルハン鹿児島新港店' },
         { company: '株式会社ワンダーランド', store: 'ワンダーランド臼杵店' },
         { company: '株式会社ワンダーランド', store: 'ワンダーランド大分皆春店' },
-        { company: '株式会社つかさ', store: 'つかさ菊陽店' }
+        { company: '株式会社つかさ', store: 'つかさ菊陽店' },
+        { company: '株式会社ユーコーラッキー', store: 'EVO37宮崎' }
       ],
-      performer: ['ワンデー取材', 'ZIZAI取材', '大分合同ズナーキー取材', '半赫取材', 'ぶっ叩け取材', 'ヤマタノオロチ討伐戦', 'ジャグラー愛してますか取材', '低貸し取材', 'ヤドゥさん来店'],
-      manager: ['荒金 尚子', '新城 大志', '松本 亮', '東 善寛', '山本 朱美', '糸原 美幸', '櫛山 豊', '草留 麻美', '宗貞 貴洋', '橋口 豊', '浅谷 悠河', '宮崎 豪']
+      managers: [
+        '荒金 尚子', '新城 大志', '松本 亮', '東 善寛', '山本 朱美',
+        '糸原 美幸', '櫛山 豊', '草留 麻美', '宗貞 貴洋', '橋口 豊',
+        '浅谷 悠河', '宮崎 豪'
+      ],
+      performers: [
+        'ワンデー取材', '集結マルエイ取材M', 'ZIZAI取材', '大分合同ズナーキー取材',
+        'せせりくん', '半赫取材', 'ネッタイ低機アツ', 'ぶっ叩け取材',
+        'なっきー来店', '皐月みる来店', '高崎たぬち来店', '俺たちまるみつでぃ取材',
+        'ヤマタノオロチ討伐戦', 'ジャグラー愛してますか取材', 'スロパチデータ（青）',
+        '低貸し取材', 'ヤドゥさん来店'
+      ]
     };
 
     let orders = [];
     let masters = JSON.parse(JSON.stringify(DEFAULT_MASTERS));
     let gasWebAppUrl = '';
     let autoSyncEnabled = true;
-
-    let currentMasterCategory = 'company';
-    let editingMasterIndex = -1;
-    let pendingDeleteOrderId = null;
-
-    let filterAbnormalDateOnly = false;
-    let filterMissingDateOnly = false;
-
     let isSyncing = false;
     let pendingSync = false;
+    let filterMissingDateOnly = false;
+    let filterAbnormalDateOnly = false;
+    let currentMasterTab = 'company';
+    let pendingDeleteOrderId = null;
 
     // =========================================================================
-    // 2. ユーティリティ（サニタイズ・ローカル時間日付・カレンダー実在日検証）
+    // 2. 汎用ユーティリティ・日付正規化関数
     // =========================================================================
     function escapeHtml(str) {
       return String(str === null || str === undefined ? '' : str)
@@ -1646,6 +1677,11 @@ function doPost(e) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    }
+
+    function formatCurrency(num) {
+      const n = Number(num) || 0;
+      return '¥' + Math.round(n).toLocaleString('ja-JP');
     }
 
     function getLocalTodayYMD() {
@@ -1666,7 +1702,6 @@ function doPost(e) {
 
     function normalizeClientDate(val) {
       if (val === null || val === undefined || val === '') return '';
-
       if (val instanceof Date && !isNaN(val.getTime())) {
         let y = val.getFullYear();
         const m = val.getMonth() + 1;
@@ -1689,9 +1724,9 @@ function doPost(e) {
             return `${s8.slice(0, 4)}-${s8.slice(4, 6)}-${s8.slice(6, 8)}`;
           }
         }
-        // Excelシリアル値（2020-01-01 = 43831 ～ 2035-12-31 = 49674）
         if (val >= 43831 && val <= 49674) {
-          const dt = new Date(Math.round((val - 25569) * 86400 * 1000));
+          const utcMs = Math.round((val - 25569) * 86400 * 1000);
+          const dt = new Date(utcMs);
           const ys = dt.getUTCFullYear();
           const ms = dt.getUTCMonth() + 1;
           const ds = dt.getUTCDate();
@@ -1710,60 +1745,59 @@ function doPost(e) {
 
       if (!str || /^#+$/.test(str)) return '';
 
-      // 8桁数字
+      // 8桁数字 YYYYMMDD
       const m8 = str.match(/^(20\d{2})(\d{2})(\d{2})$/);
       if (m8) {
-        const yy = Number(m8[1]), mm = Number(m8[2]), dd = Number(m8[3]);
+        const yy = Number(m8[1]);
+        const mm = Number(m8[2]);
+        const dd = Number(m8[3]);
         return isValidCalendarDate(yy, mm, dd) ? `${m8[1]}-${m8[2]}-${m8[3]}` : '';
       }
 
       // 4桁年 + 月 + 日
-      const mYmd = str.match(/(\d{4})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
-      if (mYmd) {
-        let yy = Number(mYmd[1]);
-        const mm = Number(mYmd[2]);
-        const dd = Number(mYmd[3]);
+      const ymd = str.match(/(\d{4})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
+      if (ymd) {
+        let yy = Number(ymd[1]);
+        const mm = Number(ymd[2]);
+        const dd = Number(ymd[3]);
         if (yy >= 1920 && yy <= 1935) yy += 100;
-        if (isValidCalendarDate(yy, mm, dd)) {
-          return `${yy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-        }
-        // スプレッドシートの既存異常日付表示用に元の不正文字列を残したい場合と区別するため空文字は返さず、正常化不可の4桁日付はそのまま返す
-        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-        return '';
+        return isValidCalendarDate(yy, mm, dd)
+          ? `${yy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
+          : '';
       }
 
       // 和暦（令和）
-      const mReiwa = str.match(/(?:令和|R|r)\s*(\d{1,2})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
-      if (mReiwa) {
-        const ry = 2018 + Number(mReiwa[1]);
-        const rm = Number(mReiwa[2]);
-        const rd = Number(mReiwa[3]);
+      const reiwa = str.match(/(?:令和|R|r)\s*(\d{1,2})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
+      if (reiwa) {
+        const ry = 2018 + Number(reiwa[1]);
+        const rm = Number(reiwa[2]);
+        const rd = Number(reiwa[3]);
         return isValidCalendarDate(ry, rm, rd)
           ? `${ry}-${String(rm).padStart(2, '0')}-${String(rd).padStart(2, '0')}`
           : '';
       }
 
-      // 英語月表記（01-Aug-2026 等）
+      // 英語月表記（01-Aug-2026 など）
       const monthMap = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
-      const mEng = str.match(/(\d{1,2})[\s\-\/]([A-Za-z]{3,9})[\s\-\/,]+(\d{4})/);
-      if (mEng) {
-        const em = monthMap[mEng[2].slice(0, 3).toLowerCase()];
-        const ey = Number(mEng[3]);
-        const ed = Number(mEng[1]);
-        return (em && isValidCalendarDate(ey, em, ed))
-          ? `${ey}-${String(em).padStart(2, '0')}-${String(ed).padStart(2, '0')}`
-          : '';
+      const eng = str.match(/(\d{1,2})[\s\-\/]([A-Za-z]{3,9})[\s\-\/,]+(\d{4})/);
+      if (eng) {
+        const em = monthMap[eng[2].slice(0, 3).toLowerCase()];
+        const ey = Number(eng[3]);
+        const ed = Number(eng[1]);
+        if (em && isValidCalendarDate(ey, em, ed)) {
+          return `${ey}-${String(em).padStart(2, '0')}-${String(ed).padStart(2, '0')}`;
+        }
       }
 
       // 2桁年（26/8/1 など）
-      const m2y = str.match(/^(\d{2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})$/);
-      if (m2y) {
-        const y2 = 2000 + Number(m2y[1]);
-        const m2 = Number(m2y[2]);
-        const d2 = Number(m2y[3]);
-        return isValidCalendarDate(y2, m2, d2)
-          ? `${y2}-${String(m2).padStart(2, '0')}-${String(d2).padStart(2, '0')}`
-          : '';
+      const y2m = str.match(/^(\d{2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})$/);
+      if (y2m) {
+        const y2 = 2000 + Number(y2m[1]);
+        const m2 = Number(y2m[2]);
+        const d2 = Number(y2m[3]);
+        if (isValidCalendarDate(y2, m2, d2)) {
+          return `${y2}-${String(m2).padStart(2, '0')}-${String(d2).padStart(2, '0')}`;
+        }
       }
 
       return '';
@@ -1773,37 +1807,41 @@ function doPost(e) {
       if (!dateStr) return false;
       const m = String(dateStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
       if (!m) return true;
-      const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+      const y = Number(m[1]);
+      const mo = Number(m[2]);
+      const d = Number(m[3]);
       return !isValidCalendarDate(y, mo, d);
     }
 
-    function generateOrderId() {
-      const now = new Date();
-      const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-      return `ORD-${ymd}-${rand}`;
-    }
-
-    function formatYen(num) {
-      return `¥${(Number(num) || 0).toLocaleString('ja-JP')}`;
-    }
-
     function getDayOfWeekLabel(dateStr) {
-      if (!dateStr || isAbnormalDate(dateStr)) return '';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return { text: '', colorClass: 'text-slate-500' };
       const [y, m, d] = dateStr.split('-').map(Number);
       const dt = new Date(y, m - 1, d);
       const days = ['日', '月', '火', '水', '木', '金', '土'];
-      return days[dt.getDay()] || '';
+      const dow = dt.getDay();
+      if (dow === 0) return { text: '(日)', colorClass: 'text-rose-600' };
+      if (dow === 6) return { text: '(土)', colorClass: 'text-sky-600' };
+      return { text: `(${days[dow]})`, colorClass: 'text-slate-500' };
     }
 
-    // =========================================================================
-    // 3. トースト通知・UIスタイル補助
-    // =========================================================================
+    function generateOrderId() {
+      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+      return `ORD-${Date.now().toString().slice(-6)}-${rand}`;
+    }
+
+    function updateSelectColor(sel) {
+      if (!sel) return;
+      if (!sel.value) {
+        sel.classList.add('select-subtle-empty');
+      } else {
+        sel.classList.remove('select-subtle-empty');
+      }
+    }
+
     function showToast(message, type = 'info') {
       const container = document.getElementById('toastContainer');
       if (!container) return;
-
-      const palette = {
+      const styles = {
         success: 'bg-emerald-600 text-white border-emerald-700',
         error: 'bg-rose-600 text-white border-rose-700',
         warning: 'bg-amber-600 text-white border-amber-700',
@@ -1811,47 +1849,71 @@ function doPost(e) {
       };
       const icons = {
         success: 'ph-check-circle',
-        error: 'ph-warning-circle',
+        error: 'ph-x-circle',
         warning: 'ph-warning',
         info: 'ph-info'
       };
-
       const el = document.createElement('div');
-      el.className = `pointer-events-auto flex items-center space-x-2 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${palette[type] || palette.info}`;
+      el.className = `pointer-events-auto flex items-center space-x-2 px-3.5 py-2.5 rounded-xl border shadow-lg text-xs font-semibold transition-all duration-300 ${styles[type] || styles.info}`;
       el.innerHTML = `<i class="ph ${icons[type] || icons.info} text-base shrink-0"></i><span class="leading-snug">${escapeHtml(message)}</span>`;
       container.appendChild(el);
-
-      requestAnimationFrame(() => {
-        el.classList.remove('translate-y-2', 'opacity-0');
-      });
-
       setTimeout(() => {
-        el.classList.add('opacity-0', 'translate-y-2');
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(6px)';
         setTimeout(() => el.remove(), 300);
-      }, 3500);
-    }
-
-    function updateSelectColor(selectEl) {
-      if (!selectEl) return;
-      if (!selectEl.value) {
-        selectEl.classList.add('select-subtle-empty');
-      } else {
-        selectEl.classList.remove('select-subtle-empty');
-      }
+      }, 3600);
     }
 
     // =========================================================================
-    // 4. ローカルストレージ永続化・初期化
+    // 3. ローカルストレージ & 連携URL多重永続保存
     // =========================================================================
+    function persistGasUrl(url) {
+      if (!url) return;
+      try { localStorage.setItem(STORAGE_KEYS.GAS_URL, url); } catch (e) {}
+      try { sessionStorage.setItem(STORAGE_KEYS.GAS_URL, url); } catch (e) {}
+      try {
+        window.name = '__ORDER_GAS_URL__:' + url;
+      } catch (e) {}
+    }
+
+    function loadPersistedGasUrl() {
+      try {
+        const v1 = localStorage.getItem(STORAGE_KEYS.GAS_URL);
+        if (v1 && v1.startsWith('https://script.google.com/')) return v1;
+      } catch (e) {}
+      try {
+        const v2 = sessionStorage.getItem(STORAGE_KEYS.GAS_URL);
+        if (v2 && v2.startsWith('https://script.google.com/')) return v2;
+      } catch (e) {}
+      try {
+        const prefix = '__ORDER_GAS_URL__:';
+        if (typeof window.name === 'string' && window.name.startsWith(prefix)) {
+          const v3 = window.name.slice(prefix.length);
+          if (v3.startsWith('https://script.google.com/')) return v3;
+        }
+      } catch (e) {}
+      return '';
+    }
+
+    function clearPersistedGasUrl() {
+      try { localStorage.removeItem(STORAGE_KEYS.GAS_URL); } catch (e) {}
+      try { sessionStorage.removeItem(STORAGE_KEYS.GAS_URL); } catch (e) {}
+      try {
+        if (typeof window.name === 'string' && window.name.startsWith('__ORDER_GAS_URL__:')) {
+          window.name = '';
+        }
+      } catch (e) {}
+    }
+
     function loadStateFromStorage() {
       try {
-        const savedOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
-        if (savedOrders) {
-          const parsed = JSON.parse(savedOrders);
+        const rawOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
+        if (rawOrders) {
+          const parsed = JSON.parse(rawOrders);
           if (Array.isArray(parsed)) {
             orders = parsed.map(o => ({
               ...o,
-              date: o.date ? (normalizeClientDate(o.date) || String(o.date).trim()) : ''
+              date: o.date ? (normalizeClientDate(o.date) || String(o.date)) : ''
             }));
           }
         }
@@ -1860,17 +1922,16 @@ function doPost(e) {
       }
 
       try {
-        const savedMasters = localStorage.getItem(STORAGE_KEYS.MASTERS);
-        if (savedMasters) {
-          const parsed = JSON.parse(savedMasters);
-          if (parsed && typeof parsed === 'object') {
+        const rawMasters = localStorage.getItem(STORAGE_KEYS.MASTERS);
+        if (rawMasters) {
+          const parsedM = JSON.parse(rawMasters);
+          if (parsedM && typeof parsedM === 'object') {
             masters = {
-              consignor: Array.isArray(parsed.consignor) ? parsed.consignor : DEFAULT_MASTERS.consignor,
-              client: Array.isArray(parsed.client) ? parsed.client : DEFAULT_MASTERS.client,
-              company: Array.isArray(parsed.company) ? parsed.company : DEFAULT_MASTERS.company,
-              store: Array.isArray(parsed.store) ? parsed.store : DEFAULT_MASTERS.store,
-              performer: Array.isArray(parsed.performer) ? parsed.performer : DEFAULT_MASTERS.performer,
-              manager: Array.isArray(parsed.manager) ? parsed.manager : DEFAULT_MASTERS.manager
+              consignors: Array.isArray(parsedM.consignors) ? parsedM.consignors : [...DEFAULT_MASTERS.consignors],
+              clients: Array.isArray(parsedM.clients) ? parsedM.clients : [...DEFAULT_MASTERS.clients],
+              companies: Array.isArray(parsedM.companies) ? parsedM.companies : [...DEFAULT_MASTERS.companies],
+              managers: Array.isArray(parsedM.managers) ? parsedM.managers : [...DEFAULT_MASTERS.managers],
+              performers: Array.isArray(parsedM.performers) ? parsedM.performers : [...DEFAULT_MASTERS.performers]
             };
           }
         }
@@ -1879,11 +1940,15 @@ function doPost(e) {
       }
 
       try {
-        gasWebAppUrl = localStorage.getItem(STORAGE_KEYS.GAS_URL) || '';
+        const savedUrl = loadPersistedGasUrl();
+        gasWebAppUrl = savedUrl || DEFAULT_GAS_URL || '';
+        if (gasWebAppUrl) {
+          persistGasUrl(gasWebAppUrl);
+        }
         const savedAuto = localStorage.getItem(STORAGE_KEYS.AUTO_SYNC);
         autoSyncEnabled = savedAuto === null ? true : savedAuto === 'true';
       } catch (e) {
-        gasWebAppUrl = '';
+        gasWebAppUrl = DEFAULT_GAS_URL || '';
         autoSyncEnabled = true;
       }
     }
@@ -1891,38 +1956,68 @@ function doPost(e) {
     function saveOrdersToStorage() {
       try {
         localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-      } catch (e) {
-        // ストレージ容量超過・制限時は無視
-      }
+      } catch (e) {}
     }
 
     function saveMastersToStorage() {
       try {
         localStorage.setItem(STORAGE_KEYS.MASTERS, JSON.stringify(masters));
-      } catch (e) {
-        // ストレージ制限時は無視
-      }
+      } catch (e) {}
     }
 
-    function updateRealtimeBadge() {
-      const badge = document.getElementById('realtimeStatusBadge');
-      if (!badge) return;
-      if (gasWebAppUrl) {
-        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
-        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>スプレッドシート連携中';
-      } else {
-        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200';
-        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>ローカル保存モード';
-      }
+    function learnMastersFromOrders(orderList) {
+      let changed = false;
+      (orderList || []).forEach(o => {
+        if (o.consignor && !masters.consignors.includes(o.consignor)) {
+          masters.consignors.push(o.consignor);
+          changed = true;
+        }
+        if (o.client && !masters.clients.includes(o.client)) {
+          masters.clients.push(o.client);
+          changed = true;
+        }
+        if (o.managerName && o.managerName !== '未定' && !masters.managers.includes(o.managerName)) {
+          masters.managers.push(o.managerName);
+          changed = true;
+        }
+        if (o.performerOrEvent && !masters.performers.includes(o.performerOrEvent)) {
+          masters.performers.push(o.performerOrEvent);
+          changed = true;
+        }
+        if (o.storeName) {
+          const exists = masters.companies.some(c => c.store === o.storeName);
+          if (!exists) {
+            masters.companies.push({ company: o.companyName || '', store: o.storeName });
+            changed = true;
+          }
+        }
+      });
+      if (changed) saveMastersToStorage();
     }
 
     // =========================================================================
-    // 5. ドロップダウン候補の生成・フォーム連動ロジック
+    // 4. プルダウン構築 & 連動ロジック
     // =========================================================================
+    function populateStoreDropdown(filterCompany = '') {
+      const storeSel = document.getElementById('storeSelect');
+      if (!storeSel) return;
+      const currentVal = storeSel.value;
+      const list = filterCompany
+        ? masters.companies.filter(item => item.company === filterCompany)
+        : masters.companies;
+      const uniqueStores = [...new Set(list.map(item => item.store).filter(Boolean))];
+      storeSel.innerHTML = '<option value="" class="text-slate-400">-- 店舗候補から選択 --</option>' +
+        uniqueStores.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+      if (uniqueStores.includes(currentVal)) {
+        storeSel.value = currentVal;
+      }
+      updateSelectColor(storeSel);
+    }
+
     function populateAllDropdowns() {
       // 委託元
-      const consignorHtml = `<option value="" class="text-slate-400">-- 委託元候補 --</option>` +
-        masters.consignor.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+      const consignorHtml = '<option value="" class="text-slate-400">-- 委託元候補 --</option>' +
+        masters.consignors.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
       ['consignorSelect', 'editConsignorSelect'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -1932,8 +2027,8 @@ function doPost(e) {
       });
 
       // 依頼元
-      const clientHtml = `<option value="" class="text-slate-400">-- 依頼元候補 --</option>` +
-        masters.client.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+      const clientHtml = '<option value="" class="text-slate-400">-- 依頼元候補 --</option>' +
+        masters.clients.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
       ['clientSelect', 'editClientSelect'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -1943,239 +2038,241 @@ function doPost(e) {
       });
 
       // 企業名
+      const uniqueCompanies = [...new Set(masters.companies.map(c => c.company).filter(Boolean))];
       const compSel = document.getElementById('companySelect');
       if (compSel) {
-        compSel.innerHTML = `<option value="" class="text-slate-400">-- 企業候補から選択 --</option>` +
-          masters.company.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+        compSel.innerHTML = '<option value="" class="text-slate-400">-- 企業候補から選択 --</option>' +
+          uniqueCompanies.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
         updateSelectColor(compSel);
       }
 
       // 店舗名
-      populateStoreDropdown('');
+      populateStoreDropdown(compSel ? compSel.value : '');
 
       // 演者名・取材名
-      const perfOptions = `<option value="" class="text-slate-400">-- 演者名または取材名を選択 --</option>` +
-        masters.performer.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+      const perfHtml = '<option value="" class="text-slate-400">-- 演者名または取材名を選択 --</option>' +
+        masters.performers.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
       ['performerSelect', 'editPerformerSelect'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-          el.innerHTML = perfOptions;
+          el.innerHTML = perfHtml;
           updateSelectColor(el);
         }
       });
 
-      // 担当者
-      const allManagers = Array.from(new Set([
-        ...masters.manager,
-        ...orders.map(o => o.managerName).filter(v => v && v !== '未定')
-      ]));
-      const mgrOptions = `<option value="" class="text-slate-400">担当者を選択</option>` +
-        allManagers.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('') +
-        `<option value="未定">未定</option>`;
-
-      const mSel = document.getElementById('managerSelect');
-      if (mSel) {
-        mSel.innerHTML = mgrOptions + `<option value="__DIRECT__">＋ 直接入力</option>`;
-        updateSelectColor(mSel);
-      }
-      const emSel = document.getElementById('editManager');
-      if (emSel) {
-        emSel.innerHTML = mgrOptions;
-        updateSelectColor(emSel);
+      // 担当者（新規・編集・フィルター）
+      const allManagers = [...new Set([...masters.managers, ...orders.map(o => o.managerName).filter(Boolean)])];
+      const mgrNewSel = document.getElementById('managerSelect');
+      if (mgrNewSel) {
+        mgrNewSel.innerHTML = '<option value="" class="text-slate-400">担当者を選択</option>' +
+          allManagers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('') +
+          '<option value="未定">未定</option>' +
+          '<option value="__DIRECT__">＋ 直接入力</option>';
+        updateSelectColor(mgrNewSel);
       }
 
-      // 担当者フィルター
-      const mFilter = document.getElementById('managerFilter');
-      if (mFilter) {
-        const currentVal = mFilter.value || 'all';
-        const filterMgrs = Array.from(new Set([
-          ...allManagers,
-          ...orders.map(o => o.managerName).filter(Boolean)
-        ]));
-        mFilter.innerHTML = `<option value="all">全担当者</option>` +
-          filterMgrs.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-        if (Array.from(mFilter.options).some(opt => opt.value === currentVal)) {
-          mFilter.value = currentVal;
+      const mgrEditSel = document.getElementById('editManager');
+      if (mgrEditSel) {
+        mgrEditSel.innerHTML = '<option value="" class="text-slate-400">担当者を選択</option>' +
+          allManagers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('') +
+          '<option value="未定">未定</option>';
+        updateSelectColor(mgrEditSel);
+      }
+
+      const mgrFilterSel = document.getElementById('managerFilter');
+      if (mgrFilterSel) {
+        const prev = mgrFilterSel.value;
+        mgrFilterSel.innerHTML = '<option value="all">全担当者</option>' +
+          allManagers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('') +
+          '<option value="未定">未定</option>';
+        if ([...mgrFilterSel.options].some(opt => opt.value === prev)) {
+          mgrFilterSel.value = prev;
         }
       }
     }
 
-    function populateStoreDropdown(filterCompany = '') {
-      const storeSel = document.getElementById('storeSelect');
-      if (!storeSel) return;
-      const list = filterCompany
-        ? masters.store.filter(item => !item.company || item.company === filterCompany)
-        : masters.store;
-      storeSel.innerHTML = `<option value="" class="text-slate-400">-- 店舗候補から選択 --</option>` +
-        list.map(item => `<option value="${escapeHtml(item.store)}" data-company="${escapeHtml(item.company || '')}">${escapeHtml(item.store)}</option>`).join('');
-      updateSelectColor(storeSel);
+    function onConsignorSelectChange() {
+      const sel = document.getElementById('consignorSelect');
+      if (sel && sel.value) document.getElementById('consignor').value = sel.value;
     }
 
-    function syncSelectToInput(selectId, inputId) {
-      const sel = document.getElementById(selectId);
-      const inp = document.getElementById(inputId);
-      if (sel && inp && sel.value) {
-        inp.value = sel.value;
-      }
+    function onClientSelectChange() {
+      const sel = document.getElementById('clientSelect');
+      if (sel && sel.value) document.getElementById('client').value = sel.value;
     }
 
-    function toggleDirectInput(selectId, inputId, makeRequired = false) {
-      const sel = document.getElementById(selectId);
-      const inp = document.getElementById(inputId);
+    function onTypeSelectChange() {
+      const sel = document.getElementById('typeSelect');
+      const inp = document.getElementById('typeInput');
       if (!sel || !inp) return;
       if (sel.value === '__DIRECT__') {
         inp.classList.remove('hidden');
-        if (makeRequired) inp.required = true;
+        inp.required = true;
         inp.focus();
       } else {
         inp.classList.add('hidden');
         inp.required = false;
-        inp.value = sel.value || '';
+        inp.value = '';
       }
     }
 
-    function onConsignorSelectChange() { syncSelectToInput('consignorSelect', 'consignor'); }
-    function onEditConsignorSelectChange() { syncSelectToInput('editConsignorSelect', 'editConsignor'); }
-    function onClientSelectChange() { syncSelectToInput('clientSelect', 'client'); }
-    function onEditClientSelectChange() { syncSelectToInput('editClientSelect', 'editClient'); }
-    function onPerformerSelectChange() { syncSelectToInput('performerSelect', 'performerOrEvent'); }
-    function onEditPerformerSelectChange() { syncSelectToInput('editPerformerSelect', 'editPerformer'); }
-
-    function onTypeSelectChange() { toggleDirectInput('typeSelect', 'typeInput', true); }
-    function onEditTypeSelectChange() { toggleDirectInput('editTypeSelect', 'editType', true); }
-    function onManagerSelectChange() { toggleDirectInput('managerSelect', 'managerName', false); }
-
     function onCompanySelectChange() {
-      const compSel = document.getElementById('companySelect');
-      const compInp = document.getElementById('companyInput');
-      if (!compSel || !compInp) return;
-      compInp.value = compSel.value;
-      populateStoreDropdown(compSel.value);
+      const sel = document.getElementById('companySelect');
+      const inp = document.getElementById('companyInput');
+      if (!sel || !inp) return;
+      if (sel.value) {
+        inp.value = sel.value;
+      }
+      populateStoreDropdown(sel.value);
     }
 
     function onStoreSelectChange() {
-      const storeSel = document.getElementById('storeSelect');
+      const sel = document.getElementById('storeSelect');
       const storeInp = document.getElementById('storeInput');
       const compInp = document.getElementById('companyInput');
       const compSel = document.getElementById('companySelect');
-      if (!storeSel || !storeInp) return;
-      storeInp.value = storeSel.value;
-      const opt = storeSel.options[storeSel.selectedIndex];
-      const linkedCompany = opt ? opt.getAttribute('data-company') : '';
-      if (linkedCompany && compInp && !compInp.value.trim()) {
-        compInp.value = linkedCompany;
-        if (compSel) {
-          compSel.value = linkedCompany;
-          updateSelectColor(compSel);
+      if (!sel || !storeInp) return;
+      if (sel.value) {
+        storeInp.value = sel.value;
+        const found = masters.companies.find(c => c.store === sel.value);
+        if (found && found.company) {
+          if (compInp) compInp.value = found.company;
+          if (compSel) {
+            compSel.value = found.company;
+            updateSelectColor(compSel);
+          }
         }
       }
     }
 
-    // =========================================================================
-    // 6. 金額自動計算ロジック（新規・編集共通ヘルパー）
-    // =========================================================================
-    function getNumVal(id) {
-      const el = document.getElementById(id);
-      const n = Number(el ? el.value : 0);
-      return isNaN(n) ? 0 : Math.max(0, Math.round(n));
+    function onPerformerSelectChange() {
+      const sel = document.getElementById('performerSelect');
+      if (sel && sel.value) document.getElementById('performerOrEvent').value = sel.value;
     }
 
-    function computeBilling(prefix) {
-      const isEdit = prefix === 'edit';
-      const reward = getNumVal(isEdit ? 'editReward' : 'rewardAmount');
-      const gas = getNumVal(isEdit ? 'editGasolineFee' : 'gasolineFee');
-      const highway = getNumVal(isEdit ? 'editHighwayFee' : 'highwayFee');
-      const lunch8 = getNumVal(isEdit ? 'editLunch8Fee' : 'lunch8Fee');
-      const lunch = getNumVal(isEdit ? 'editLunchFee' : 'lunchFee');
-      const other = getNumVal(isEdit ? 'editOtherExpenses' : 'otherExpenses');
-
-      const billEx = reward + gas + highway + lunch8 + lunch + other;
-      const billIn = Math.round(billEx * 1.1);
-
-      const billExEl = document.getElementById(isEdit ? 'editBilling' : 'billingAmount');
-      const billInEl = document.getElementById(isEdit ? 'editBillingTax' : 'billingTaxIncluded');
-      if (billExEl) billExEl.value = billEx || '';
-      if (billInEl) billInEl.value = billIn || '';
+    function onManagerSelectChange() {
+      const sel = document.getElementById('managerSelect');
+      const inp = document.getElementById('managerName');
+      if (!sel || !inp) return;
+      if (sel.value === '__DIRECT__') {
+        inp.classList.remove('hidden');
+        inp.focus();
+      } else {
+        inp.classList.add('hidden');
+        inp.value = '';
+      }
     }
 
-    function updateTaxFromExclude(exId, inId) {
-      const ex = getNumVal(exId);
-      const inEl = document.getElementById(inId);
-      if (inEl) inEl.value = ex ? Math.round(ex * 1.1) : '';
+    function onEditConsignorSelectChange() {
+      const sel = document.getElementById('editConsignorSelect');
+      if (sel && sel.value) document.getElementById('editConsignor').value = sel.value;
     }
 
-    function computePayment(prefix) {
-      const isEdit = prefix === 'edit';
-      const pRew = getNumVal(isEdit ? 'editPayRewardExclude' : 'payRewardExclude');
-      const pExp = getNumVal(isEdit ? 'editPayExpenseExclude' : 'payExpenseExclude');
-      const pTotEx = pRew + pExp;
-      const pTotIn = Math.round(pTotEx * 1.1);
-
-      const pTotExEl = document.getElementById(isEdit ? 'editPayTotalExclude' : 'payTotalExclude');
-      const pTotInEl = document.getElementById(isEdit ? 'editPayment' : 'paymentAmount');
-      if (pTotExEl) pTotExEl.value = pTotEx || '';
-      if (pTotInEl) pTotInEl.value = pTotIn || '';
+    function onEditClientSelectChange() {
+      const sel = document.getElementById('editClientSelect');
+      if (sel && sel.value) document.getElementById('editClient').value = sel.value;
     }
 
-    function calcBillingAndPayment() { computeBilling('new'); }
-    function calcEditBillingAndPayment() { computeBilling('edit'); }
-    function onBillingExcludeChange() { updateTaxFromExclude('billingAmount', 'billingTaxIncluded'); }
-    function onEditBillingExcludeChange() { updateTaxFromExclude('editBilling', 'editBillingTax'); }
-    function onManualPaymentInput() { computePayment('new'); }
-    function onEditManualPaymentInput() { computePayment('edit'); }
-    function onPayTotalExcludeChange() { updateTaxFromExclude('payTotalExclude', 'paymentAmount'); }
-    function onEditPayTotalExcludeChange() { updateTaxFromExclude('editPayTotalExclude', 'editPayment'); }
+    function onEditTypeSelectChange() {
+      const sel = document.getElementById('editTypeSelect');
+      const inp = document.getElementById('editType');
+      if (!sel || !inp) return;
+      if (sel.value === '__DIRECT__') {
+        inp.classList.remove('hidden');
+        inp.required = true;
+        inp.focus();
+      } else {
+        inp.classList.add('hidden');
+        inp.required = false;
+        inp.value = '';
+      }
+    }
+
+    function onEditPerformerSelectChange() {
+      const sel = document.getElementById('editPerformerSelect');
+      if (sel && sel.value) document.getElementById('editPerformer').value = sel.value;
+    }
 
     // =========================================================================
-    // 7. 新規登録・編集・ステータス切替・削除処理
+    // 5. 金額自動計算ロジック（新規・編集）
     // =========================================================================
-    function learnMasterFromOrder(order) {
-      let updated = false;
-      if (order.consignor && !masters.consignor.includes(order.consignor)) {
-        masters.consignor.push(order.consignor);
-        updated = true;
-      }
-      if (order.client && !masters.client.includes(order.client)) {
-        masters.client.push(order.client);
-        updated = true;
-      }
-      if (order.companyName && !masters.company.includes(order.companyName)) {
-        masters.company.push(order.companyName);
-        updated = true;
-      }
-      if (order.storeName && !masters.store.some(s => s.store === order.storeName)) {
-        masters.store.push({ company: order.companyName || '', store: order.storeName });
-        updated = true;
-      }
-      if (order.performerOrEvent && !masters.performer.includes(order.performerOrEvent)) {
-        masters.performer.push(order.performerOrEvent);
-        updated = true;
-      }
-      if (order.managerName && order.managerName !== '未定' && !masters.manager.includes(order.managerName)) {
-        masters.manager.push(order.managerName);
-        updated = true;
-      }
-      if (updated) {
-        saveMastersToStorage();
-        populateAllDropdowns();
-      }
+    function calcBillingAndPayment() {
+      const reward = Number(document.getElementById('rewardAmount').value) || 0;
+      const gas = Number(document.getElementById('gasolineFee').value) || 0;
+      const highway = Number(document.getElementById('highwayFee').value) || 0;
+      const lunch8 = Number(document.getElementById('lunch8Fee').value) || 0;
+      const lunch = Number(document.getElementById('lunchFee').value) || 0;
+      const other = Number(document.getElementById('otherExpenses').value) || 0;
+
+      const totalExclude = reward + gas + highway + lunch8 + lunch + other;
+      document.getElementById('billingAmount').value = totalExclude > 0 ? totalExclude : '';
+      document.getElementById('billingTaxIncluded').value = totalExclude > 0 ? Math.round(totalExclude * 1.1) : '';
     }
 
+    function onBillingExcludeChange() {
+      const ex = Number(document.getElementById('billingAmount').value) || 0;
+      document.getElementById('billingTaxIncluded').value = ex > 0 ? Math.round(ex * 1.1) : '';
+    }
+
+    function onManualPaymentInput() {
+      const pRew = Number(document.getElementById('payRewardExclude').value) || 0;
+      const pExp = Number(document.getElementById('payExpenseExclude').value) || 0;
+      const totEx = pRew + pExp;
+      document.getElementById('payTotalExclude').value = totEx > 0 ? totEx : '';
+      document.getElementById('paymentAmount').value = totEx > 0 ? Math.round(totEx * 1.1) : '';
+    }
+
+    function onPayTotalExcludeChange() {
+      const totEx = Number(document.getElementById('payTotalExclude').value) || 0;
+      document.getElementById('paymentAmount').value = totEx > 0 ? Math.round(totEx * 1.1) : '';
+    }
+
+    function calcEditBillingAndPayment() {
+      const reward = Number(document.getElementById('editReward').value) || 0;
+      const gas = Number(document.getElementById('editGasolineFee').value) || 0;
+      const highway = Number(document.getElementById('editHighwayFee').value) || 0;
+      const lunch8 = Number(document.getElementById('editLunch8Fee').value) || 0;
+      const lunch = Number(document.getElementById('editLunchFee').value) || 0;
+      const other = Number(document.getElementById('editOtherExpenses').value) || 0;
+
+      const totalExclude = reward + gas + highway + lunch8 + lunch + other;
+      document.getElementById('editBilling').value = totalExclude;
+      document.getElementById('editBillingTax').value = Math.round(totalExclude * 1.1);
+    }
+
+    function onEditBillingExcludeChange() {
+      const ex = Number(document.getElementById('editBilling').value) || 0;
+      document.getElementById('editBillingTax').value = Math.round(ex * 1.1);
+    }
+
+    function onEditManualPaymentInput() {
+      const pRew = Number(document.getElementById('editPayRewardExclude').value) || 0;
+      const pExp = Number(document.getElementById('editPayExpenseExclude').value) || 0;
+      const totEx = pRew + pExp;
+      document.getElementById('editPayTotalExclude').value = totEx;
+      document.getElementById('editPayment').value = Math.round(totEx * 1.1);
+    }
+
+    function onEditPayTotalExcludeChange() {
+      const totEx = Number(document.getElementById('editPayTotalExclude').value) || 0;
+      document.getElementById('editPayment').value = Math.round(totEx * 1.1);
+    }
+
+    // =========================================================================
+    // 6. 新規登録・編集・ステータス切替・削除
+    // =========================================================================
     function handleNewOrderSubmit(e) {
       e.preventDefault();
       const status = document.getElementById('status').value;
       const consignor = document.getElementById('consignor').value.trim();
       const client = document.getElementById('client').value.trim();
       const rawDate = document.getElementById('date').value;
-      const date = normalizeClientDate(rawDate) || rawDate;
-
+      const date = normalizeClientDate(rawDate);
       const typeSel = document.getElementById('typeSelect').value;
-      const type = typeSel === '__DIRECT__'
-        ? document.getElementById('typeInput').value.trim()
-        : typeSel;
+      const type = typeSel === '__DIRECT__' ? document.getElementById('typeInput').value.trim() : typeSel;
 
       if (!status || !consignor || !client || !date || !type) {
-        showToast('必須項目（ステータス・委託元・依頼元・実施日・種別）を入力してください', 'warning');
+        showToast('必須項目（ステータス・委託元・依頼元・実施日・種別）を正しく入力してください', 'warning');
         return;
       }
 
@@ -2195,51 +2292,48 @@ function doPost(e) {
         storeName: document.getElementById('storeInput').value.trim(),
         performerOrEvent: document.getElementById('performerOrEvent').value.trim(),
         managerName,
-        rewardAmount: getNumVal('rewardAmount'),
+        rewardAmount: Number(document.getElementById('rewardAmount').value) || 0,
         transportationCost: document.getElementById('transportationCost').value,
-        gasolineFee: getNumVal('gasolineFee'),
-        highwayFee: getNumVal('highwayFee'),
-        lunch8Fee: getNumVal('lunch8Fee'),
-        lunchFee: getNumVal('lunchFee'),
-        otherExpenses: getNumVal('otherExpenses'),
-        billingAmount: getNumVal('billingAmount'),
-        billingTaxIncluded: getNumVal('billingTaxIncluded'),
-        payRewardExclude: getNumVal('payRewardExclude'),
-        payExpenseExclude: getNumVal('payExpenseExclude'),
-        payTotalExclude: getNumVal('payTotalExclude'),
-        paymentAmount: getNumVal('paymentAmount'),
+        gasolineFee: Number(document.getElementById('gasolineFee').value) || 0,
+        highwayFee: Number(document.getElementById('highwayFee').value) || 0,
+        lunch8Fee: Number(document.getElementById('lunch8Fee').value) || 0,
+        lunchFee: Number(document.getElementById('lunchFee').value) || 0,
+        otherExpenses: Number(document.getElementById('otherExpenses').value) || 0,
+        billingAmount: Number(document.getElementById('billingAmount').value) || 0,
+        billingTaxIncluded: Number(document.getElementById('billingTaxIncluded').value) || 0,
+        payRewardExclude: Number(document.getElementById('payRewardExclude').value) || 0,
+        payExpenseExclude: Number(document.getElementById('payExpenseExclude').value) || 0,
+        payTotalExclude: Number(document.getElementById('payTotalExclude').value) || 0,
+        paymentAmount: Number(document.getElementById('paymentAmount').value) || 0,
         notes: document.getElementById('notes').value.trim()
       };
 
-      orders.unshift(newOrder);
+      orders.push(newOrder);
+      learnMastersFromOrders([newOrder]);
       saveOrdersToStorage();
-      learnMasterFromOrder(newOrder);
+      populateAllDropdowns();
 
       // フォームリセット
       document.getElementById('newOrderForm').reset();
-      document.getElementById('date').value = getLocalTodayYMD();
-      const typeInp = document.getElementById('typeInput');
-      typeInp.classList.add('hidden');
-      typeInp.required = false;
+      document.getElementById('typeInput').classList.add('hidden');
+      document.getElementById('typeInput').required = false;
       document.getElementById('managerName').classList.add('hidden');
-
       ['status', 'consignorSelect', 'clientSelect', 'typeSelect', 'companySelect', 'storeSelect', 'performerSelect', 'managerSelect', 'transportationCost'].forEach(id => {
         updateSelectColor(document.getElementById(id));
       });
-      populateStoreDropdown('');
 
+      filterMissingDateOnly = false;
+      filterAbnormalDateOnly = false;
       renderOrders();
       showToast('案件を受注登録しました', 'success');
-
-      if (autoSyncEnabled && gasWebAppUrl) {
-        syncToGoogleSheets(false);
-      }
+      triggerAutoSync();
     }
 
-    function openEditModal(orderId) {
-      const order = orders.find(o => o.id === orderId);
+    function openEditModal(id) {
+      const order = orders.find(o => o.id === id);
       if (!order) return;
 
+      populateAllDropdowns();
       document.getElementById('editOrderId').value = order.id;
       document.getElementById('editOrderIdDisplay').textContent = order.id;
 
@@ -2248,16 +2342,14 @@ function doPost(e) {
       updateSelectColor(editStatus);
 
       document.getElementById('editConsignor').value = order.consignor || '';
-      const editConsSel = document.getElementById('editConsignorSelect');
-      editConsSel.value = masters.consignor.includes(order.consignor) ? order.consignor : '';
-      updateSelectColor(editConsSel);
+      document.getElementById('editConsignorSelect').value = masters.consignors.includes(order.consignor) ? order.consignor : '';
+      updateSelectColor(document.getElementById('editConsignorSelect'));
 
       document.getElementById('editClient').value = order.client || '';
-      const editCliSel = document.getElementById('editClientSelect');
-      editCliSel.value = masters.client.includes(order.client) ? order.client : '';
-      updateSelectColor(editCliSel);
+      document.getElementById('editClientSelect').value = masters.clients.includes(order.client) ? order.client : '';
+      updateSelectColor(document.getElementById('editClientSelect'));
 
-      document.getElementById('editDate').value = isAbnormalDate(order.date) ? '' : (order.date || '');
+      document.getElementById('editDate').value = /^\d{4}-\d{2}-\d{2}$/.test(order.date) ? order.date : '';
 
       const editTypeSel = document.getElementById('editTypeSelect');
       const editTypeInp = document.getElementById('editType');
@@ -2266,7 +2358,7 @@ function doPost(e) {
         editTypeSel.value = order.type;
         editTypeInp.classList.add('hidden');
         editTypeInp.required = false;
-        editTypeInp.value = order.type;
+        editTypeInp.value = '';
       } else if (order.type) {
         editTypeSel.value = '__DIRECT__';
         editTypeInp.classList.remove('hidden');
@@ -2284,35 +2376,35 @@ function doPost(e) {
       document.getElementById('editStore').value = order.storeName || '';
       document.getElementById('editPerformer').value = order.performerOrEvent || '';
       const editPerfSel = document.getElementById('editPerformerSelect');
-      editPerfSel.value = masters.performer.includes(order.performerOrEvent) ? order.performerOrEvent : '';
+      editPerfSel.value = masters.performers.includes(order.performerOrEvent) ? order.performerOrEvent : '';
       updateSelectColor(editPerfSel);
 
-      const editMgr = document.getElementById('editManager');
-      if (order.managerName && !Array.from(editMgr.options).some(opt => opt.value === order.managerName)) {
+      const editMgrSel = document.getElementById('editManager');
+      if (order.managerName && ![...editMgrSel.options].some(opt => opt.value === order.managerName)) {
         const opt = document.createElement('option');
         opt.value = order.managerName;
         opt.textContent = order.managerName;
-        editMgr.appendChild(opt);
+        editMgrSel.appendChild(opt);
       }
-      editMgr.value = order.managerName || '';
-      updateSelectColor(editMgr);
+      editMgrSel.value = order.managerName || '';
+      updateSelectColor(editMgrSel);
 
-      document.getElementById('editReward').value = order.rewardAmount || '';
+      document.getElementById('editReward').value = order.rewardAmount || 0;
       const editTrans = document.getElementById('editTransportation');
       editTrans.value = order.transportationCost || '';
       updateSelectColor(editTrans);
 
-      document.getElementById('editGasolineFee').value = order.gasolineFee || '';
-      document.getElementById('editHighwayFee').value = order.highwayFee || '';
-      document.getElementById('editLunch8Fee').value = order.lunch8Fee || '';
-      document.getElementById('editLunchFee').value = order.lunchFee || '';
-      document.getElementById('editOtherExpenses').value = order.otherExpenses || '';
-      document.getElementById('editBilling').value = order.billingAmount || '';
-      document.getElementById('editBillingTax').value = order.billingTaxIncluded || '';
-      document.getElementById('editPayRewardExclude').value = order.payRewardExclude || '';
-      document.getElementById('editPayExpenseExclude').value = order.payExpenseExclude || '';
-      document.getElementById('editPayTotalExclude').value = order.payTotalExclude || '';
-      document.getElementById('editPayment').value = order.paymentAmount || '';
+      document.getElementById('editGasolineFee').value = order.gasolineFee || 0;
+      document.getElementById('editHighwayFee').value = order.highwayFee || 0;
+      document.getElementById('editLunch8Fee').value = order.lunch8Fee || 0;
+      document.getElementById('editLunchFee').value = order.lunchFee || 0;
+      document.getElementById('editOtherExpenses').value = order.otherExpenses || 0;
+      document.getElementById('editBilling').value = order.billingAmount || 0;
+      document.getElementById('editBillingTax').value = order.billingTaxIncluded || 0;
+      document.getElementById('editPayRewardExclude').value = order.payRewardExclude || 0;
+      document.getElementById('editPayExpenseExclude').value = order.payExpenseExclude || 0;
+      document.getElementById('editPayTotalExclude').value = order.payTotalExclude || 0;
+      document.getElementById('editPayment').value = order.paymentAmount || 0;
       document.getElementById('editNotes').value = order.notes || '';
 
       document.getElementById('editModal').classList.remove('hidden');
@@ -2328,94 +2420,87 @@ function doPost(e) {
       const idx = orders.findIndex(o => o.id === id);
       if (idx === -1) return;
 
-      const status = document.getElementById('editStatus').value;
-      const consignor = document.getElementById('editConsignor').value.trim();
-      const client = document.getElementById('editClient').value.trim();
-      const rawDate = document.getElementById('editDate').value;
-      const date = normalizeClientDate(rawDate) || rawDate;
+      const date = normalizeClientDate(document.getElementById('editDate').value);
       const typeSel = document.getElementById('editTypeSelect').value;
-      const type = typeSel === '__DIRECT__'
-        ? document.getElementById('editType').value.trim()
-        : typeSel;
+      const type = typeSel === '__DIRECT__' ? document.getElementById('editType').value.trim() : typeSel;
 
-      if (!status || !consignor || !client || !date || !type) {
-        showToast('必須項目を入力してください', 'warning');
+      if (!date || !type) {
+        showToast('実施日と種別を正しく入力してください', 'warning');
         return;
       }
 
-      const updatedOrder = {
+      const updated = {
         ...orders[idx],
-        status,
-        consignor,
-        client,
+        status: document.getElementById('editStatus').value || 'confirmed',
+        consignor: document.getElementById('editConsignor').value.trim(),
+        client: document.getElementById('editClient').value.trim(),
         date,
         type,
         companyName: document.getElementById('editCompany').value.trim(),
         storeName: document.getElementById('editStore').value.trim(),
         performerOrEvent: document.getElementById('editPerformer').value.trim(),
         managerName: document.getElementById('editManager').value || '未定',
-        rewardAmount: getNumVal('editReward'),
+        rewardAmount: Number(document.getElementById('editReward').value) || 0,
         transportationCost: document.getElementById('editTransportation').value,
-        gasolineFee: getNumVal('editGasolineFee'),
-        highwayFee: getNumVal('editHighwayFee'),
-        lunch8Fee: getNumVal('editLunch8Fee'),
-        lunchFee: getNumVal('editLunchFee'),
-        otherExpenses: getNumVal('editOtherExpenses'),
-        billingAmount: getNumVal('editBilling'),
-        billingTaxIncluded: getNumVal('editBillingTax'),
-        payRewardExclude: getNumVal('editPayRewardExclude'),
-        payExpenseExclude: getNumVal('editPayExpenseExclude'),
-        payTotalExclude: getNumVal('editPayTotalExclude'),
-        paymentAmount: getNumVal('editPayment'),
+        gasolineFee: Number(document.getElementById('editGasolineFee').value) || 0,
+        highwayFee: Number(document.getElementById('editHighwayFee').value) || 0,
+        lunch8Fee: Number(document.getElementById('editLunch8Fee').value) || 0,
+        lunchFee: Number(document.getElementById('editLunchFee').value) || 0,
+        otherExpenses: Number(document.getElementById('editOtherExpenses').value) || 0,
+        billingAmount: Number(document.getElementById('editBilling').value) || 0,
+        billingTaxIncluded: Number(document.getElementById('editBillingTax').value) || 0,
+        payRewardExclude: Number(document.getElementById('editPayRewardExclude').value) || 0,
+        payExpenseExclude: Number(document.getElementById('editPayExpenseExclude').value) || 0,
+        payTotalExclude: Number(document.getElementById('editPayTotalExclude').value) || 0,
+        paymentAmount: Number(document.getElementById('editPayment').value) || 0,
         notes: document.getElementById('editNotes').value.trim()
       };
 
-      orders[idx] = updatedOrder;
+      orders[idx] = updated;
+      learnMastersFromOrders([updated]);
       saveOrdersToStorage();
-      learnMasterFromOrder(updatedOrder);
+      populateAllDropdowns();
       closeEditModal();
       renderOrders();
-      showToast('案件の変更を保存しました', 'success');
-
-      if (autoSyncEnabled && gasWebAppUrl) {
-        syncToGoogleSheets(false);
-      }
+      showToast('案件情報を更新しました', 'success');
+      triggerAutoSync();
     }
 
-    function toggleOrderStatus(orderId) {
-      const idx = orders.findIndex(o => o.id === orderId);
+    function updateOrderDateInline(id, rawNewDate) {
+      const idx = orders.findIndex(o => o.id === id);
+      if (idx === -1) return;
+      const norm = normalizeClientDate(rawNewDate);
+      if (!norm) {
+        showToast('有効な日付を選択してください', 'warning');
+        return;
+      }
+      orders[idx].date = norm;
+      saveOrdersToStorage();
+      renderOrders();
+      showToast(`実施日を ${norm} に更新しました`, 'success');
+      triggerAutoSync();
+    }
+
+    function toggleOrderStatus(id) {
+      const idx = orders.findIndex(o => o.id === id);
       if (idx === -1) return;
       orders[idx].status = orders[idx].status === 'tentative' ? 'confirmed' : 'tentative';
       saveOrdersToStorage();
       renderOrders();
       showToast(`ステータスを「${orders[idx].status === 'confirmed' ? '確定' : '仮案件'}」に変更しました`, 'info');
-
-      if (autoSyncEnabled && gasWebAppUrl) {
-        syncToGoogleSheets(false);
-      }
+      triggerAutoSync();
     }
 
-    function updateOrderDateInline(orderId, newDateVal) {
-      const idx = orders.findIndex(o => o.id === orderId);
-      if (idx === -1) return;
-      const fixed = normalizeClientDate(newDateVal) || newDateVal;
-      orders[idx].date = fixed;
-      saveOrdersToStorage();
-      renderOrders();
-      showToast('実施日を更新しました', 'success');
-
-      if (autoSyncEnabled && gasWebAppUrl) {
-        syncToGoogleSheets(false);
-      }
-    }
-
-    function openDeleteConfirmModal(orderId) {
-      const order = orders.find(o => o.id === orderId);
+    function openDeleteConfirmModal(id) {
+      const order = orders.find(o => o.id === id);
       if (!order) return;
-      pendingDeleteOrderId = orderId;
-      const label = [order.date || '日付未設定', order.storeName || order.companyName, order.performerOrEvent || order.type]
-        .filter(Boolean).join(' / ');
-      document.getElementById('deleteConfirmMessage').textContent = `「${label}」（管理ID: ${order.id}）を削除してよろしいですか？`;
+      pendingDeleteOrderId = id;
+      const label = [
+        order.date || '日付未設定',
+        order.storeName || order.companyName || '店舗未設定',
+        order.performerOrEvent || order.type || ''
+      ].filter(Boolean).join(' / ');
+      document.getElementById('deleteConfirmMessage').textContent = `以下の案件を削除してもよろしいですか？\n【${label}】`;
       document.getElementById('deleteConfirmModal').classList.remove('hidden');
     }
 
@@ -2431,15 +2516,40 @@ function doPost(e) {
       closeDeleteConfirmModal();
       renderOrders();
       showToast('案件を削除しました', 'info');
-
-      if (autoSyncEnabled && gasWebAppUrl) {
-        syncToGoogleSheets(false);
-      }
+      triggerAutoSync();
     }
 
     // =========================================================================
-    // 8. 異常日付・日付未設定フィルターおよび一括クリア
+    // 7. 日付アラート（未設定・20年以上前の異常日付）管理
     // =========================================================================
+    function updateDateAlertBadges() {
+      const abnormalOrders = orders.filter(o => o.date && isAbnormalDate(o.date));
+      const missingOrders = orders.filter(o => !o.date);
+
+      const abBadge = document.getElementById('abnormalDateAlertBadge');
+      const abClearBtn = document.getElementById('clearAbnormalDateBtn');
+      const abText = document.getElementById('abnormalDateAlertText');
+      if (abnormalOrders.length > 0) {
+        abBadge.classList.remove('hidden');
+        abClearBtn.classList.remove('hidden');
+        abText.textContent = `異常日付(20年以上前等): ${abnormalOrders.length}件${filterAbnormalDateOnly ? '（絞り込み中）' : ''}`;
+      } else {
+        abBadge.classList.add('hidden');
+        abClearBtn.classList.add('hidden');
+        filterAbnormalDateOnly = false;
+      }
+
+      const missBadge = document.getElementById('missingDateAlertBadge');
+      const missText = document.getElementById('missingDateAlertText');
+      if (missingOrders.length > 0) {
+        missBadge.classList.remove('hidden');
+        missText.textContent = `日付未設定: ${missingOrders.length}件${filterMissingDateOnly ? '（絞り込み中）' : ''}`;
+      } else {
+        missBadge.classList.add('hidden');
+        filterMissingDateOnly = false;
+      }
+    }
+
     function toggleAbnormalDateFilter() {
       filterAbnormalDateOnly = !filterAbnormalDateOnly;
       if (filterAbnormalDateOnly) filterMissingDateOnly = false;
@@ -2453,10 +2563,10 @@ function doPost(e) {
     }
 
     function openClearAbnormalDateModal() {
-      const count = orders.filter(o => isAbnormalDate(o.date)).length;
-      if (count === 0) return;
+      const abnormalOrders = orders.filter(o => o.date && isAbnormalDate(o.date));
+      if (abnormalOrders.length === 0) return;
       document.getElementById('clearAbnormalDateMessage').textContent =
-        `2020年より前などの異常な日付が入っている ${count} 件の案件の日付を空欄（未設定）にリセットします。よろしいですか？`;
+        `20年以上前などの異常な日付が入っている ${abnormalOrders.length} 件の案件の実施日をクリア（未設定）に戻します。クリア後は各カードのカレンダーから正しい日付を選択できます。`;
       document.getElementById('clearAbnormalDateModal').classList.remove('hidden');
     }
 
@@ -2467,250 +2577,233 @@ function doPost(e) {
     function executeClearAbnormalDates() {
       let cleared = 0;
       orders = orders.map(o => {
-        if (isAbnormalDate(o.date)) {
+        if (o.date && isAbnormalDate(o.date)) {
           cleared++;
           return { ...o, date: '' };
         }
         return o;
       });
+      filterAbnormalDateOnly = false;
       saveOrdersToStorage();
       closeClearAbnormalDateModal();
-      filterAbnormalDateOnly = false;
-      filterMissingDateOnly = cleared > 0;
       renderOrders();
       showToast(`${cleared} 件の異常日付をクリアしました`, 'success');
-
-      if (autoSyncEnabled && gasWebAppUrl) {
-        syncToGoogleSheets(false);
-      }
+      triggerAutoSync();
     }
 
     // =========================================================================
-    // 9. 受注ボックス一覧レンダリング
+    // 8. 受注ボックス一覧レンダリング（日付グループ化・整列）
     // =========================================================================
     function renderOrders() {
-      const container = document.getElementById('orderListContainer');
-      const countEl = document.getElementById('orderCount');
-      const statusFilter = document.getElementById('statusFilter').value;
-      const managerFilter = document.getElementById('managerFilter').value;
+      updateDateAlertBadges();
 
-      // 異常日付・未設定件数の集計とバッジ制御
-      const abnormalCount = orders.filter(o => isAbnormalDate(o.date)).length;
-      const missingCount = orders.filter(o => !o.date).length;
+      const statusVal = document.getElementById('statusFilter').value;
+      const managerVal = document.getElementById('managerFilter').value;
 
-      const abBadge = document.getElementById('abnormalDateAlertBadge');
-      const abClearBtn = document.getElementById('clearAbnormalDateBtn');
-      const abText = document.getElementById('abnormalDateAlertText');
-      if (abnormalCount > 0) {
-        abBadge.classList.remove('hidden');
-        abClearBtn.classList.remove('hidden');
-        abText.textContent = filterAbnormalDateOnly
-          ? `異常日付のみ表示中 (${abnormalCount}件) - 解除`
-          : `異常日付(20年以上前等): ${abnormalCount}件`;
-      } else {
-        abBadge.classList.add('hidden');
-        abClearBtn.classList.add('hidden');
-        filterAbnormalDateOnly = false;
-      }
-
-      const missBadge = document.getElementById('missingDateAlertBadge');
-      const missText = document.getElementById('missingDateAlertText');
-      if (missingCount > 0) {
-        missBadge.classList.remove('hidden');
-        missText.textContent = filterMissingDateOnly
-          ? `日付未設定のみ表示中 (${missingCount}件) - 解除`
-          : `日付未設定: ${missingCount}件`;
-      } else {
-        missBadge.classList.add('hidden');
-        filterMissingDateOnly = false;
-      }
-
-      // フィルタリング
-      let filtered = orders.filter(o => {
-        if (statusFilter !== 'all' && o.status !== statusFilter) return false;
-        if (managerFilter !== 'all' && (o.managerName || '未定') !== managerFilter) return false;
-        if (filterAbnormalDateOnly && !isAbnormalDate(o.date)) return false;
+      const filtered = orders.filter(o => {
+        if (statusVal !== 'all' && o.status !== statusVal) return false;
+        if (managerVal !== 'all' && (o.managerName || '未定') !== managerVal) return false;
+        if (filterAbnormalDateOnly && !(o.date && isAbnormalDate(o.date))) return false;
         if (filterMissingDateOnly && Boolean(o.date)) return false;
         return true;
       });
 
-      // ソート（実施日 ➔ 種別 ➔ 担当者 ➔ 企業名 ➔ 店舗名 ➔ 演者・取材名）
+      document.getElementById('orderCount').textContent = filtered.length;
+
+      // 整列: 異常・未設定を先頭、その後 日付昇順 ➔ 種別 ➔ 担当者 ➔ 企業 ➔ 店舗 ➔ 取材名
       filtered.sort((a, b) => {
-        const da = a.date || '9999-99-99';
-        const db = b.date || '9999-99-99';
-        if (da !== db) return da.localeCompare(db);
-        const cmpType = (a.type || '').localeCompare(b.type || '', 'ja');
-        if (cmpType !== 0) return cmpType;
-        const cmpMgr = (a.managerName || '').localeCompare(b.managerName || '', 'ja');
-        if (cmpMgr !== 0) return cmpMgr;
-        const cmpComp = (a.companyName || '').localeCompare(b.companyName || '', 'ja');
-        if (cmpComp !== 0) return cmpComp;
-        const cmpStore = (a.storeName || '').localeCompare(b.storeName || '', 'ja');
-        if (cmpStore !== 0) return cmpStore;
+        const aAb = a.date && isAbnormalDate(a.date);
+        const bAb = b.date && isAbnormalDate(b.date);
+        if (aAb !== bAb) return aAb ? -1 : 1;
+
+        const aEmpty = !a.date;
+        const bEmpty = !b.date;
+        if (aEmpty !== bEmpty) return aEmpty ? -1 : 1;
+
+        if (a.date !== b.date) return String(a.date).localeCompare(String(b.date));
+        if ((a.type || '') !== (b.type || '')) return (a.type || '').localeCompare(b.type || '', 'ja');
+        if ((a.managerName || '') !== (b.managerName || '')) return (a.managerName || '').localeCompare(b.managerName || '', 'ja');
+        if ((a.companyName || '') !== (b.companyName || '')) return (a.companyName || '').localeCompare(b.companyName || '', 'ja');
+        if ((a.storeName || '') !== (b.storeName || '')) return (a.storeName || '').localeCompare(b.storeName || '', 'ja');
         return (a.performerOrEvent || '').localeCompare(b.performerOrEvent || '', 'ja');
       });
 
-      countEl.textContent = filtered.length;
-
+      const container = document.getElementById('orderListContainer');
       if (filtered.length === 0) {
         container.innerHTML = `
           <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center">
             <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
               <i class="ph ph-folder-open text-2xl"></i>
             </div>
-            <p class="text-sm font-bold text-slate-700">表示する受注案件がありません</p>
-            <p class="text-xs text-slate-400 mt-1">左側のフォームから新規登録するか、「シートから取得」で読み込んでください。</p>
+            <p class="text-sm font-bold text-slate-700">表示できる受注案件がありません</p>
+            <p class="text-xs text-slate-400 mt-1">左のフォームから新規登録するか、「シートから取得」「Excel貼付」をご利用ください。</p>
           </div>
         `;
         return;
       }
 
-      // 日付ごとにグループ化してカード出力
-      const groups = new Map();
-      filtered.forEach(order => {
-        const key = order.date || '__NO_DATE__';
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(order);
+      // 日付ごとのグループ化
+      const groups = [];
+      const groupMap = new Map();
+      filtered.forEach(o => {
+        const key = o.date || '__UNSET__';
+        if (!groupMap.has(key)) {
+          const g = { key, items: [] };
+          groupMap.set(key, g);
+          groups.push(g);
+        }
+        groupMap.get(key).items.push(o);
       });
 
-      let html = '';
-      groups.forEach((groupOrders, dateKey) => {
-        const isNoDate = dateKey === '__NO_DATE__';
-        const isAb = !isNoDate && isAbnormalDate(dateKey);
-        const dow = getDayOfWeekLabel(dateKey);
-        const dowBadge = dow
-          ? `<span class="ml-1.5 text-[11px] font-bold px-1.5 py-0.5 rounded ${dow === '日' ? 'bg-rose-100 text-rose-700' : dow === '土' ? 'bg-sky-100 text-sky-700' : 'bg-slate-200 text-slate-700'}">(${dow})</span>`
-          : '';
+      const typeBadgeStyles = {
+        '取材': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'アテンド': 'bg-purple-50 text-purple-700 border-purple-200',
+        'ディレクター': 'bg-sky-50 text-sky-700 border-sky-200',
+        '販売会': 'bg-amber-50 text-amber-700 border-amber-200'
+      };
 
-        const headerBadge = isNoDate
-          ? `<span class="inline-flex items-center text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-lg"><i class="ph ph-warning mr-1"></i>実施日未設定</span>`
+      container.innerHTML = groups.map(group => {
+        const isUnset = group.key === '__UNSET__';
+        const isAb = !isUnset && isAbnormalDate(group.key);
+        const dow = (!isUnset && !isAb) ? getDayOfWeekLabel(group.key) : { text: '', colorClass: '' };
+        const groupBillingSum = group.items.reduce((acc, it) => acc + (Number(it.billingAmount) || 0), 0);
+
+        const headerBadge = isUnset
+          ? `<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300"><i class="ph ph-warning mr-1"></i>実施日 未設定</span>`
           : isAb
-            ? `<span class="inline-flex items-center text-xs font-bold text-white bg-rose-600 px-2.5 py-1 rounded-lg"><i class="ph ph-warning-octagon mr-1"></i>異常日付: ${escapeHtml(dateKey)}</span>`
-            : `<span class="inline-flex items-center text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg"><i class="ph ph-calendar-blank mr-1.5 text-indigo-600"></i>${escapeHtml(dateKey)}${dowBadge}</span>`;
+            ? `<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300"><i class="ph ph-warning-octagon mr-1"></i>異常日付: ${escapeHtml(group.key)}</span>`
+            : `<span class="text-sm font-bold text-slate-800">${escapeHtml(group.key)} <span class="text-xs font-bold ${dow.colorClass}">${dow.text}</span></span>`;
 
-        const cardsHtml = groupOrders.map(o => renderSingleOrderCard(o)).join('');
+        const cardsHtml = group.items.map(o => {
+          const isTentative = o.status === 'tentative';
+          const statusBtnClass = isTentative
+            ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+            : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
+          const statusLabel = isTentative ? '仮案件' : '確定';
+          const tStyle = typeBadgeStyles[o.type] || 'bg-slate-100 text-slate-700 border-slate-200';
+          const validInputDate = (!isAbnormalDate(o.date) && /^\d{4}-\d{2}-\d{2}$/.test(o.date)) ? o.date : '';
 
-        html += `
-          <div class="space-y-2.5">
-            <div class="flex items-center justify-between px-1">
-              ${headerBadge}
-              <span class="text-[11px] font-semibold text-slate-400">${groupOrders.length} 件</span>
+          const expenseItems = [];
+          if (o.gasolineFee > 0) expenseItems.push(`ガソリン ${formatCurrency(o.gasolineFee)}`);
+          if (o.highwayFee > 0) expenseItems.push(`高速 ${formatCurrency(o.highwayFee)}`);
+          if (o.lunch8Fee > 0) expenseItems.push(`昼食8% ${formatCurrency(o.lunch8Fee)}`);
+          if (o.lunchFee > 0) expenseItems.push(`昼食 ${formatCurrency(o.lunchFee)}`);
+          if (o.otherExpenses > 0) expenseItems.push(`その他 ${formatCurrency(o.otherExpenses)}`);
+
+          return `
+            <div class="p-3.5 sm:p-4 hover:bg-slate-50/70 transition flex flex-col gap-2.5">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button type="button" onclick="toggleOrderStatus('${escapeHtml(o.id)}')" title="クリックで確定／仮案件を切替"
+                    class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold border transition ${statusBtnClass}">
+                    <span class="w-1.5 h-1.5 rounded-full ${isTentative ? 'bg-amber-500' : 'bg-emerald-500'} mr-1"></span>${statusLabel}
+                  </button>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold border ${tStyle}">
+                    ${escapeHtml(o.type || '種別未設定')}
+                  </span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                    ${escapeHtml(o.consignor || '-')} ➔ ${escapeHtml(o.client || '-')}
+                  </span>
+                  <span class="text-[10px] font-mono text-slate-400">${escapeHtml(o.id)}</span>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                  <input type="date" value="${escapeHtml(validInputDate)}" onchange="updateOrderDateInline('${escapeHtml(o.id)}', this.value)"
+                    title="実施日を直接変更"
+                    class="text-[11px] bg-white border ${!validInputDate ? 'border-amber-400 bg-amber-50/60' : 'border-slate-200'} rounded-lg px-2 py-1 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <button type="button" onclick="openEditModal('${escapeHtml(o.id)}')" class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200 bg-white transition" title="編集">
+                    <i class="ph ph-pencil-simple text-sm"></i>
+                  </button>
+                  <button type="button" onclick="openDeleteConfirmModal('${escapeHtml(o.id)}')" class="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 bg-white transition" title="削除">
+                    <i class="ph ph-trash text-sm"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                <div class="sm:col-span-7 space-y-0.5">
+                  <div class="flex flex-wrap items-baseline gap-1.5">
+                    ${o.companyName ? `<span class="text-[11px] text-slate-500 font-medium">${escapeHtml(o.companyName)}</span>` : ''}
+                    <span class="text-sm font-bold text-slate-800">${escapeHtml(o.storeName || '店舗未設定')}</span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <span class="font-semibold text-indigo-700">${escapeHtml(o.performerOrEvent || '演者・取材名未設定')}</span>
+                    <span class="text-slate-300">|</span>
+                    <span class="text-slate-600 font-medium"><i class="ph ph-user mr-0.5 text-slate-400"></i>${escapeHtml(o.managerName || '未定')}</span>
+                    ${o.transportationCost ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${o.transportationCost === '実費' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600'}">交通費:${escapeHtml(o.transportationCost)}</span>` : ''}
+                  </div>
+                </div>
+
+                <div class="sm:col-span-5 flex sm:justify-end items-center gap-3 bg-slate-50 rounded-xl px-3 py-2 border border-slate-200/70">
+                  <div class="text-right">
+                    <p class="text-[10px] text-slate-400 font-semibold">報酬</p>
+                    <p class="text-xs font-bold text-slate-700">${formatCurrency(o.rewardAmount)}</p>
+                  </div>
+                  <div class="h-6 w-px bg-slate-200"></div>
+                  <div class="text-right">
+                    <p class="text-[10px] text-indigo-600 font-bold">請求(税抜 / 税込)</p>
+                    <p class="text-xs font-bold text-indigo-950">${formatCurrency(o.billingAmount)} <span class="text-[10px] font-normal text-slate-500">/ ${formatCurrency(o.billingTaxIncluded)}</span></p>
+                  </div>
+                </div>
+              </div>
+
+              ${(expenseItems.length > 0 || o.paymentAmount > 0 || o.notes) ? `
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100 text-[11px] text-slate-500">
+                  <div class="flex flex-wrap items-center gap-2">
+                    ${expenseItems.length > 0 ? `<span class="text-slate-600">経費: ${escapeHtml(expenseItems.join(' / '))}</span>` : ''}
+                    ${o.paymentAmount > 0 ? `<span class="font-semibold text-slate-700">支払総額(税込): ${formatCurrency(o.paymentAmount)}</span>` : ''}
+                  </div>
+                  ${o.notes ? `<span class="text-slate-600 bg-amber-50/70 border border-amber-200/70 px-2 py-0.5 rounded-lg"><i class="ph ph-note mr-1 text-amber-600"></i>${escapeHtml(o.notes)}</span>` : ''}
+                </div>
+              ` : ''}
             </div>
-            <div class="space-y-2.5">
+          `;
+        }).join('');
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-slate-50/90 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between gap-2">
+              <div class="flex items-center space-x-2">
+                ${headerBadge}
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-600 border border-slate-200">${group.items.length}件</span>
+              </div>
+              <span class="text-xs font-bold text-slate-700">小計(税抜): <span class="text-indigo-700">${formatCurrency(groupBillingSum)}</span></span>
+            </div>
+            <div class="divide-y divide-slate-100">
               ${cardsHtml}
             </div>
           </div>
         `;
-      });
-
-      container.innerHTML = html;
-    }
-
-    function renderSingleOrderCard(o) {
-      const isConfirmed = o.status !== 'tentative';
-      const statusBtn = isConfirmed
-        ? `<button type="button" onclick="toggleOrderStatus('${escapeHtml(o.id)}')" class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition" title="クリックで仮案件へ切替">確定</button>`
-        : `<button type="button" onclick="toggleOrderStatus('${escapeHtml(o.id)}')" class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition" title="クリックで確定へ切替">仮案件</button>`;
-
-      const typeColors = {
-        '取材': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-        'アテンド': 'bg-purple-50 text-purple-700 border-purple-200',
-        'ディレクター': 'bg-cyan-50 text-cyan-700 border-cyan-200',
-        '販売会': 'bg-orange-50 text-orange-700 border-orange-200'
-      };
-      const typeClass = typeColors[o.type] || 'bg-slate-100 text-slate-700 border-slate-200';
-
-      const needsDateFix = !o.date || isAbnormalDate(o.date);
-      const inlineDateFixHtml = needsDateFix
-        ? `<div class="mt-2 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5">
-             <span class="text-[11px] font-bold text-amber-800 whitespace-nowrap">実施日を設定:</span>
-             <input type="date" onchange="updateOrderDateInline('${escapeHtml(o.id)}', this.value)" class="text-xs bg-white border border-amber-300 rounded-lg px-2 py-1 text-slate-800 outline-none">
-           </div>`
-        : '';
-
-      const expenseTotal = (Number(o.gasolineFee) || 0) + (Number(o.highwayFee) || 0) + (Number(o.lunch8Fee) || 0) + (Number(o.lunchFee) || 0) + (Number(o.otherExpenses) || 0);
-
-      return `
-        <div class="bg-white rounded-2xl border ${needsDateFix ? 'border-amber-300' : 'border-slate-200'} p-4 shadow-sm hover:shadow-md transition">
-          <div class="flex flex-wrap items-start justify-between gap-2 pb-2.5 border-b border-slate-100">
-            <div class="flex flex-wrap items-center gap-1.5">
-              ${statusBtn}
-              <span class="px-2 py-0.5 rounded-md text-[11px] font-bold border ${typeClass}">${escapeHtml(o.type || '未設定')}</span>
-              <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700">${escapeHtml(o.consignor || '-')}</span>
-              <span class="text-slate-300 text-xs">➔</span>
-              <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700">${escapeHtml(o.client || '-')}</span>
-              <span class="text-[10px] font-mono text-slate-400 ml-1">${escapeHtml(o.id)}</span>
-            </div>
-
-            <div class="flex items-center space-x-1">
-              <button type="button" onclick="openEditModal('${escapeHtml(o.id)}')" class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition" title="編集">
-                <i class="ph ph-pencil-simple text-base"></i>
-              </button>
-              <button type="button" onclick="openDeleteConfirmModal('${escapeHtml(o.id)}')" class="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition" title="削除">
-                <i class="ph ph-trash text-base"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="pt-2.5 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-            <div class="sm:col-span-7 space-y-1">
-              <div class="flex flex-wrap items-baseline gap-x-2">
-                ${o.companyName ? `<span class="text-[11px] font-medium text-slate-500">${escapeHtml(o.companyName)}</span>` : ''}
-                <span class="text-sm font-bold text-slate-800">${escapeHtml(o.storeName || '店舗未設定')}</span>
-              </div>
-              <div class="flex flex-wrap items-center gap-2 text-xs">
-                <span class="font-semibold text-indigo-700">${escapeHtml(o.performerOrEvent || '演者・取材名未設定')}</span>
-                <span class="text-slate-300">|</span>
-                <span class="inline-flex items-center text-slate-600 font-medium">
-                  <i class="ph ph-user mr-1 text-slate-400"></i>${escapeHtml(o.managerName || '未定')}
-                </span>
-                ${o.transportationCost ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${o.transportationCost === '実費' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600'}">交通費:${escapeHtml(o.transportationCost)}</span>` : ''}
-              </div>
-              ${o.notes ? `<p class="text-[11px] text-slate-500 bg-slate-50 rounded-lg px-2.5 py-1 mt-1"><i class="ph ph-note mr-1 text-slate-400"></i>${escapeHtml(o.notes)}</p>` : ''}
-              ${inlineDateFixHtml}
-            </div>
-
-            <div class="sm:col-span-5 bg-slate-50/80 rounded-xl p-2.5 border border-slate-200/70 grid grid-cols-2 gap-2 text-right">
-              <div>
-                <p class="text-[10px] text-slate-400">報酬 / 経費</p>
-                <p class="text-xs font-bold text-slate-700">${formatYen(o.rewardAmount)} <span class="text-[10px] font-normal text-slate-400">/ ${formatYen(expenseTotal)}</span></p>
-              </div>
-              <div>
-                <p class="text-[10px] text-indigo-600 font-semibold">請求(税込)</p>
-                <p class="text-xs font-bold text-indigo-900">${formatYen(o.billingTaxIncluded || o.billingAmount)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
+      }).join('');
     }
 
     // =========================================================================
-    // 10. マスター管理モーダル
+    // 9. マスター管理モーダル（企業・店舗 / 担当者 / 演者・取材名）
     // =========================================================================
-    function openMasterModal(category) {
-      currentMasterCategory = category;
-      editingMasterIndex = -1;
-
-      const titles = {
-        company: '企業・店舗マスター管理',
-        manager: '担当者マスター管理',
-        performer: '演者・取材名マスター管理'
+    function openMasterModal(tab) {
+      currentMasterTab = tab || 'company';
+      const titleMap = {
+        company: '<i class="ph ph-buildings mr-1.5 text-indigo-600 text-lg"></i>企業・店舗リスト管理',
+        manager: '<i class="ph ph-users mr-1.5 text-indigo-600 text-lg"></i>担当者リスト管理',
+        performer: '<i class="ph ph-microphone-stage mr-1.5 text-indigo-600 text-lg"></i>演者・取材名リスト管理'
       };
-      document.getElementById('masterModalTitle').innerHTML =
-        `<i class="ph ph-list-bullets mr-1.5 text-indigo-600 text-lg"></i>${titles[category] || 'リスト管理'}`;
+      const placeholderMap = {
+        company: '店舗名を入力（例: マルハン鹿児島新港店）',
+        manager: '新しい担当者名を入力',
+        performer: '新しい演者名または取材名を入力'
+      };
 
-      const compInput = document.getElementById('newMasterCompanyInput');
-      const itemInput = document.getElementById('newMasterItemInput');
-      compInput.value = '';
-      itemInput.value = '';
+      document.getElementById('masterModalTitle').innerHTML = titleMap[currentMasterTab];
+      const compInp = document.getElementById('newMasterCompanyInput');
+      const itemInp = document.getElementById('newMasterItemInput');
+      itemInp.value = '';
+      itemInp.placeholder = placeholderMap[currentMasterTab];
 
-      if (category === 'company') {
-        compInput.classList.remove('hidden');
-        itemInput.placeholder = '店舗名を入力（企業名のみ追加する場合は空欄可）';
+      if (currentMasterTab === 'company') {
+        compInp.classList.remove('hidden');
+        compInp.value = '';
       } else {
-        compInput.classList.add('hidden');
-        itemInput.placeholder = category === 'manager' ? '新しい担当者名を入力' : '新しい演者名または取材名を入力';
+        compInp.classList.add('hidden');
       }
 
       renderMasterList();
@@ -2718,260 +2811,186 @@ function doPost(e) {
     }
 
     function closeMasterModal() {
-      editingMasterIndex = -1;
       document.getElementById('masterModal').classList.add('hidden');
     }
 
     function renderMasterList() {
-      const listEl = document.getElementById('masterItemList');
-      if (!listEl) return;
+      const container = document.getElementById('masterItemList');
+      if (!container) return;
 
-      if (currentMasterCategory === 'company') {
-        const items = masters.store;
-        if (items.length === 0) {
-          listEl.innerHTML = `<p class="p-4 text-center text-xs text-slate-400">登録されている企業・店舗はありません</p>`;
+      if (currentMasterTab === 'company') {
+        if (masters.companies.length === 0) {
+          container.innerHTML = '<p class="p-4 text-xs text-slate-400 text-center">登録された企業・店舗はありません</p>';
           return;
         }
-        listEl.innerHTML = items.map((item, idx) => {
-          if (editingMasterIndex === idx) {
-            return `
-              <div class="p-2.5 bg-indigo-50/60 space-y-1.5">
-                <input type="text" id="editMasterComp_${idx}" value="${escapeHtml(item.company || '')}" placeholder="企業名" class="w-full text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 outline-none">
-                <input type="text" id="editMasterStore_${idx}" value="${escapeHtml(item.store || '')}" placeholder="店舗名" class="w-full text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 outline-none">
-                <div class="flex justify-end space-x-1.5">
-                  <button type="button" onclick="editingMasterIndex=-1;renderMasterList();" class="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg">取消</button>
-                  <button type="button" onclick="saveMasterEdit(${idx})" class="px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 rounded-lg">保存</button>
-                </div>
-              </div>
-            `;
-          }
-          return `
-            <div class="px-3 py-2.5 flex items-center justify-between hover:bg-slate-50">
-              <div>
-                <p class="text-xs font-bold text-slate-800">${escapeHtml(item.store)}</p>
-                ${item.company ? `<p class="text-[11px] text-slate-400">${escapeHtml(item.company)}</p>` : ''}
-              </div>
-              <div class="flex items-center space-x-1">
-                <button type="button" onclick="editingMasterIndex=${idx};renderMasterList();" class="p-1 text-slate-400 hover:text-indigo-600 rounded">
-                  <i class="ph ph-pencil-simple text-sm"></i>
-                </button>
-                <button type="button" onclick="deleteMasterItem(${idx})" class="p-1 text-slate-400 hover:text-rose-600 rounded">
-                  <i class="ph ph-trash text-sm"></i>
-                </button>
-              </div>
+        container.innerHTML = masters.companies.map((item, idx) => `
+          <div class="px-3 py-2 flex items-center justify-between gap-2 text-xs hover:bg-slate-50">
+            <div class="min-w-0 flex-1">
+              ${item.company ? `<p class="text-[10px] text-slate-400 truncate">${escapeHtml(item.company)}</p>` : ''}
+              <p class="font-semibold text-slate-800 truncate">${escapeHtml(item.store)}</p>
             </div>
-          `;
-        }).join('');
-        return;
-      }
-
-      const arr = masters[currentMasterCategory] || [];
-      if (arr.length === 0) {
-        listEl.innerHTML = `<p class="p-4 text-center text-xs text-slate-400">登録されている項目はありません</p>`;
-        return;
-      }
-
-      listEl.innerHTML = arr.map((val, idx) => {
-        if (editingMasterIndex === idx) {
-          return `
-            <div class="p-2.5 bg-indigo-50/60 flex items-center space-x-2">
-              <input type="text" id="editMasterVal_${idx}" value="${escapeHtml(val)}" class="flex-1 text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 outline-none">
-              <button type="button" onclick="editingMasterIndex=-1;renderMasterList();" class="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg">取消</button>
-              <button type="button" onclick="saveMasterEdit(${idx})" class="px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 rounded-lg">保存</button>
-            </div>
-          `;
-        }
-        return `
-          <div class="px-3 py-2.5 flex items-center justify-between hover:bg-slate-50">
-            <span class="text-xs font-semibold text-slate-800">${escapeHtml(val)}</span>
-            <div class="flex items-center space-x-1">
-              <button type="button" onclick="editingMasterIndex=${idx};renderMasterList();" class="p-1 text-slate-400 hover:text-indigo-600 rounded">
-                <i class="ph ph-pencil-simple text-sm"></i>
-              </button>
-              <button type="button" onclick="deleteMasterItem(${idx})" class="p-1 text-slate-400 hover:text-rose-600 rounded">
-                <i class="ph ph-trash text-sm"></i>
-              </button>
-            </div>
+            <button type="button" onclick="deleteMasterItem(${idx})" class="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition" title="削除">
+              <i class="ph ph-trash text-sm"></i>
+            </button>
           </div>
-        `;
-      }).join('');
+        `).join('');
+        return;
+      }
+
+      const list = currentMasterTab === 'manager' ? masters.managers : masters.performers;
+      if (list.length === 0) {
+        container.innerHTML = '<p class="p-4 text-xs text-slate-400 text-center">登録された項目はありません</p>';
+        return;
+      }
+      container.innerHTML = list.map((name, idx) => `
+        <div class="px-3 py-2 flex items-center justify-between gap-2 text-xs hover:bg-slate-50">
+          <span class="font-semibold text-slate-800 truncate">${escapeHtml(name)}</span>
+          <button type="button" onclick="deleteMasterItem(${idx})" class="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition" title="削除">
+            <i class="ph ph-trash text-sm"></i>
+          </button>
+        </div>
+      `).join('');
     }
 
     function addMasterItem() {
-      const itemInp = document.getElementById('newMasterItemInput');
-      const compInp = document.getElementById('newMasterCompanyInput');
-      const val = itemInp.value.trim();
-      const comp = compInp.value.trim();
-
-      if (currentMasterCategory === 'company') {
-        if (!comp && !val) {
-          showToast('企業名または店舗名を入力してください', 'warning');
-          return;
-        }
-        if (comp && !masters.company.includes(comp)) {
-          masters.company.push(comp);
-        }
-        if (val) {
-          masters.store.push({ company: comp, store: val });
-        }
-      } else {
-        if (!val) {
-          showToast('項目名を入力してください', 'warning');
-          return;
-        }
-        if (!masters[currentMasterCategory].includes(val)) {
-          masters[currentMasterCategory].push(val);
-        }
+      const itemVal = document.getElementById('newMasterItemInput').value.trim();
+      if (!itemVal) {
+        showToast('追加する項目を入力してください', 'warning');
+        return;
       }
 
-      itemInp.value = '';
-      compInp.value = '';
+      if (currentMasterTab === 'company') {
+        const compVal = document.getElementById('newMasterCompanyInput').value.trim();
+        masters.companies.push({ company: compVal, store: itemVal });
+        document.getElementById('newMasterCompanyInput').value = '';
+      } else if (currentMasterTab === 'manager') {
+        if (!masters.managers.includes(itemVal)) masters.managers.push(itemVal);
+      } else {
+        if (!masters.performers.includes(itemVal)) masters.performers.push(itemVal);
+      }
+
+      document.getElementById('newMasterItemInput').value = '';
       saveMastersToStorage();
       populateAllDropdowns();
       renderMasterList();
-      showToast('候補リストに追加しました', 'success');
-    }
-
-    function saveMasterEdit(idx) {
-      if (currentMasterCategory === 'company') {
-        const comp = document.getElementById(`editMasterComp_${idx}`).value.trim();
-        const store = document.getElementById(`editMasterStore_${idx}`).value.trim();
-        if (!store) return;
-        masters.store[idx] = { company: comp, store };
-        if (comp && !masters.company.includes(comp)) {
-          masters.company.push(comp);
-        }
-      } else {
-        const val = document.getElementById(`editMasterVal_${idx}`).value.trim();
-        if (!val) return;
-        masters[currentMasterCategory][idx] = val;
-      }
-      editingMasterIndex = -1;
-      saveMastersToStorage();
-      populateAllDropdowns();
-      renderMasterList();
-      showToast('候補を更新しました', 'success');
+      showToast('リストに追加しました', 'success');
     }
 
     function deleteMasterItem(idx) {
-      if (currentMasterCategory === 'company') {
-        masters.store.splice(idx, 1);
+      if (currentMasterTab === 'company') {
+        masters.companies.splice(idx, 1);
+      } else if (currentMasterTab === 'manager') {
+        masters.managers.splice(idx, 1);
       } else {
-        masters[currentMasterCategory].splice(idx, 1);
+        masters.performers.splice(idx, 1);
       }
-      editingMasterIndex = -1;
       saveMastersToStorage();
       populateAllDropdowns();
       renderMasterList();
-      showToast('候補を削除しました', 'info');
+      showToast('リストから削除しました', 'info');
     }
 
     // =========================================================================
-    // 11. Excel直接貼り付け取り込み
+    // 10. Excel直接貼り付け取り込み機能
     // =========================================================================
     function openExcelPasteModal() {
       document.getElementById('excelPasteTextarea').value = '';
       document.getElementById('excelPasteModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('excelPasteTextarea').focus(), 50);
     }
 
     function closeExcelPasteModal() {
       document.getElementById('excelPasteModal').classList.add('hidden');
     }
 
-    function parseDelimitedText(rawText) {
-      const delimiter = rawText.includes('\t') ? '\t' : ',';
+    function parseTsvRows(text) {
       const rows = [];
-      let currentRow = [];
-      let currentCell = '';
+      let row = [];
+      let field = '';
       let inQuotes = false;
 
-      for (let i = 0; i < rawText.length; i++) {
-        const ch = rawText[i];
-        const next = rawText[i + 1];
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
         if (inQuotes) {
           if (ch === '"' && next === '"') {
-            currentCell += '"';
+            field += '"';
             i++;
           } else if (ch === '"') {
             inQuotes = false;
           } else {
-            currentCell += ch;
+            field += ch;
           }
+        } else if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === '\t') {
+          row.push(field.trim());
+          field = '';
+        } else if (ch === '\r' && next === '\n') {
+          row.push(field.trim());
+          rows.push(row);
+          row = [];
+          field = '';
+          i++;
+        } else if (ch === '\n' || ch === '\r') {
+          row.push(field.trim());
+          rows.push(row);
+          row = [];
+          field = '';
         } else {
-          if (ch === '"') {
-            inQuotes = true;
-          } else if (ch === delimiter) {
-            currentRow.push(currentCell.trim());
-            currentCell = '';
-          } else if (ch === '\r' && next === '\n') {
-            currentRow.push(currentCell.trim());
-            rows.push(currentRow);
-            currentRow = [];
-            currentCell = '';
-            i++;
-          } else if (ch === '\n' || ch === '\r') {
-            currentRow.push(currentCell.trim());
-            rows.push(currentRow);
-            currentRow = [];
-            currentCell = '';
-          } else {
-            currentCell += ch;
-          }
+          field += ch;
         }
       }
-      if (currentCell.length > 0 || currentRow.length > 0) {
-        currentRow.push(currentCell.trim());
-        rows.push(currentRow);
+      if (field.length > 0 || row.length > 0) {
+        row.push(field.trim());
+        rows.push(row);
       }
-      return rows.filter(r => r.some(c => c !== ''));
+      return rows.filter(r => r.some(cell => cell !== ''));
     }
 
     function importFromExcelPaste() {
       const raw = document.getElementById('excelPasteTextarea').value;
       if (!raw || !raw.trim()) {
-        showToast('貼り付け欄にデータがありません', 'warning');
+        showToast('Excelからコピーした内容を貼り付けてください', 'warning');
         return;
       }
 
-      const rows = parseDelimitedText(raw);
+      const rows = parseTsvRows(raw);
       if (rows.length === 0) {
-        showToast('有効な行が読み取れませんでした', 'warning');
+        showToast('有効なデータ行が見つかりませんでした', 'warning');
         return;
       }
 
       const toNum = v => {
         const n = Number(String(v || '').replace(/[^\d\-]/g, ''));
-        return isNaN(n) ? 0 : Math.max(0, Math.round(n));
+        return isNaN(n) ? 0 : n;
       };
 
-      // 先頭行が見出し行か判定
-      const firstRowJoined = rows[0].join('');
-      const hasHeader = /委託元|依頼元|実施日|日付|店舗名|演者|取材/.test(firstRowJoined);
+      const firstJoined = rows[0].join(',');
+      const hasHeader = firstJoined.includes('実施日') || firstJoined.includes('委託元') || firstJoined.includes('店舗名') || firstJoined.includes('管理ID');
       let startIdx = 0;
       let colMap = null;
 
       if (hasHeader) {
         startIdx = 1;
-        const h = rows[0].map(c => c.replace(/[\s\u3000]+/g, ''));
-        const findIdx = (keys, ex = []) => h.findIndex(col =>
-          col && !ex.some(x => col.includes(x)) && keys.some(k => col.includes(k))
-        );
+        const headers = rows[0].map(h => h.replace(/[\s\u3000]+/g, ''));
+        const findIdx = (inc, exc = []) => headers.findIndex(h => !exc.some(e => h.includes(e)) && inc.some(k => h.includes(k)));
         colMap = {
           id: findIdx(['管理ID', 'ID']),
           status: findIdx(['ステータス', '状態']),
           consignor: findIdx(['委託元']),
           client: findIdx(['依頼元']),
-          date: findIdx(['実施日', '日付', '開催日', '稼働日', '日程'], ['曜日']),
+          date: findIdx(['実施日', '日付', '開催日', '稼働日'], ['同期', '更新', '登録', '作成', '曜日']),
           type: findIdx(['種別']),
-          company: findIdx(['企業名', '会社名']),
+          company: findIdx(['企業名']),
           store: findIdx(['店舗名', '店舗']),
-          performer: findIdx(['演者名または取材名', '演者名', '取材名', '演者']),
+          performer: findIdx(['演者名または取材名', '演者名', '取材名']),
           manager: findIdx(['担当者', '担当']),
           reward: findIdx(['報酬'], ['支払']),
           trans: findIdx(['交通費']),
           gas: findIdx(['ガソリン']),
           highway: findIdx(['高速']),
-          lunch8: findIdx(['昼食代(8%)', '昼食代8%', '昼食8']),
+          lunch8: findIdx(['昼食代(8%)', '昼食代8%']),
           lunch: findIdx(['昼食代'], ['8%']),
           other: findIdx(['その他経費', 'その他']),
           billEx: findIdx(['請求金額(税抜)', '請求金額税抜']),
@@ -2984,41 +3003,41 @@ function doPost(e) {
         };
       }
 
-      let importedCount = 0;
-      for (let i = startIdx; i < rows.length; i++) {
-        const r = rows[i];
-        if (r.every(c => !c)) continue;
+      const imported = [];
+      for (let r = startIdx; r < rows.length; r++) {
+        const cols = rows[r];
+        if (!cols.some(c => c !== '')) continue;
 
-        let orderObj;
+        let item;
         if (colMap) {
-          const getVal = idx => (idx >= 0 && idx < r.length) ? r[idx] : '';
-          const rawSt = getVal(colMap.status);
-          const reward = toNum(getVal(colMap.reward));
-          const gas = toNum(getVal(colMap.gas));
-          const highway = toNum(getVal(colMap.highway));
-          const lunch8 = toNum(getVal(colMap.lunch8));
-          const lunch = toNum(getVal(colMap.lunch));
-          const other = toNum(getVal(colMap.other));
-          const billEx = colMap.billEx >= 0 ? toNum(getVal(colMap.billEx)) : (reward + gas + highway + lunch8 + lunch + other);
-          const billIn = colMap.billIn >= 0 ? toNum(getVal(colMap.billIn)) : Math.round(billEx * 1.1);
-          const payRew = toNum(getVal(colMap.payRew));
-          const payExp = toNum(getVal(colMap.payExp));
-          const payTotEx = colMap.payTotEx >= 0 ? toNum(getVal(colMap.payTotEx)) : (payRew + payExp);
-          const payTotIn = colMap.payTotIn >= 0 ? toNum(getVal(colMap.payTotIn)) : Math.round(payTotEx * 1.1);
+          const get = idx => (idx >= 0 && cols[idx] !== undefined) ? cols[idx] : '';
+          const rawSt = get(colMap.status);
+          const reward = toNum(get(colMap.reward));
+          const gas = toNum(get(colMap.gas));
+          const highway = toNum(get(colMap.highway));
+          const lunch8 = toNum(get(colMap.lunch8));
+          const lunch = toNum(get(colMap.lunch));
+          const other = toNum(get(colMap.other));
+          const billEx = toNum(get(colMap.billEx)) || (reward + gas + highway + lunch8 + lunch + other);
+          const billIn = toNum(get(colMap.billIn)) || Math.round(billEx * 1.1);
+          const payRew = toNum(get(colMap.payRew));
+          const payExp = toNum(get(colMap.payExp));
+          const payTotEx = toNum(get(colMap.payTotEx)) || (payRew + payExp);
+          const payTotIn = toNum(get(colMap.payTotIn)) || Math.round(payTotEx * 1.1);
 
-          orderObj = {
-            id: getVal(colMap.id) || generateOrderId(),
+          item = {
+            id: get(colMap.id) || generateOrderId(),
             status: (rawSt === '仮案件' || rawSt === 'tentative') ? 'tentative' : 'confirmed',
-            consignor: getVal(colMap.consignor),
-            client: getVal(colMap.client),
-            date: normalizeClientDate(getVal(colMap.date)),
-            type: getVal(colMap.type) || '取材',
-            companyName: getVal(colMap.company),
-            storeName: getVal(colMap.store),
-            performerOrEvent: getVal(colMap.performer),
-            managerName: getVal(colMap.manager) || '未定',
+            consignor: get(colMap.consignor),
+            client: get(colMap.client),
+            date: normalizeClientDate(get(colMap.date)),
+            type: get(colMap.type) || '取材',
+            companyName: get(colMap.company),
+            storeName: get(colMap.store),
+            performerOrEvent: get(colMap.performer),
+            managerName: get(colMap.manager) || '未定',
             rewardAmount: reward,
-            transportationCost: getVal(colMap.trans),
+            transportationCost: get(colMap.trans),
             gasolineFee: gas,
             highwayFee: highway,
             lunch8Fee: lunch8,
@@ -3030,34 +3049,40 @@ function doPost(e) {
             payExpenseExclude: payExp,
             payTotalExclude: payTotEx,
             paymentAmount: payTotIn,
-            notes: getVal(colMap.notes)
+            notes: get(colMap.notes)
           };
         } else {
-          // 見出しなしの場合：先頭列がステータスか委託元かを自動判別
-          const hasStatusCol = (r[0] === '確定' || r[0] === '仮案件');
-          const offset = hasStatusCol ? 1 : 0;
-          const reward = toNum(r[offset + 8]);
-          const gas = toNum(r[offset + 10]);
-          const highway = toNum(r[offset + 11]);
-          const lunch8 = toNum(r[offset + 12]);
-          const lunch = toNum(r[offset + 13]);
-          const other = toNum(r[offset + 14]);
-          const billEx = r[offset + 15] ? toNum(r[offset + 15]) : (reward + gas + highway + lunch8 + lunch + other);
-          const billIn = r[offset + 16] ? toNum(r[offset + 16]) : Math.round(billEx * 1.1);
+          // 見出しなし貼り付け時：スプレッドシート列順（A:管理ID, B:ステータス, C:委託元, D:依頼元, E:実施日...）または先頭が委託元の場合に自動対応
+          const startsWithId = /^ORD-/i.test(cols[0] || '');
+          const offset = startsWithId ? 0 : (cols[0] === '確定' || cols[0] === '仮案件' ? -1 : -2);
+          const c = i => (i + offset >= 0 && cols[i + offset] !== undefined) ? cols[i + offset] : '';
+          const rawSt = c(1);
+          const reward = toNum(c(10));
+          const gas = toNum(c(12));
+          const highway = toNum(c(13));
+          const lunch8 = toNum(c(14));
+          const lunch = toNum(c(15));
+          const other = toNum(c(16));
+          const billEx = toNum(c(17)) || (reward + gas + highway + lunch8 + lunch + other);
+          const billIn = toNum(c(18)) || Math.round(billEx * 1.1);
+          const payRew = toNum(c(19));
+          const payExp = toNum(c(20));
+          const payTotEx = toNum(c(21)) || (payRew + payExp);
+          const payTotIn = toNum(c(22)) || Math.round(payTotEx * 1.1);
 
-          orderObj = {
-            id: generateOrderId(),
-            status: hasStatusCol && r[0] === '仮案件' ? 'tentative' : 'confirmed',
-            consignor: r[offset] || '',
-            client: r[offset + 1] || '',
-            date: normalizeClientDate(r[offset + 2]),
-            type: r[offset + 3] || '取材',
-            companyName: r[offset + 4] || '',
-            storeName: r[offset + 5] || '',
-            performerOrEvent: r[offset + 6] || '',
-            managerName: r[offset + 7] || '未定',
+          item = {
+            id: startsWithId ? cols[0] : generateOrderId(),
+            status: (rawSt === '仮案件' || rawSt === 'tentative') ? 'tentative' : 'confirmed',
+            consignor: c(2),
+            client: c(3),
+            date: normalizeClientDate(c(4)),
+            type: c(5) || '取材',
+            companyName: c(6),
+            storeName: c(7),
+            performerOrEvent: c(8),
+            managerName: c(9) || '未定',
             rewardAmount: reward,
-            transportationCost: r[offset + 9] || '',
+            transportationCost: c(11),
             gasolineFee: gas,
             highwayFee: highway,
             lunch8Fee: lunch8,
@@ -3065,40 +3090,81 @@ function doPost(e) {
             otherExpenses: other,
             billingAmount: billEx,
             billingTaxIncluded: billIn,
-            payRewardExclude: toNum(r[offset + 17]),
-            payExpenseExclude: toNum(r[offset + 18]),
-            payTotalExclude: toNum(r[offset + 19]),
-            paymentAmount: toNum(r[offset + 20]),
-            notes: r[offset + 21] || ''
+            payRewardExclude: payRew,
+            payExpenseExclude: payExp,
+            payTotalExclude: payTotEx,
+            paymentAmount: payTotIn,
+            notes: c(23)
           };
         }
 
-        orders.unshift(orderObj);
-        learnMasterFromOrder(orderObj);
-        importedCount++;
+        if (item.consignor || item.client || item.storeName || item.performerOrEvent || item.date) {
+          imported.push(item);
+        }
       }
 
-      if (importedCount === 0) {
-        showToast('取り込めるデータ行がありませんでした', 'warning');
+      if (imported.length === 0) {
+        showToast('取り込める有効な案件データがありませんでした', 'warning');
         return;
       }
 
+      orders.push(...imported);
+      learnMastersFromOrders(imported);
       saveOrdersToStorage();
+      populateAllDropdowns();
       closeExcelPasteModal();
       renderOrders();
-      showToast(`${importedCount} 件の案件を日付を保持して取り込みました`, 'success');
-
-      if (autoSyncEnabled && gasWebAppUrl) {
-        syncToGoogleSheets(false);
-      }
+      showToast(`Excelから ${imported.length} 件を取り込みました`, 'success');
+      triggerAutoSync();
     }
 
     // =========================================================================
-    // 12. Googleスプレッドシート (GAS) 双方向同期・連携設定・CSV出力
+    // 11. Googleスプレッドシート (GAS) 双方向同期・連携設定・CSV出力
     // =========================================================================
+    function updateRealtimeBadge() {
+      const badge = document.getElementById('realtimeStatusBadge');
+      if (!badge) return;
+      if (gasWebAppUrl) {
+        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>スプレッドシート連携中';
+      } else {
+        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>ローカル保存モード';
+      }
+    }
+
+    function setSyncIndicator(text, tone = 'muted') {
+      const el = document.getElementById('syncIndicator');
+      if (!el) return;
+      const toneClass = {
+        muted: 'text-slate-500',
+        syncing: 'text-indigo-600 font-semibold',
+        success: 'text-emerald-600 font-semibold',
+        error: 'text-rose-600 font-semibold'
+      };
+      el.className = `text-[11px] transition-all ${toneClass[tone] || toneClass.muted}`;
+      el.textContent = text;
+    }
+
+    function updateEmbeddedUrlBadge() {
+      const badge = document.getElementById('embeddedUrlStatusBadge');
+      if (!badge) return;
+      if (DEFAULT_GAS_URL) {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+        badge.textContent = 'コード内に固定済み';
+      } else if (gasWebAppUrl) {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300';
+        badge.textContent = 'ブラウザ記憶済み';
+      } else {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-500 border border-slate-200';
+        badge.textContent = '未設定';
+      }
+    }
+
     function openSheetsModal() {
-      document.getElementById('gasUrlInput').value = gasWebAppUrl || '';
+      document.getElementById('gasUrlInput').value = gasWebAppUrl || DEFAULT_GAS_URL || '';
       document.getElementById('autoSyncCheck').checked = autoSyncEnabled;
+      updateEmbeddedUrlBadge();
       document.getElementById('sheetsModal').classList.remove('hidden');
     }
 
@@ -3113,23 +3179,67 @@ function doPost(e) {
         return;
       }
       gasWebAppUrl = url;
-      try {
-        localStorage.setItem(STORAGE_KEYS.GAS_URL, url);
-      } catch (e) {}
+      persistGasUrl(url);
       updateRealtimeBadge();
+      updateEmbeddedUrlBadge();
       closeSheetsModal();
-      showToast('連携URLを保存しました。シートから最新データを取得します', 'success');
+      showToast('連携URLを保存しました。次回以降も自動で連携されます', 'success');
       fetchFromGoogleSheets(true);
     }
 
     function clearGasUrl() {
       gasWebAppUrl = '';
       document.getElementById('gasUrlInput').value = '';
-      try {
-        localStorage.removeItem(STORAGE_KEYS.GAS_URL);
-      } catch (e) {}
+      clearPersistedGasUrl();
       updateRealtimeBadge();
-      showToast('連携URLをクリアしました', 'info');
+      updateEmbeddedUrlBadge();
+      showToast('保存されていた連携URLをクリアしました', 'info');
+    }
+
+    function buildConfiguredHtmlSource() {
+      const targetUrl = (document.getElementById('gasUrlInput').value.trim() || gasWebAppUrl || DEFAULT_GAS_URL || '').trim();
+      if (!targetUrl || !targetUrl.startsWith('https://script.google.com/')) {
+        showToast('先に有効なGAS WebアプリURLを入力してください', 'warning');
+        return '';
+      }
+      const rawHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const escapedUrl = targetUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return rawHtml.replace(/const DEFAULT_GAS_URL = '[^']*';/, `const DEFAULT_GAS_URL = '${escapedUrl}';`);
+    }
+
+    function copyConfiguredHtml() {
+      const html = buildConfiguredHtmlSource();
+      if (!html) return;
+      const temp = document.createElement('textarea');
+      temp.value = html;
+      temp.style.position = 'fixed';
+      temp.style.opacity = '0';
+      document.body.appendChild(temp);
+      temp.select();
+      temp.setSelectionRange(0, temp.value.length);
+      try {
+        document.execCommand('copy');
+        showToast('URL埋め込み済みのHTMLコードをコピーしました（GitHub等にそのまま貼り付け可能です）', 'success');
+      } catch (e) {
+        showToast('コピーに失敗しました。「HTMLファイルとして保存」をお試しください', 'error');
+      } finally {
+        document.body.removeChild(temp);
+      }
+    }
+
+    function downloadConfiguredHtml() {
+      const html = buildConfiguredHtmlSource();
+      if (!html) return;
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'order_manager.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('URLが固定された order_manager.html をダウンロードしました', 'success');
     }
 
     function toggleAutoSync(checked) {
@@ -3137,113 +3247,140 @@ function doPost(e) {
       try {
         localStorage.setItem(STORAGE_KEYS.AUTO_SYNC, String(autoSyncEnabled));
       } catch (e) {}
+      showToast(autoSyncEnabled ? '自動送信を有効にしました' : '自動送信をオフにしました', 'info');
     }
 
     function copyGasScript() {
-      const textarea = document.getElementById('gasScriptArea');
-      if (!textarea) return;
-      textarea.select();
-      textarea.setSelectionRange(0, textarea.value.length);
+      const area = document.getElementById('gasScriptArea');
+      if (!area) return;
+      area.select();
+      area.setSelectionRange(0, area.value.length);
       try {
         document.execCommand('copy');
         showToast('Apps Script コードをクリップボードにコピーしました', 'success');
       } catch (e) {
-        showToast('コピーに失敗しました。枠内を選択して手動でコピーしてください', 'error');
+        showToast('コピーに失敗しました。手動で選択してコピーしてください', 'error');
       }
     }
 
-    function setSyncIndicator(text, tone = 'muted') {
-      const el = document.getElementById('syncIndicator');
-      if (!el) return;
-      const colors = {
-        muted: 'text-slate-500',
-        active: 'text-indigo-600 font-semibold',
-        success: 'text-emerald-600 font-semibold',
-        error: 'text-rose-600 font-semibold'
-      };
-      el.className = `text-[11px] transition-all ${colors[tone] || colors.muted}`;
-      el.textContent = text;
-    }
-
-    async function fetchFromGoogleSheets(isManual = false) {
+    async function fetchFromGoogleSheets(manual = false) {
       if (!gasWebAppUrl) {
-        if (isManual) {
-          showToast('先に「連携設定」からGAS WebアプリURLを設定してください', 'warning');
+        if (manual) {
+          showToast('先に右上の「連携設定」からGAS WebアプリURLを設定してください', 'warning');
           openSheetsModal();
         }
         return;
       }
 
-      setSyncIndicator('スプレッドシートから取得中...', 'active');
+      setSyncIndicator('スプレッドシートから取得中...', 'syncing');
       try {
         const sep = gasWebAppUrl.includes('?') ? '&' : '?';
-        const res = await fetch(`${gasWebAppUrl}${sep}t=${Date.now()}`, { method: 'GET' });
+        const res = await fetch(`${gasWebAppUrl}${sep}_t=${Date.now()}`, {
+          method: 'GET',
+          cache: 'no-store'
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-
         if (data.status !== 'ok' || !Array.isArray(data.orders)) {
-          throw new Error(data.message || 'データ形式エラー');
+          throw new Error(data.message || '不正なレスポンス形式です');
         }
 
-        const usedIds = new Set();
-        orders = data.orders.map((o, idx) => {
-          let oid = String(o.id || '').trim() || `ORD-SHEET-${idx + 1}`;
-          if (usedIds.has(oid)) {
-            oid = `${oid}-${idx + 1}`;
-          }
-          usedIds.add(oid);
-
-          const fixedDate = normalizeClientDate(o.date) || (o.date ? String(o.date).trim() : '');
-          const cleaned = {
-            ...o,
-            id: oid,
-            date: fixedDate
+        const existingMap = new Map(orders.map(o => [o.id, o]));
+        const fetchedOrders = data.orders.map(item => {
+          const normD = normalizeClientDate(item.date);
+          const prev = existingMap.get(item.id);
+          return {
+            ...item,
+            date: normD || (prev && prev.date && !isAbnormalDate(prev.date) ? prev.date : '')
           };
-          learnMasterFromOrder(cleaned);
-          return cleaned;
         });
 
+        orders = fetchedOrders;
+        learnMastersFromOrders(orders);
         saveOrdersToStorage();
+        populateAllDropdowns();
         renderOrders();
 
-        // 診断バナーの更新
-        const banner = document.getElementById('gasDateGuideBanner');
-        const detail = document.getElementById('gasDateGuideDetail');
+        const guideBanner = document.getElementById('gasDateGuideBanner');
+        const guideDetail = document.getElementById('gasDateGuideDetail');
         const diagBox = document.getElementById('gasDiagnosticBox');
         if (data.diagnostic && (data.diagnostic.detectedDateCol === -1 || data.diagnostic.abnormalDateCount > 0)) {
-          banner.classList.remove('hidden');
-          detail.textContent = data.diagnostic.detectedDateCol === -1
-            ? 'シート内に「実施日」見出し列が見つかりませんでした。最新GASコードへ更新してください。'
-            : `シート上に ${data.diagnostic.abnormalDateCount} 件の###または異常日付が検出されました。「シート修復」またはGAS更新をお試しください。`;
+          guideBanner.classList.remove('hidden');
+          guideDetail.textContent = data.diagnostic.detectedDateCol === -1
+            ? 'シートの見出し行に「実施日」列が検出されませんでした。最新GASコードへの更新をご確認いただくか、見出し名をご確認ください。'
+            : `シート上に ${data.diagnostic.abnormalDateCount} 件の異常日付または###表示が検出されました。「シート修復」ボタンで一括修復できます。`;
           diagBox.classList.remove('hidden');
-          diagBox.textContent = JSON.stringify({ sheetName: data.sheetName, ...data.diagnostic });
-        } else {
-          banner.classList.add('hidden');
+          diagBox.textContent = `診断情報: シート名=${data.sheetName || '-'} / 見出し行=${data.diagnostic.headerRow}行目 / 実施日列=${data.diagnostic.detectedDateCol}列目 / 未設定=${data.diagnostic.emptyDateRowCount}件`;
+        } else if (guideBanner) {
+          guideBanner.classList.add('hidden');
         }
 
         const nowStr = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-        setSyncIndicator(`取得完了 (${nowStr})`, 'success');
-        if (isManual) {
-          showToast(`スプレッドシートから ${orders.length} 件を取得しました`, 'success');
-        }
+        setSyncIndicator(`最終取得: ${nowStr}（${orders.length}件）`, 'success');
+        if (manual) showToast(`スプレッドシートから ${orders.length} 件を取得しました`, 'success');
       } catch (err) {
-        setSyncIndicator('取得エラー', 'error');
+        setSyncIndicator('取得エラー（URL・デプロイ設定を確認してください）', 'error');
+        if (manual) showToast(`取得に失敗しました: ${err.message}`, 'error');
+      }
+    }
+
+    function triggerAutoSync() {
+      if (!gasWebAppUrl || !autoSyncEnabled) return;
+      syncToGoogleSheets(false);
+    }
+
+    async function syncToGoogleSheets(isManual = false) {
+      if (!gasWebAppUrl) {
         if (isManual) {
-          showToast(`シートからの取得に失敗しました: ${err.message}`, 'error');
+          showToast('先に右上の「連携設定」からGAS WebアプリURLを設定してください', 'warning');
+          openSheetsModal();
+        }
+        return;
+      }
+
+      if (isSyncing) {
+        pendingSync = true;
+        return;
+      }
+
+      isSyncing = true;
+      setSyncIndicator('スプレッドシートへ送信中...', 'syncing');
+
+      try {
+        await fetch(gasWebAppUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'syncOrders',
+            orders
+          })
+        });
+        const nowStr = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        setSyncIndicator(`最終送信: ${nowStr}（${orders.length}件）`, 'success');
+        if (isManual) showToast(`スプレッドシートへ ${orders.length} 件を送信しました`, 'success');
+      } catch (err) {
+        setSyncIndicator('送信エラーが発生しました', 'error');
+        if (isManual) showToast(`送信に失敗しました: ${err.message}`, 'error');
+      } finally {
+        isSyncing = false;
+        if (pendingSync) {
+          pendingSync = false;
+          syncToGoogleSheets(false);
         }
       }
     }
 
     function syncAllToSheetsManual() {
       if (!gasWebAppUrl) {
-        showToast('先に「連携設定」からGAS WebアプリURLを設定してください', 'warning');
+        showToast('先に右上の「連携設定」からGAS WebアプリURLを設定してください', 'warning');
         openSheetsModal();
         return;
       }
       const emptyCount = orders.filter(o => !o.date).length;
       if (emptyCount > 0) {
         document.getElementById('syncEmptyDateConfirmMessage').textContent =
-          `現在、実施日が未設定（空欄）の案件が ${emptyCount} 件あります。先に日付を入力しますか？`;
+          `現在、実施日が空欄（未設定）の案件が ${emptyCount} 件あります。先に未設定の案件を確認して日付を入力しますか？`;
         document.getElementById('syncEmptyDateConfirmModal').classList.remove('hidden');
         return;
       }
@@ -3259,7 +3396,7 @@ function doPost(e) {
       filterMissingDateOnly = true;
       filterAbnormalDateOnly = false;
       renderOrders();
-      showToast('実施日が未設定の案件を表示しました。各カードから日付を選択してください', 'info');
+      showToast('実施日が未設定の案件のみを表示しました', 'info');
     }
 
     function forceSyncAllToSheets() {
@@ -3267,76 +3404,29 @@ function doPost(e) {
       syncToGoogleSheets(true);
     }
 
-    async function syncToGoogleSheets(isManual = false) {
-      if (!gasWebAppUrl) return;
-      if (isSyncing) {
-        pendingSync = true;
-        return;
-      }
-
-      isSyncing = true;
-      setSyncIndicator('スプレッドシートへ送信中...', 'active');
-
-      try {
-        const res = await fetch(gasWebAppUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'syncAll', orders })
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (data.status !== 'ok') throw new Error(data.message || '同期エラー');
-
-        const nowStr = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-        setSyncIndicator(`同期済み (${nowStr})`, 'success');
-        if (isManual) {
-          showToast(`スプレッドシートへ全 ${orders.length} 件を送信しました`, 'success');
-        }
-      } catch (err) {
-        setSyncIndicator('送信エラー', 'error');
-        if (isManual) {
-          showToast(`スプレッドシートへの送信に失敗しました: ${err.message}`, 'error');
-        }
-      } finally {
-        isSyncing = false;
-        if (pendingSync) {
-          pendingSync = false;
-          syncToGoogleSheets(false);
-        }
-      }
-    }
-
     async function repairSheetHashesRemote() {
       if (!gasWebAppUrl) {
-        showToast('先に「連携設定」からGAS WebアプリURLを設定してください', 'warning');
+        showToast('先に右上の「連携設定」からGAS WebアプリURLを設定してください', 'warning');
         openSheetsModal();
         return;
       }
-      setSyncIndicator('シートの###・日付を修復中...', 'active');
+      setSyncIndicator('スプレッドシートの###・異常日付を修復中...', 'syncing');
       try {
-        const res = await fetch(gasWebAppUrl, {
+        await fetch(gasWebAppUrl, {
           method: 'POST',
+          mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'fixDates' })
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (data.status !== 'ok') throw new Error(data.message || '修復エラー');
-
-        showToast('スプレッドシートの###・日付書式を修復しました', 'success');
-        await fetchFromGoogleSheets(false);
+        showToast('シート修復コマンドを送信しました。最新データを再取得します...', 'success');
+        setTimeout(() => fetchFromGoogleSheets(true), 1500);
       } catch (err) {
         setSyncIndicator('シート修復エラー', 'error');
-        showToast(`リモート修復に失敗しました: ${err.message}`, 'error');
+        showToast(`シート修復に失敗しました: ${err.message}`, 'error');
       }
     }
 
     function exportCSV() {
-      if (orders.length === 0) {
-        showToast('出力する受注データがありません', 'warning');
-        return;
-      }
-
       const headers = [
         '管理ID', 'ステータス', '委託元', '依頼元', '実施日', '種別', '企業名', '店舗名',
         '演者名または取材名', '担当者', '報酬', '交通費', 'ガソリン代', '高速代',
@@ -3345,7 +3435,13 @@ function doPost(e) {
         '特記事項'
       ];
 
-      const escCsv = v => `"${String(v === null || v === undefined ? '' : v).replace(/"/g, '""')}"`;
+      const escCsv = v => {
+        const s = String(v === null || v === undefined ? '' : v);
+        if (s.includes('"') || s.includes(',') || s.includes('\n')) {
+          return `"${s.replace(/"/g, '""')}"`;
+        }
+        return s;
+      };
 
       const lines = [headers.map(escCsv).join(',')];
       orders.forEach(o => {
@@ -3377,12 +3473,12 @@ function doPost(e) {
         ].map(escCsv).join(','));
       });
 
-      const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-      const blob = new Blob([bom, lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const bom = '\uFEFF';
+      const blob = new Blob([bom + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `orders_${getLocalTodayYMD()}.csv`;
+      a.download = `受注一覧_${getLocalTodayYMD()}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -3391,43 +3487,32 @@ function doPost(e) {
     }
 
     // =========================================================================
-    // 13. アプリケーション起動処理
+    // 12. 初期化処理 & キーボード操作
     // =========================================================================
-    function initApp() {
+    window.addEventListener('DOMContentLoaded', () => {
       loadStateFromStorage();
-      updateRealtimeBadge();
+      learnMastersFromOrders(orders);
       populateAllDropdowns();
-
-      const dateInput = document.getElementById('date');
-      if (dateInput && !dateInput.value) {
-        dateInput.value = getLocalTodayYMD();
-      }
-
-      // Escapeキーで開いているモーダルを閉じる
-      document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') {
-          closeEditModal();
-          closeMasterModal();
-          closeDeleteConfirmModal();
-          closeSyncEmptyDateModal();
-          closeClearAbnormalDateModal();
-          closeExcelPasteModal();
-          closeSheetsModal();
-        }
-      });
-
+      updateRealtimeBadge();
+      updateEmbeddedUrlBadge();
       renderOrders();
 
       if (gasWebAppUrl) {
         fetchFromGoogleSheets(false);
       }
-    }
+    });
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-      initApp();
-    }
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        closeEditModal();
+        closeMasterModal();
+        closeDeleteConfirmModal();
+        closeSyncEmptyDateModal();
+        closeClearAbnormalDateModal();
+        closeExcelPasteModal();
+        closeSheetsModal();
+      }
+    });
   </script>
 </body>
-</html>
+</html>[^\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
