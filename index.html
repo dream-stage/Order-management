@@ -118,14 +118,14 @@
               <label class="block text-xs font-semibold text-slate-700 mb-1">委託元 <span class="text-rose-500">*</span></label>
               <select id="consignorSelect" onchange="syncSelectToInput('consignorSelect', 'consignor'); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none mb-1">
               </select>
-              <input type="text" id="consignor" required placeholder="例: ユナイト"
+              <input type="text" id="consignor" required oninput="updateInputUndecidedColor(this)" placeholder="例: ユナイト"
                 class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">依頼元 <span class="text-rose-500">*</span></label>
               <select id="clientSelect" onchange="syncSelectToInput('clientSelect', 'client'); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none mb-1">
               </select>
-              <input type="text" id="client" required placeholder="例: アツ姫"
+              <input type="text" id="client" required oninput="updateInputUndecidedColor(this)" placeholder="例: アツ姫"
                 class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
             </div>
           </div>
@@ -147,7 +147,7 @@
                 <option value="販売会">販売会</option>
                 <option value="__DIRECT__">＋ 直接入力（新規追加）</option>
               </select>
-              <input type="text" id="typeInput" value="" placeholder="種別を直接入力"
+              <input type="text" id="typeInput" value="" oninput="updateInputUndecidedColor(this)" placeholder="種別を直接入力"
                 class="hidden w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
             </div>
           </div>
@@ -162,7 +162,7 @@
               <select id="companySelect" onchange="onCompanySelectChange(); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium">
                 <option value="" class="text-slate-400">-- 企業候補から選択 --</option>
               </select>
-              <input type="text" id="companyInput" oninput="onCompanyInputChange()" placeholder="直接入力または選択した企業名"
+              <input type="text" id="companyInput" oninput="onCompanyInputChange(); updateInputUndecidedColor(this);" placeholder="直接入力または選択した企業名"
                 class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
             </div>
             <div>
@@ -173,7 +173,7 @@
               <select id="storeSelect" disabled onchange="syncSelectToInput('storeSelect', 'storeInput'); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium disabled:cursor-not-allowed transition-colors">
                 <option value="" class="text-slate-400">-- 先に上の「企業名」を選択してください --</option>
               </select>
-              <input type="text" id="storeInput" placeholder="直接入力または選択した店舗名"
+              <input type="text" id="storeInput" oninput="updateInputUndecidedColor(this)" placeholder="直接入力または選択した店舗名"
                 class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
             </div>
           </div>
@@ -184,7 +184,7 @@
             <select id="performerSelect" onchange="syncSelectToInput('performerSelect', 'performerOrEvent'); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium">
               <option value="" class="text-slate-400">-- 演者名または取材名を選択 --</option>
             </select>
-            <input type="text" id="performerOrEvent" placeholder="直接入力または選択した演者名・取材名"
+            <input type="text" id="performerOrEvent" oninput="updateInputUndecidedColor(this)" placeholder="直接入力または選択した演者名・取材名"
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
           </div>
 
@@ -194,7 +194,7 @@
             <select id="managerSelect" onchange="onManagerSelectChange(); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium">
               <option value="" class="text-slate-400">担当者を選択</option>
             </select>
-            <input type="text" id="managerName" placeholder="直接入力または未定"
+            <input type="text" id="managerName" oninput="updateInputUndecidedColor(this)" placeholder="直接入力または未定"
               class="hidden w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
           </div>
 
@@ -214,6 +214,7 @@
                 <option value="" selected class="text-slate-400">交通費を選択</option>
                 <option value="実費">実費</option>
                 <option value="込み">込み</option>
+                <option value="未定">未定</option>
               </select>
             </div>
           </div>
@@ -327,7 +328,7 @@
           <!-- 特記事項 -->
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">特記事項</label>
-            <textarea id="notes" rows="2" placeholder="特記事項があれば入力"
+            <textarea id="notes" rows="2" oninput="updateInputUndecidedColor(this)" placeholder="特記事項があれば入力"
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none resize-none"></textarea>
           </div>
 
@@ -569,14 +570,14 @@
             <label class="block text-xs font-semibold text-slate-700 mb-1">委託元 <span class="text-rose-500">*</span></label>
             <select id="editConsignorSelect" onchange="syncSelectToInput('editConsignorSelect', 'editConsignor'); updateSelectColor(this);" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none mb-1">
             </select>
-            <input type="text" id="editConsignor" required
+            <input type="text" id="editConsignor" required oninput="updateInputUndecidedColor(this)"
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">依頼元 <span class="text-rose-500">*</span></label>
             <select id="editClientSelect" onchange="syncSelectToInput('editClientSelect', 'editClient'); updateSelectColor(this);" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none mb-1">
             </select>
-            <input type="text" id="editClient" required
+            <input type="text" id="editClient" required oninput="updateInputUndecidedColor(this)"
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
           </div>
         </div>
@@ -598,7 +599,7 @@
               <option value="販売会">販売会</option>
               <option value="__DIRECT__">＋ 直接入力（新規追加）</option>
             </select>
-            <input type="text" id="editType" placeholder="種別を直接入力"
+            <input type="text" id="editType" oninput="updateInputUndecidedColor(this)" placeholder="種別を直接入力"
               class="hidden w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
           </div>
         </div>
@@ -607,13 +608,13 @@
         <div class="grid grid-cols-2 gap-2 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200/80">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">企業名</label>
-            <input type="text" id="editCompany" list="editCompanyList" oninput="updateEditStoreDatalist(this.value)" placeholder="企業名"
+            <input type="text" id="editCompany" list="editCompanyList" oninput="updateEditStoreDatalist(this.value); updateInputUndecidedColor(this);" placeholder="企業名"
               class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
             <datalist id="editCompanyList"></datalist>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">店舗名</label>
-            <input type="text" id="editStore" list="editStoreList" placeholder="店舗名"
+            <input type="text" id="editStore" list="editStoreList" oninput="updateInputUndecidedColor(this)" placeholder="店舗名"
               class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
             <datalist id="editStoreList"></datalist>
           </div>
@@ -625,7 +626,7 @@
           <select id="editPerformerSelect" onchange="syncSelectToInput('editPerformerSelect', 'editPerformer'); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium">
             <option value="" class="text-slate-400">-- 演者名または取材名を選択 --</option>
           </select>
-          <input type="text" id="editPerformer" placeholder="直接入力または選択した演者名・取材名"
+          <input type="text" id="editPerformer" oninput="updateInputUndecidedColor(this)" placeholder="直接入力または選択した演者名・取材名"
             class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
         </div>
 
@@ -652,6 +653,7 @@
               <option value="" class="text-slate-400">交通費を選択</option>
               <option value="実費">実費</option>
               <option value="込み">込み</option>
+              <option value="未定">未定</option>
             </select>
           </div>
         </div>
@@ -750,7 +752,7 @@
         <!-- 特記事項 -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">特記事項</label>
-          <textarea id="editNotes" rows="2" placeholder="特記事項があれば入力"
+          <textarea id="editNotes" rows="2" oninput="updateInputUndecidedColor(this)" placeholder="特記事項があれば入力"
             class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none resize-none"></textarea>
         </div>
 
@@ -1867,6 +1869,97 @@ function doPost(e) {
       return !isValidCalendarDate(Number(m[1]), Number(m[2]), Number(m[3]));
     }
 
+    function normalizeClientDate(val) {
+      if (val === null || val === undefined || val === '') return '';
+      if (typeof val === 'number') {
+        if (val >= 20200101 && val <= 20351231) {
+          const s8 = String(Math.floor(val));
+          const y8 = Number(s8.slice(0, 4));
+          const m8 = Number(s8.slice(4, 6));
+          const d8 = Number(s8.slice(6, 8));
+          if (isValidCalendarDate(y8, m8, d8)) {
+            return `${s8.slice(0, 4)}-${s8.slice(4, 6)}-${s8.slice(6, 8)}`;
+          }
+        }
+        // Excelシリアル値（2020-01-01 = 43831 ～ 2035-12-31 = 49674）
+        if (val >= 43831 && val <= 49674) {
+          const utcMs = Math.round((val - 25569) * 86400 * 1000);
+          const dt = new Date(utcMs);
+          const ys = dt.getUTCFullYear();
+          const ms = dt.getUTCMonth() + 1;
+          const ds = dt.getUTCDate();
+          if (isValidCalendarDate(ys, ms, ds)) {
+            return `${ys}-${String(ms).padStart(2, '0')}-${String(ds).padStart(2, '0')}`;
+          }
+        }
+        return '';
+      }
+
+      const str = String(val)
+        .replace(/^'+/, '')
+        .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+        .replace(/[\u3000\s]+/g, ' ')
+        .trim();
+
+      if (!str || /^#+$/.test(str)) return '';
+
+      // 8桁数字
+      const m8str = str.match(/^(20\d{2})(\d{2})(\d{2})$/);
+      if (m8str) {
+        const y = Number(m8str[1]);
+        const m = Number(m8str[2]);
+        const d = Number(m8str[3]);
+        return isValidCalendarDate(y, m, d) ? `${m8str[1]}-${m8str[2]}-${m8str[3]}` : '';
+      }
+
+      // YYYY/MM/DD, YYYY-MM-DD, YYYY年M月D日
+      const mYmd = str.match(/(\d{4})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
+      if (mYmd) {
+        const y = Number(mYmd[1]);
+        const m = Number(mYmd[2]);
+        const d = Number(mYmd[3]);
+        return isValidCalendarDate(y, m, d)
+          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+          : '';
+      }
+
+      // 和暦（令和）
+      const mReiwa = str.match(/(?:令和|R|r)\s*(\d{1,2})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
+      if (mReiwa) {
+        const y = 2018 + Number(mReiwa[1]);
+        const m = Number(mReiwa[2]);
+        const d = Number(mReiwa[3]);
+        return isValidCalendarDate(y, m, d)
+          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+          : '';
+      }
+
+      // 英語月表記（01-Aug-2026 等）
+      const monthMap = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+      const mEng = str.match(/(\d{1,2})[\s\-\/]([A-Za-z]{3,9})[\s\-\/,]+(\d{4})/);
+      if (mEng) {
+        const m = monthMap[mEng[2].slice(0, 3).toLowerCase()];
+        const y = Number(mEng[3]);
+        const d = Number(mEng[1]);
+        return (m && isValidCalendarDate(y, m, d))
+          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+          : '';
+      }
+
+      // 2桁年（26/8/1 等）
+      const m2y = str.match(/^(\d{2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})$/);
+      if (m2y) {
+        const y = 2000 + Number(m2y[1]);
+        const m = Number(m2y[2]);
+        const d = Number(m2y[3]);
+        return isValidCalendarDate(y, m, d)
+          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+          : '';
+      }
+
+      return '';
+    }
+
     function formatDateWithWeekday(dateStr) {
       const s = String(dateStr || '').trim();
       const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -1884,43 +1977,67 @@ function doPost(e) {
       return '¥' + n.toLocaleString('ja-JP');
     }
 
+    function isUndecidedText(val) {
+      const s = String(val || '').trim();
+      return !s || s.includes('未定') || s.includes('未設定');
+    }
+
     function updateSelectColor(selectEl) {
       if (!selectEl) return;
       if (!selectEl.value) {
         selectEl.classList.add('select-subtle-empty');
+        selectEl.classList.remove('text-rose-600', 'font-bold');
       } else {
         selectEl.classList.remove('select-subtle-empty');
+        if (selectEl.value.includes('未定')) {
+          selectEl.classList.add('text-rose-600', 'font-bold');
+        } else {
+          selectEl.classList.remove('text-rose-600', 'font-bold');
+        }
+      }
+    }
+
+    function updateInputUndecidedColor(inputEl) {
+      if (!inputEl) return;
+      const val = String(inputEl.value || '').trim();
+      if (val && val.includes('未定')) {
+        inputEl.classList.add('text-rose-600', 'font-bold');
+        inputEl.classList.remove('text-slate-800');
+      } else {
+        inputEl.classList.remove('text-rose-600', 'font-bold');
+        inputEl.classList.add('text-slate-800');
       }
     }
 
     function showToast(message, type = 'info') {
       const container = document.getElementById('toastContainer');
       if (!container) return;
+
       const styles = {
         success: 'bg-emerald-600 text-white border-emerald-700',
-        warning: 'bg-amber-600 text-white border-amber-700',
         error: 'bg-rose-600 text-white border-rose-700',
+        warning: 'bg-amber-500 text-white border-amber-600',
         info: 'bg-slate-800 text-white border-slate-900'
       };
       const icons = {
         success: 'ph-check-circle',
+        error: 'ph-warning-octagon',
         warning: 'ph-warning',
-        error: 'ph-x-circle',
         info: 'ph-info'
       };
+
       const toast = document.createElement('div');
-      toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${styles[type] || styles.info}`;
-      toast.innerHTML = `<i class="ph ${icons[type] || icons.info} text-base shrink-0"></i><span class="leading-snug">${escapeHtml(message)}</span>`;
+      toast.className = `pointer-events-auto flex items-center space-x-2 px-3.5 py-2.5 rounded-xl border shadow-lg text-xs font-semibold transition-all duration-200 ${styles[type] || styles.info}`;
+      toast.innerHTML = `<i class="ph ${icons[type] || icons.info} text-base shrink-0"></i><span>${escapeHtml(message)}</span>`;
       container.appendChild(toast);
-      requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      });
+
       setTimeout(() => {
-        toast.classList.add('opacity-0', 'translate-y-2');
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
         setTimeout(() => {
           if (toast.parentNode) toast.parentNode.removeChild(toast);
-        }, 300);
-      }, 3500);
+        }, 200);
+      }, 3200);
     }
 
     function showModalById(id) {
@@ -1943,14 +2060,20 @@ function doPost(e) {
       }
     }
 
+    // =========================================================================
+    // 4. 永続ストレージ・GAS URL解決
+    // =========================================================================
     function isValidGasWebAppUrl(url) {
       const s = String(url || '').trim();
-      return /^https:\/\/script\.google\.com\/(?:a\/macros\/[^\/]+\/s\/|macros\/s\/)[A-Za-z0-9_-]+\/exec(?:\?.*)?$/.test(s);
+      return /^https:\/\/script\.google\.com\/(?:a\/[^\/]+\/)?macros\/s\/[A-Za-z0-9_-]+\/exec(?:\?.*)?$/i.test(s);
     }
 
-    function saveGasUrlToIdb(url) {
-      try {
-        if (!window.indexedDB) return;
+    function openGasIdb() {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error('No IndexedDB'));
+          return;
+        }
         const req = indexedDB.open(GAS_IDB_CONFIG.DB_NAME, 1);
         req.onupgradeneeded = e => {
           const db = e.target.result;
@@ -1958,209 +2081,91 @@ function doPost(e) {
             db.createObjectStore(GAS_IDB_CONFIG.STORE_NAME);
           }
         };
-        req.onsuccess = e => {
-          const db = e.target.result;
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+      });
+    }
+
+    async function saveGasUrlToIdb(url) {
+      try {
+        const db = await openGasIdb();
+        await new Promise((resolve, reject) => {
           const tx = db.transaction(GAS_IDB_CONFIG.STORE_NAME, 'readwrite');
           tx.objectStore(GAS_IDB_CONFIG.STORE_NAME).put(url, GAS_IDB_CONFIG.KEY);
-        };
+          tx.oncomplete = () => resolve();
+          tx.onerror = e => reject(e.target.error);
+        });
       } catch (_) {}
     }
 
-    function loadGasUrlFromIdb() {
-      return new Promise(resolve => {
-        try {
-          if (!window.indexedDB) {
-            resolve('');
-            return;
-          }
-          const req = indexedDB.open(GAS_IDB_CONFIG.DB_NAME, 1);
-          req.onupgradeneeded = e => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains(GAS_IDB_CONFIG.STORE_NAME)) {
-              db.createObjectStore(GAS_IDB_CONFIG.STORE_NAME);
-            }
-          };
-          req.onsuccess = e => {
-            const db = e.target.result;
-            const tx = db.transaction(GAS_IDB_CONFIG.STORE_NAME, 'readonly');
-            const getReq = tx.objectStore(GAS_IDB_CONFIG.STORE_NAME).get(GAS_IDB_CONFIG.KEY);
-            getReq.onsuccess = () => resolve(String(getReq.result || '').trim());
-            getReq.onerror = () => resolve('');
-          };
-          req.onerror = () => resolve('');
-        } catch (_) {
-          resolve('');
-        }
-      });
-    }
-
-    function normalizeClientDate(val) {
-      if (val === null || val === undefined || val === '') return '';
-      if (val instanceof Date && !isNaN(val.getTime())) {
-        const y = val.getFullYear();
-        const m = val.getMonth() + 1;
-        const d = val.getDate();
-        return isValidCalendarDate(y, m, d)
-          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-          : '';
-      }
-
-      if (typeof val === 'number') {
-        if (val >= 20200101 && val <= 20351231) {
-          const s8 = String(Math.floor(val));
-          const y8 = Number(s8.slice(0, 4));
-          const m8 = Number(s8.slice(4, 6));
-          const d8 = Number(s8.slice(6, 8));
-          return isValidCalendarDate(y8, m8, d8) ? `${s8.slice(0, 4)}-${s8.slice(4, 6)}-${s8.slice(6, 8)}` : '';
-        }
-        // Excelシリアル値 (2020-01-01 = 43831 〜 2035-12-31 = 49674)
-        if (val >= 43831 && val <= 49674) {
-          const utcMs = Math.round((val - 25569) * 86400 * 1000);
-          const dt = new Date(utcMs);
-          const ys = dt.getUTCFullYear();
-          const ms = dt.getUTCMonth() + 1;
-          const ds = dt.getUTCDate();
-          return isValidCalendarDate(ys, ms, ds)
-            ? `${ys}-${String(ms).padStart(2, '0')}-${String(ds).padStart(2, '0')}`
-            : '';
-        }
+    async function loadGasUrlFromIdb() {
+      try {
+        const db = await openGasIdb();
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction(GAS_IDB_CONFIG.STORE_NAME, 'readonly');
+          const req = tx.objectStore(GAS_IDB_CONFIG.STORE_NAME).get(GAS_IDB_CONFIG.KEY);
+          req.onsuccess = () => resolve(req.result || '');
+          req.onerror = e => reject(e.target.error);
+        });
+      } catch (_) {
         return '';
       }
-
-      const str = String(val)
-        .replace(/^'+/, '')
-        .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-        .replace(/[\u3000\s]+/g, ' ')
-        .trim();
-
-      if (!str || /^#+$/.test(str)) return '';
-
-      // 5桁シリアル文字列
-      if (/^\d{5}$/.test(str)) {
-        const num = Number(str);
-        if (num >= 43831 && num <= 49674) {
-          return normalizeClientDate(num);
-        }
-      }
-
-      // 8桁数字
-      const m8 = str.match(/^(20\d{2})(\d{2})(\d{2})$/);
-      if (m8) {
-        return isValidCalendarDate(Number(m8[1]), Number(m8[2]), Number(m8[3]))
-          ? `${m8[1]}-${m8[2]}-${m8[3]}`
-          : '';
-      }
-
-      // YYYY/MM/DD or YYYY-MM-DD or YYYY年MM月DD日
-      const mYmd = str.match(/(\d{4})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
-      if (mYmd) {
-        let yy = Number(mYmd[1]);
-        const mm = Number(mYmd[2]);
-        const dd = Number(mYmd[3]);
-        if (yy >= 1920 && yy <= 1935) yy += 100;
-        return isValidCalendarDate(yy, mm, dd)
-          ? `${yy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
-          : '';
-      }
-
-      // 和暦（令和）
-      const mReiwa = str.match(/(?:令和|R|r)\s*(\d{1,2})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
-      if (mReiwa) {
-        const ry = 2018 + Number(mReiwa[1]);
-        const rm = Number(mReiwa[2]);
-        const rd = Number(mReiwa[3]);
-        return isValidCalendarDate(ry, rm, rd)
-          ? `${ry}-${String(rm).padStart(2, '0')}-${String(rd).padStart(2, '0')}`
-          : '';
-      }
-
-      // 英語月表記（01-Aug-2026 等）
-      const monthMap = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
-      const mEng = str.match(/(\d{1,2})[\s\-\/]([A-Za-z]{3,9})[\s\-\/,]+(\d{4})/);
-      if (mEng) {
-        const em = monthMap[mEng[2].slice(0, 3).toLowerCase()];
-        const ey = Number(mEng[3]);
-        const ed = Number(mEng[1]);
-        return (em && isValidCalendarDate(ey, em, ed))
-          ? `${ey}-${String(em).padStart(2, '0')}-${String(ed).padStart(2, '0')}`
-          : '';
-      }
-
-      // 2桁年（26/8/1 など）
-      const m2y = str.match(/^(\d{2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})$/);
-      if (m2y) {
-        const y2 = 2000 + Number(m2y[1]);
-        const m2 = Number(m2y[2]);
-        const d2 = Number(m2y[3]);
-        return isValidCalendarDate(y2, m2, d2)
-          ? `${y2}-${String(m2).padStart(2, '0')}-${String(d2).padStart(2, '0')}`
-          : '';
-      }
-
-      return '';
     }
 
-    function sortOrdersList(list) {
-      return [...list].sort((a, b) => {
-        const da = a.date || '9999-99-99';
-        const db = b.date || '9999-99-99';
-        if (da !== db) return da.localeCompare(db, 'ja');
-        const ta = a.type || '';
-        const tb = b.type || '';
-        if (ta !== tb) return ta.localeCompare(tb, 'ja');
-        const ma = a.managerName || '';
-        const mb = b.managerName || '';
-        if (ma !== mb) return ma.localeCompare(mb, 'ja');
-        const ca = stripCompanyPrefix(a.companyName);
-        const cb = stripCompanyPrefix(b.companyName);
-        if (ca !== cb) return ca.localeCompare(cb, 'ja');
-        const sa = a.storeName || '';
-        const sb = b.storeName || '';
-        if (sa !== sb) return sa.localeCompare(sb, 'ja');
-        return (a.performerOrEvent || '').localeCompare(b.performerOrEvent || '', 'ja');
-      });
-    }
-
-    // =========================================================================
-    // 4. ストレージ永続化 & GAS連携URL解決
-    // =========================================================================
     function persistGasUrlEverywhere(url) {
       const clean = String(url || '').trim();
-      try { localStorage.setItem(STORAGE_KEYS.GAS_URL, clean); } catch (_) {}
-      try { sessionStorage.setItem(STORAGE_KEYS.GAS_URL, clean); } catch (_) {}
       try {
         if (clean) {
-          window.name = 'ORDER_MANAGER_GAS:' + clean;
-        } else if (window.name && window.name.startsWith('ORDER_MANAGER_GAS:')) {
-          window.name = '';
-        }
-      } catch (_) {}
-      try {
-        if (clean) {
-          document.cookie = `om_gas_url=${encodeURIComponent(clean)}; path=/; max-age=31536000; SameSite=Lax`;
+          localStorage.setItem(STORAGE_KEYS.GAS_URL, clean);
         } else {
-          document.cookie = 'om_gas_url=; path=/; max-age=0; SameSite=Lax';
+          localStorage.removeItem(STORAGE_KEYS.GAS_URL);
         }
       } catch (_) {}
-      saveGasUrlToIdb(clean);
+
       try {
         if (clean) {
-          history.replaceState(null, '', '#gas=' + encodeURIComponent(clean));
-        } else if (location.hash && location.hash.startsWith('#gas=')) {
+          sessionStorage.setItem(STORAGE_KEYS.GAS_URL, clean);
+        } else {
+          sessionStorage.removeItem(STORAGE_KEYS.GAS_URL);
+        }
+      } catch (_) {}
+
+      try {
+        window.name = clean ? `GAS_URL:${clean}` : '';
+      } catch (_) {}
+
+      try {
+        if (clean) {
+          document.cookie = `order_mgr_gas=${encodeURIComponent(clean)}; max-age=31536000; path=/; SameSite=Lax`;
+        } else {
+          document.cookie = 'order_mgr_gas=; max-age=0; path=/; SameSite=Lax';
+        }
+      } catch (_) {}
+
+      try {
+        if (clean) {
+          history.replaceState(null, '', `#gas=${encodeURIComponent(clean)}`);
+        } else if (location.hash.startsWith('#gas=')) {
           history.replaceState(null, '', location.pathname + location.search);
         }
       } catch (_) {}
+
+      saveGasUrlToIdb(clean);
     }
 
     function resolveInitialGasUrl() {
-      // 1. URLクエリ / ハッシュ（明示的パラメータ）
+      // 1. URLクエリパラメータ (?gas=...) またはハッシュ (#gas=...)
       try {
         const params = new URLSearchParams(location.search);
-        const qGas = params.get('gas');
-        if (isValidGasWebAppUrl(qGas)) return qGas.trim();
-        if (location.hash && location.hash.startsWith('#gas=')) {
-          const hGas = decodeURIComponent(location.hash.slice(5));
-          if (isValidGasWebAppUrl(hGas)) return hGas.trim();
+        const qUrl = params.get('gas');
+        if (isValidGasWebAppUrl(qUrl)) return qUrl.trim();
+      } catch (_) {}
+
+      try {
+        if (location.hash && location.hash.includes('gas=')) {
+          const hParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+          const hUrl = hParams.get('gas');
+          if (isValidGasWebAppUrl(hUrl)) return hUrl.trim();
         }
       } catch (_) {}
 
@@ -2174,21 +2179,24 @@ function doPost(e) {
         const ls = localStorage.getItem(STORAGE_KEYS.GAS_URL);
         if (isValidGasWebAppUrl(ls)) return ls.trim();
       } catch (_) {}
+
       try {
         const ss = sessionStorage.getItem(STORAGE_KEYS.GAS_URL);
         if (isValidGasWebAppUrl(ss)) return ss.trim();
       } catch (_) {}
+
       try {
-        if (window.name && window.name.startsWith('ORDER_MANAGER_GAS:')) {
-          const wn = window.name.slice('ORDER_MANAGER_GAS:'.length);
-          if (isValidGasWebAppUrl(wn)) return wn.trim();
+        if (window.name && window.name.startsWith('GAS_URL:')) {
+          const wn = window.name.slice(8).trim();
+          if (isValidGasWebAppUrl(wn)) return wn;
         }
       } catch (_) {}
+
       try {
-        const m = document.cookie.match(/(?:^|;\s*)om_gas_url=([^;]+)/);
+        const m = document.cookie.match(/(?:^|;\s*)order_mgr_gas=([^;]+)/);
         if (m) {
-          const ck = decodeURIComponent(m[1]);
-          if (isValidGasWebAppUrl(ck)) return ck.trim();
+          const ck = decodeURIComponent(m[1]).trim();
+          if (isValidGasWebAppUrl(ck)) return ck;
         }
       } catch (_) {}
 
@@ -2197,37 +2205,29 @@ function doPost(e) {
 
     function loadStateFromStorage() {
       try {
-        const savedOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
-        if (savedOrders) {
-          const parsed = JSON.parse(savedOrders);
+        const rawOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
+        if (rawOrders) {
+          const parsed = JSON.parse(rawOrders);
           if (Array.isArray(parsed)) {
-            orders = parsed.map(o => ({
-              ...o,
-              companyName: stripCompanyPrefix(o.companyName)
-            }));
+            orders = parsed;
           }
         }
       } catch (_) {}
 
       try {
-        const savedMasters = localStorage.getItem(STORAGE_KEYS.MASTERS);
-        if (savedMasters) {
-          const parsedM = JSON.parse(savedMasters);
+        const rawMasters = localStorage.getItem(STORAGE_KEYS.MASTERS);
+        if (rawMasters) {
+          const parsedM = JSON.parse(rawMasters);
           if (parsedM && typeof parsedM === 'object') {
             masters = {
-              consignors: Array.isArray(parsedM.consignors) && parsedM.consignors.length ? parsedM.consignors : [...DEFAULT_MASTERS.consignors],
-              clients: Array.isArray(parsedM.clients) && parsedM.clients.length ? parsedM.clients : [...DEFAULT_MASTERS.clients],
-              companies: Array.isArray(parsedM.companies) && parsedM.companies.length
-                ? Array.from(new Set(parsedM.companies.map(stripCompanyPrefix).filter(Boolean)))
-                : [...DEFAULT_MASTERS.companies],
-              companyStores: Array.isArray(parsedM.companyStores) && parsedM.companyStores.length
-                ? parsedM.companyStores.map(cs => ({
-                    company: stripCompanyPrefix(cs.company),
-                    store: String(cs.store || '').trim()
-                  })).filter(cs => cs.company && cs.store)
+              consignors: Array.isArray(parsedM.consignors) ? parsedM.consignors : [...DEFAULT_MASTERS.consignors],
+              clients: Array.isArray(parsedM.clients) ? parsedM.clients : [...DEFAULT_MASTERS.clients],
+              companies: Array.isArray(parsedM.companies) ? parsedM.companies.map(stripCompanyPrefix).filter(Boolean) : [...DEFAULT_MASTERS.companies],
+              companyStores: Array.isArray(parsedM.companyStores)
+                ? parsedM.companyStores.map(cs => ({ company: stripCompanyPrefix(cs.company), store: String(cs.store || '').trim() }))
                 : [...DEFAULT_MASTERS.companyStores],
-              managers: Array.isArray(parsedM.managers) && parsedM.managers.length ? parsedM.managers : [...DEFAULT_MASTERS.managers],
-              performers: Array.isArray(parsedM.performers) && parsedM.performers.length ? parsedM.performers : [...DEFAULT_MASTERS.performers]
+              managers: Array.isArray(parsedM.managers) ? parsedM.managers : [...DEFAULT_MASTERS.managers],
+              performers: Array.isArray(parsedM.performers) ? parsedM.performers : [...DEFAULT_MASTERS.performers]
             };
           }
         }
@@ -2255,7 +2255,7 @@ function doPost(e) {
 
     function learnMastersFromOrders(orderList) {
       let changed = false;
-      orderList.forEach(o => {
+      (orderList || []).forEach(o => {
         if (o.consignor && !masters.consignors.includes(o.consignor)) {
           masters.consignors.push(o.consignor);
           changed = true;
@@ -2270,13 +2270,13 @@ function doPost(e) {
           changed = true;
         }
         if (comp && o.storeName) {
-          const exists = masters.companyStores.some(cs => cs.company === comp && cs.store === o.storeName);
+          const exists = masters.companyStores.some(cs => stripCompanyPrefix(cs.company) === comp && cs.store === o.storeName);
           if (!exists) {
             masters.companyStores.push({ company: comp, store: o.storeName });
             changed = true;
           }
         }
-        if (o.managerName && !masters.managers.includes(o.managerName)) {
+        if (o.managerName && o.managerName !== '未定' && !masters.managers.includes(o.managerName)) {
           masters.managers.push(o.managerName);
           changed = true;
         }
@@ -2287,23 +2287,66 @@ function doPost(e) {
       });
       if (changed) {
         saveMastersToStorage();
-        populateAllDropdowns();
       }
+      populateAllDropdowns();
     }
 
     // =========================================================================
-    // 5. プルダウン・企業2段階選択・自動金額計算
+    // 5. ドロップダウン・フォーム連動・自動金額計算
     // =========================================================================
-    function fillSelectOptions(selectId, items, placeholderText) {
+    function syncSelectToInput(selectId, inputId) {
       const sel = document.getElementById(selectId);
-      if (!sel) return;
-      const prevVal = sel.value;
-      sel.innerHTML = `<option value="" class="text-slate-400">${escapeHtml(placeholderText)}</option>` +
-        items.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join('');
-      if (prevVal && items.includes(prevVal)) {
-        sel.value = prevVal;
+      const inp = document.getElementById(inputId);
+      if (!sel || !inp) return;
+      if (sel.value) {
+        inp.value = sel.value;
+        updateInputUndecidedColor(inp);
       }
-      updateSelectColor(sel);
+    }
+
+    function handleTypeToggle(selectId, inputId) {
+      const sel = document.getElementById(selectId);
+      const inp = document.getElementById(inputId);
+      if (!sel || !inp) return;
+      if (sel.value === '__DIRECT__') {
+        inp.classList.remove('hidden');
+        inp.required = true;
+        inp.value = '';
+        inp.focus();
+      } else {
+        inp.classList.add('hidden');
+        inp.required = false;
+        inp.value = sel.value || '';
+      }
+      updateInputUndecidedColor(inp);
+    }
+
+    function onCompanySelectChange() {
+      const sel = document.getElementById('companySelect');
+      const inp = document.getElementById('companyInput');
+      const storeInp = document.getElementById('storeInput');
+      if (!sel || !inp) return;
+      const cleanComp = stripCompanyPrefix(sel.value);
+      inp.value = cleanComp;
+      updateInputUndecidedColor(inp);
+      if (storeInp) {
+        storeInp.value = '';
+        updateInputUndecidedColor(storeInp);
+      }
+      populateStoreDropdown(cleanComp);
+    }
+
+    function onCompanyInputChange() {
+      const inp = document.getElementById('companyInput');
+      const sel = document.getElementById('companySelect');
+      if (!inp) return;
+      const cleanComp = stripCompanyPrefix(inp.value);
+      if (sel) {
+        const matchOpt = Array.from(sel.options).find(opt => stripCompanyPrefix(opt.value) === cleanComp);
+        sel.value = matchOpt ? matchOpt.value : '';
+        updateSelectColor(sel);
+      }
+      populateStoreDropdown(cleanComp);
     }
 
     function populateStoreDropdown(filterCompany) {
@@ -2314,14 +2357,10 @@ function doPost(e) {
       const cleanComp = stripCompanyPrefix(filterCompany);
       if (!cleanComp) {
         storeSel.disabled = true;
-        storeSel.classList.add('bg-slate-100', 'text-slate-400');
+        storeSel.classList.add('bg-slate-100', 'text-slate-400', 'select-subtle-empty');
         storeSel.classList.remove('bg-white', 'text-slate-800');
         storeSel.innerHTML = '<option value="" class="text-slate-400">-- 先に上の「企業名」を選択してください --</option>';
-        if (hintBadge) {
-          hintBadge.textContent = '企業選択後に店舗を表示';
-          hintBadge.className = 'text-[10px] text-slate-400 font-medium';
-        }
-        updateSelectColor(storeSel);
+        if (hintBadge) hintBadge.textContent = '企業選択後に店舗を表示';
         return;
       }
 
@@ -2336,109 +2375,15 @@ function doPost(e) {
       storeSel.classList.remove('bg-slate-100', 'text-slate-400');
       storeSel.classList.add('bg-white', 'text-slate-800');
 
-      if (matchedStores.length > 0) {
-        storeSel.innerHTML = `<option value="" class="text-slate-400">-- ${escapeHtml(cleanComp)}の店舗を選択 (${matchedStores.length}件) --</option>` +
-          matchedStores.map(st => `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`).join('');
-        if (hintBadge) {
-          hintBadge.textContent = `${cleanComp}の店舗 (${matchedStores.length}件)`;
-          hintBadge.className = 'text-[10px] text-emerald-600 font-bold';
-        }
+      if (matchedStores.length === 0) {
+        storeSel.innerHTML = '<option value="" class="text-slate-400">-- 登録店舗なし（下の欄へ直接入力） --</option>';
+        if (hintBadge) hintBadge.textContent = `${cleanComp}: 直接入力可`;
       } else {
-        storeSel.innerHTML = `<option value="" class="text-slate-400">-- 登録店舗なし（下の欄へ直接入力してください） --</option>`;
-        if (hintBadge) {
-          hintBadge.textContent = '直接入力可能';
-          hintBadge.className = 'text-[10px] text-amber-600 font-semibold';
-        }
+        storeSel.innerHTML = `<option value="" class="text-slate-400">-- ${escapeHtml(cleanComp)} の店舗を選択 (${matchedStores.length}件) --</option>` +
+          matchedStores.map(st => `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`).join('');
+        if (hintBadge) hintBadge.textContent = `${cleanComp}: ${matchedStores.length}店舗`;
       }
       updateSelectColor(storeSel);
-    }
-
-    function populateAllDropdowns() {
-      fillSelectOptions('consignorSelect', masters.consignors, '-- 委託元を選択 --');
-      fillSelectOptions('editConsignorSelect', masters.consignors, '-- 委託元を選択 --');
-      fillSelectOptions('clientSelect', masters.clients, '-- 依頼元を選択 --');
-      fillSelectOptions('editClientSelect', masters.clients, '-- 依頼元を選択 --');
-
-      const cleanCompanies = Array.from(new Set(masters.companies.map(stripCompanyPrefix).filter(Boolean)));
-      fillSelectOptions('companySelect', cleanCompanies, '-- 企業候補から選択 --');
-
-      const currentComp = document.getElementById('companyInput')?.value || '';
-      populateStoreDropdown(currentComp);
-
-      fillSelectOptions('performerSelect', masters.performers, '-- 演者名または取材名を選択 --');
-      fillSelectOptions('editPerformerSelect', masters.performers, '-- 演者名または取材名を選択 --');
-
-      const managerSel = document.getElementById('managerSelect');
-      if (managerSel) {
-        const prev = managerSel.value;
-        managerSel.innerHTML = '<option value="" class="text-slate-400">担当者を選択</option>' +
-          masters.managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('') +
-          '<option value="__DIRECT__">＋ 直接入力</option>';
-        if (prev) managerSel.value = prev;
-        updateSelectColor(managerSel);
-      }
-
-      const editManagerSel = document.getElementById('editManager');
-      if (editManagerSel) {
-        const prevE = editManagerSel.value;
-        editManagerSel.innerHTML = '<option value="" class="text-slate-400">担当者を選択</option>' +
-          masters.managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-        if (prevE) {
-          if (!masters.managers.includes(prevE)) {
-            editManagerSel.innerHTML += `<option value="${escapeHtml(prevE)}">${escapeHtml(prevE)}</option>`;
-          }
-          editManagerSel.value = prevE;
-        }
-        updateSelectColor(editManagerSel);
-      }
-
-      const editCompanyList = document.getElementById('editCompanyList');
-      if (editCompanyList) {
-        editCompanyList.innerHTML = cleanCompanies.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
-      }
-    }
-
-    function syncSelectToInput(selectId, inputId) {
-      const sel = document.getElementById(selectId);
-      const inp = document.getElementById(inputId);
-      if (sel && inp && sel.value) {
-        inp.value = sel.value;
-      }
-    }
-
-    function handleTypeToggle(selectId, inputId) {
-      const sel = document.getElementById(selectId);
-      const inp = document.getElementById(inputId);
-      if (!sel || !inp) return;
-      if (sel.value === '__DIRECT__') {
-        inp.classList.remove('hidden');
-        inp.required = true;
-        inp.focus();
-      } else {
-        inp.classList.add('hidden');
-        inp.required = false;
-        inp.value = '';
-      }
-    }
-
-    function onCompanySelectChange() {
-      const sel = document.getElementById('companySelect');
-      const inp = document.getElementById('companyInput');
-      const storeInp = document.getElementById('storeInput');
-      if (!sel || !inp) return;
-      const cleanComp = stripCompanyPrefix(sel.value);
-      inp.value = cleanComp;
-      populateStoreDropdown(cleanComp);
-      if (storeInp && storeInp.value) {
-        const belongs = masters.companyStores.some(cs => stripCompanyPrefix(cs.company) === cleanComp && cs.store === storeInp.value);
-        if (!belongs) storeInp.value = '';
-      }
-    }
-
-    function onCompanyInputChange() {
-      const inp = document.getElementById('companyInput');
-      if (!inp) return;
-      populateStoreDropdown(inp.value);
     }
 
     function onManagerSelectChange() {
@@ -2451,91 +2396,181 @@ function doPost(e) {
         inp.focus();
       } else {
         inp.classList.add('hidden');
-        inp.value = sel.value;
+        inp.value = sel.value || '';
+      }
+      updateInputUndecidedColor(inp);
+    }
+
+    function updateEditStoreDatalist(companyVal) {
+      const storeListEl = document.getElementById('editStoreList');
+      if (!storeListEl) return;
+      const cleanComp = stripCompanyPrefix(companyVal);
+      const stores = cleanComp
+        ? masters.companyStores.filter(cs => stripCompanyPrefix(cs.company) === cleanComp).map(cs => cs.store)
+        : masters.companyStores.map(cs => cs.store);
+      const uniqueStores = Array.from(new Set(stores.filter(Boolean)));
+      storeListEl.innerHTML = uniqueStores.map(st => `<option value="${escapeHtml(st)}"></option>`).join('');
+    }
+
+    function populateAllDropdowns() {
+      const fillSelect = (id, items, placeholder) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const prev = el.value;
+        el.innerHTML = `<option value="" class="text-slate-400">${escapeHtml(placeholder)}</option>` +
+          items.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join('');
+        if (prev && items.includes(prev)) el.value = prev;
+        updateSelectColor(el);
+      };
+
+      fillSelect('consignorSelect', masters.consignors, '-- 委託元を選択 --');
+      fillSelect('editConsignorSelect', masters.consignors, '-- 委託元を選択 --');
+      fillSelect('clientSelect', masters.clients, '-- 依頼元を選択 --');
+      fillSelect('editClientSelect', masters.clients, '-- 依頼元を選択 --');
+
+      const cleanCompanies = Array.from(new Set(masters.companies.map(stripCompanyPrefix).filter(Boolean)));
+      fillSelect('companySelect', cleanCompanies, '-- 企業候補から選択 --');
+
+      fillSelect('performerSelect', masters.performers, '-- 演者名または取材名を選択 --');
+      fillSelect('editPerformerSelect', masters.performers, '-- 演者名または取材名を選択 --');
+
+      const managerSel = document.getElementById('managerSelect');
+      if (managerSel) {
+        const prev = managerSel.value;
+        managerSel.innerHTML = '<option value="" class="text-slate-400">担当者を選択</option>' +
+          '<option value="未定" class="text-rose-600 font-bold">未定</option>' +
+          masters.managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('') +
+          '<option value="__DIRECT__">＋ 直接入力</option>';
+        if (prev) managerSel.value = prev;
+        updateSelectColor(managerSel);
+      }
+
+      const editManagerSel = document.getElementById('editManager');
+      if (editManagerSel) {
+        const prevE = editManagerSel.value;
+        editManagerSel.innerHTML = '<option value="" class="text-slate-400">担当者を選択</option>' +
+          '<option value="未定" class="text-rose-600 font-bold">未定</option>' +
+          masters.managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+        if (prevE) {
+          if (prevE !== '未定' && !masters.managers.includes(prevE)) {
+            editManagerSel.innerHTML += `<option value="${escapeHtml(prevE)}">${escapeHtml(prevE)}</option>`;
+          }
+          editManagerSel.value = prevE;
+        }
+        updateSelectColor(editManagerSel);
+      }
+
+      const editCompanyList = document.getElementById('editCompanyList');
+      if (editCompanyList) {
+        editCompanyList.innerHTML = cleanCompanies.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+      }
+      updateEditStoreDatalist(document.getElementById('editCompany')?.value || '');
+    }
+
+    function syncTaxIncluded(excludeInputId, includeInputId) {
+      const exVal = Number(document.getElementById(excludeInputId)?.value) || 0;
+      const incEl = document.getElementById(includeInputId);
+      if (incEl) {
+        incEl.value = exVal > 0 ? Math.round(exVal * 1.1) : '';
       }
     }
 
     function computeBillingValues(mode) {
-      const isEdit = mode === 'edit';
-      const reward = Number(document.getElementById(isEdit ? 'editReward' : 'rewardAmount')?.value) || 0;
-      const gas = Number(document.getElementById(isEdit ? 'editGasolineFee' : 'gasolineFee')?.value) || 0;
-      const highway = Number(document.getElementById(isEdit ? 'editHighwayFee' : 'highwayFee')?.value) || 0;
-      const lunch8 = Number(document.getElementById(isEdit ? 'editLunch8Fee' : 'lunch8Fee')?.value) || 0;
-      const lunch = Number(document.getElementById(isEdit ? 'editLunchFee' : 'lunchFee')?.value) || 0;
-      const other = Number(document.getElementById(isEdit ? 'editOtherExpenses' : 'otherExpenses')?.value) || 0;
+      const ids = mode === 'edit'
+        ? {
+            reward: 'editReward',
+            gas: 'editGasolineFee',
+            highway: 'editHighwayFee',
+            lunch8: 'editLunch8Fee',
+            lunch: 'editLunchFee',
+            other: 'editOtherExpenses',
+            billEx: 'editBilling',
+            billIn: 'editBillingTax'
+          }
+        : {
+            reward: 'rewardAmount',
+            gas: 'gasolineFee',
+            highway: 'highwayFee',
+            lunch8: 'lunch8Fee',
+            lunch: 'lunchFee',
+            other: 'otherExpenses',
+            billEx: 'billingAmount',
+            billIn: 'billingTaxIncluded'
+          };
 
-      const totalEx = reward + gas + highway + lunch8 + lunch + other;
-      const totalIn = Math.round(totalEx * 1.1);
+      const totalEx =
+        (Number(document.getElementById(ids.reward)?.value) || 0) +
+        (Number(document.getElementById(ids.gas)?.value) || 0) +
+        (Number(document.getElementById(ids.highway)?.value) || 0) +
+        (Number(document.getElementById(ids.lunch8)?.value) || 0) +
+        (Number(document.getElementById(ids.lunch)?.value) || 0) +
+        (Number(document.getElementById(ids.other)?.value) || 0);
 
-      const billExEl = document.getElementById(isEdit ? 'editBilling' : 'billingAmount');
-      const billInEl = document.getElementById(isEdit ? 'editBillingTax' : 'billingTaxIncluded');
-      if (billExEl) billExEl.value = totalEx > 0 ? totalEx : '';
-      if (billInEl) billInEl.value = totalIn > 0 ? totalIn : '';
-    }
-
-    function syncTaxIncluded(excludeId, includeId) {
-      const exEl = document.getElementById(excludeId);
-      const inEl = document.getElementById(includeId);
-      if (!exEl || !inEl) return;
-      const val = Number(exEl.value) || 0;
-      inEl.value = val > 0 ? Math.round(val * 1.1) : '';
+      const exEl = document.getElementById(ids.billEx);
+      const inEl = document.getElementById(ids.billIn);
+      if (exEl) exEl.value = totalEx > 0 ? totalEx : '';
+      if (inEl) inEl.value = totalEx > 0 ? Math.round(totalEx * 1.1) : '';
     }
 
     function computePaymentTotals(mode) {
-      const isEdit = mode === 'edit';
-      const rew = Number(document.getElementById(isEdit ? 'editPayRewardExclude' : 'payRewardExclude')?.value) || 0;
-      const exp = Number(document.getElementById(isEdit ? 'editPayExpenseExclude' : 'payExpenseExclude')?.value) || 0;
-      const totEx = rew + exp;
-      const totIn = Math.round(totEx * 1.1);
+      const ids = mode === 'edit'
+        ? { rew: 'editPayRewardExclude', exp: 'editPayExpenseExclude', totEx: 'editPayTotalExclude', totIn: 'editPayment' }
+        : { rew: 'payRewardExclude', exp: 'payExpenseExclude', totEx: 'payTotalExclude', totIn: 'paymentAmount' };
 
-      const totExEl = document.getElementById(isEdit ? 'editPayTotalExclude' : 'payTotalExclude');
-      const totInEl = document.getElementById(isEdit ? 'editPayment' : 'paymentAmount');
-      if (totExEl) totExEl.value = totEx > 0 ? totEx : '';
-      if (totInEl) totInEl.value = totIn > 0 ? totIn : '';
+      const totEx =
+        (Number(document.getElementById(ids.rew)?.value) || 0) +
+        (Number(document.getElementById(ids.exp)?.value) || 0);
+
+      const exEl = document.getElementById(ids.totEx);
+      const inEl = document.getElementById(ids.totIn);
+      if (exEl) exEl.value = totEx > 0 ? totEx : '';
+      if (inEl) inEl.value = totEx > 0 ? Math.round(totEx * 1.1) : '';
     }
 
     // =========================================================================
-    // 6. 新規登録・編集・ステータス切替・削除処理
+    // 6. 新規登録・編集・ステータス変更・削除ハンドラ
     // =========================================================================
-    function handleNewOrderSubmit(e) {
-      e.preventDefault();
+    function generateOrderId() {
+      const stamp = Date.now().toString(36).toUpperCase();
+      const rand = Math.random().toString(36).slice(2, 5).toUpperCase();
+      return `ORD-${stamp}-${rand}`;
+    }
 
-      const status = document.getElementById('status').value;
-      const consignor = document.getElementById('consignor').value.trim();
-      const client = document.getElementById('client').value.trim();
-      const rawDate = document.getElementById('date').value;
-      const date = normalizeClientDate(rawDate);
-      const typeSel = document.getElementById('typeSelect').value;
-      const type = typeSel === '__DIRECT__'
+    function handleNewOrderSubmit(event) {
+      event.preventDefault();
+
+      const statusVal = document.getElementById('status').value;
+      const consignorVal = document.getElementById('consignor').value.trim();
+      const clientVal = document.getElementById('client').value.trim();
+      const dateVal = normalizeClientDate(document.getElementById('date').value);
+      const typeSelVal = document.getElementById('typeSelect').value;
+      const typeVal = typeSelVal === '__DIRECT__'
         ? document.getElementById('typeInput').value.trim()
-        : typeSel;
+        : typeSelVal.trim();
 
-      if (!status || !consignor || !client || !date || !type) {
+      if (!statusVal || !consignorVal || !clientVal || !dateVal || !typeVal) {
         showToast('必須項目（ステータス・委託元・依頼元・実施日・種別）を正しく入力してください', 'warning');
         return;
       }
 
-      const companyName = stripCompanyPrefix(document.getElementById('companyInput').value);
-      const storeName = document.getElementById('storeInput').value.trim();
-      const performerOrEvent = document.getElementById('performerOrEvent').value.trim();
-      const mgrSel = document.getElementById('managerSelect').value;
-      const managerName = mgrSel === '__DIRECT__'
+      const managerSelVal = document.getElementById('managerSelect').value;
+      const managerVal = managerSelVal === '__DIRECT__'
         ? document.getElementById('managerName').value.trim()
-        : (mgrSel || document.getElementById('managerName').value.trim());
+        : managerSelVal.trim();
 
       const newOrder = {
-        id: 'ORD-' + Date.now().toString(36).toUpperCase(),
-        status,
-        consignor,
-        client,
-        date,
-        type,
-        companyName,
-        storeName,
-        performerOrEvent,
-        managerName,
+        id: generateOrderId(),
+        status: statusVal === 'tentative' ? 'tentative' : 'confirmed',
+        consignor: consignorVal,
+        client: clientVal,
+        date: dateVal,
+        type: typeVal,
+        companyName: stripCompanyPrefix(document.getElementById('companyInput').value),
+        storeName: document.getElementById('storeInput').value.trim(),
+        performerOrEvent: document.getElementById('performerOrEvent').value.trim(),
+        managerName: managerVal,
         rewardAmount: Number(document.getElementById('rewardAmount').value) || 0,
-        transportationCost: document.getElementById('transportationCost').value,
+        transportationCost: document.getElementById('transportationCost').value.trim(),
         gasolineFee: Number(document.getElementById('gasolineFee').value) || 0,
         highwayFee: Number(document.getElementById('highwayFee').value) || 0,
         lunch8Fee: Number(document.getElementById('lunch8Fee').value) || 0,
@@ -2554,111 +2589,79 @@ function doPost(e) {
       saveOrdersToStorage();
       learnMastersFromOrders([newOrder]);
 
-      document.getElementById('newOrderForm').reset();
+      const form = document.getElementById('newOrderForm');
+      if (form) form.reset();
       document.getElementById('typeInput').classList.add('hidden');
       document.getElementById('typeInput').required = false;
       document.getElementById('managerName').classList.add('hidden');
       populateStoreDropdown('');
-      ['status', 'consignorSelect', 'clientSelect', 'typeSelect', 'companySelect', 'storeSelect', 'performerSelect', 'managerSelect', 'transportationCost']
-        .forEach(id => updateSelectColor(document.getElementById(id)));
+
+      ['status', 'consignorSelect', 'clientSelect', 'typeSelect', 'companySelect', 'storeSelect', 'performerSelect', 'managerSelect', 'transportationCost'].forEach(id => {
+        updateSelectColor(document.getElementById(id));
+      });
+      ['consignor', 'client', 'typeInput', 'companyInput', 'storeInput', 'performerOrEvent', 'managerName', 'notes'].forEach(id => {
+        updateInputUndecidedColor(document.getElementById(id));
+      });
 
       renderOrders();
-      showToast('新しい案件を登録しました', 'success');
+      showToast('新規案件を登録しました', 'success');
 
       if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
         syncToGoogleSheets(false, false);
       }
-    }
-
-    function toggleOrderStatus(orderId) {
-      const idx = orders.findIndex(o => o.id === orderId);
-      if (idx === -1) return;
-      orders[idx].status = orders[idx].status === 'confirmed' ? 'tentative' : 'confirmed';
-      saveOrdersToStorage();
-      renderOrders();
-      showToast(`ステータスを「${orders[idx].status === 'confirmed' ? '確定' : '仮案件'}」に変更しました`, 'info');
-      if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
-        syncToGoogleSheets(false, false);
-      }
-    }
-
-    function updateOrderDateInline(orderId, rawVal) {
-      const idx = orders.findIndex(o => o.id === orderId);
-      if (idx === -1) return;
-      if (!rawVal) {
-        orders[idx].date = '';
-        saveOrdersToStorage();
-        renderOrders();
-        if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
-          syncToGoogleSheets(false, false);
-        }
-        return;
-      }
-      const norm = normalizeClientDate(rawVal);
-      if (!norm) {
-        showToast('実施日は2020年〜2035年の正しい日付を入力してください', 'warning');
-        renderOrders();
-        return;
-      }
-      orders[idx].date = norm;
-      saveOrdersToStorage();
-      renderOrders();
-      showToast(`実施日を ${formatDateWithWeekday(norm)} に更新しました`, 'success');
-      if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
-        syncToGoogleSheets(false, false);
-      }
-    }
-
-    function updateEditStoreDatalist(companyVal) {
-      const dl = document.getElementById('editStoreList');
-      if (!dl) return;
-      const cleanComp = stripCompanyPrefix(companyVal);
-      const stores = cleanComp
-        ? masters.companyStores.filter(cs => stripCompanyPrefix(cs.company) === cleanComp).map(cs => cs.store)
-        : masters.companyStores.map(cs => cs.store);
-      const uniq = Array.from(new Set(stores.filter(Boolean)));
-      dl.innerHTML = uniq.map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
     }
 
     function openEditModal(orderId) {
       const o = orders.find(item => item.id === orderId);
       if (!o) return;
 
+      populateAllDropdowns();
+
       document.getElementById('editOrderId').value = o.id;
       document.getElementById('editOrderIdDisplay').textContent = o.id;
       document.getElementById('editStatus').value = o.status || 'confirmed';
+
       document.getElementById('editConsignor').value = o.consignor || '';
+      const editConsSel = document.getElementById('editConsignorSelect');
+      editConsSel.value = masters.consignors.includes(o.consignor) ? o.consignor : '';
+
       document.getElementById('editClient').value = o.client || '';
+      const editCliSel = document.getElementById('editClientSelect');
+      editCliSel.value = masters.clients.includes(o.client) ? o.client : '';
+
       document.getElementById('editDate').value = isAbnormalDate(o.date) ? '' : (o.date || '');
 
       const editTypeSel = document.getElementById('editTypeSelect');
       const editTypeInp = document.getElementById('editType');
-      const standardTypes = ['取材', 'アテンド', 'ディレクター', '販売会'];
-      if (standardTypes.includes(o.type)) {
-        editTypeSel.value = o.type;
-        editTypeInp.classList.add('hidden');
-        editTypeInp.required = false;
-        editTypeInp.value = '';
-      } else if (o.type) {
-        editTypeSel.value = '__DIRECT__';
-        editTypeInp.classList.remove('hidden');
-        editTypeInp.required = true;
-        editTypeInp.value = o.type;
-      } else {
+      const presetTypes = ['取材', 'アテンド', 'ディレクター', '販売会'];
+      if (!o.type) {
         editTypeSel.value = '';
         editTypeInp.classList.add('hidden');
         editTypeInp.required = false;
         editTypeInp.value = '';
+      } else if (presetTypes.includes(o.type)) {
+        editTypeSel.value = o.type;
+        editTypeInp.classList.add('hidden');
+        editTypeInp.required = false;
+        editTypeInp.value = o.type;
+      } else {
+        editTypeSel.value = '__DIRECT__';
+        editTypeInp.classList.remove('hidden');
+        editTypeInp.required = true;
+        editTypeInp.value = o.type;
       }
 
       const cleanComp = stripCompanyPrefix(o.companyName);
       document.getElementById('editCompany').value = cleanComp;
       updateEditStoreDatalist(cleanComp);
       document.getElementById('editStore').value = o.storeName || '';
+
       document.getElementById('editPerformer').value = o.performerOrEvent || '';
+      const editPerfSel = document.getElementById('editPerformerSelect');
+      editPerfSel.value = masters.performers.includes(o.performerOrEvent) ? o.performerOrEvent : '';
 
       const editManagerSel = document.getElementById('editManager');
-      if (o.managerName && !masters.managers.includes(o.managerName)) {
+      if (o.managerName && o.managerName !== '未定' && !masters.managers.includes(o.managerName)) {
         editManagerSel.innerHTML += `<option value="${escapeHtml(o.managerName)}">${escapeHtml(o.managerName)}</option>`;
       }
       editManagerSel.value = o.managerName || '';
@@ -2678,7 +2681,13 @@ function doPost(e) {
       document.getElementById('editPayment').value = o.paymentAmount || '';
       document.getElementById('editNotes').value = o.notes || '';
 
-      ['editStatus', 'editTypeSelect', 'editManager', 'editTransportation'].forEach(id => updateSelectColor(document.getElementById(id)));
+      ['editStatus', 'editConsignorSelect', 'editClientSelect', 'editTypeSelect', 'editPerformerSelect', 'editManager', 'editTransportation'].forEach(id => {
+        updateSelectColor(document.getElementById(id));
+      });
+      ['editConsignor', 'editClient', 'editType', 'editCompany', 'editStore', 'editPerformer', 'editNotes'].forEach(id => {
+        updateInputUndecidedColor(document.getElementById(id));
+      });
+
       showModalById('editModal');
     }
 
@@ -2686,36 +2695,39 @@ function doPost(e) {
       hideModalById('editModal');
     }
 
-    function handleEditSubmit(e) {
-      e.preventDefault();
+    function handleEditSubmit(event) {
+      event.preventDefault();
       const id = document.getElementById('editOrderId').value;
-      const idx = orders.findIndex(o => o.id === id);
-      if (idx === -1) return;
+      const idx = orders.findIndex(item => item.id === id);
+      if (idx < 0) return;
 
-      const date = normalizeClientDate(document.getElementById('editDate').value);
-      const typeSel = document.getElementById('editTypeSelect').value;
-      const type = typeSel === '__DIRECT__'
+      const statusVal = document.getElementById('editStatus').value;
+      const consignorVal = document.getElementById('editConsignor').value.trim();
+      const clientVal = document.getElementById('editClient').value.trim();
+      const dateVal = normalizeClientDate(document.getElementById('editDate').value);
+      const editTypeSelVal = document.getElementById('editTypeSelect').value;
+      const typeVal = editTypeSelVal === '__DIRECT__'
         ? document.getElementById('editType').value.trim()
-        : typeSel;
+        : editTypeSelVal.trim();
 
-      if (!date || !type) {
-        showToast('実施日と種別を正しく入力してください', 'warning');
+      if (!statusVal || !consignorVal || !clientVal || !dateVal || !typeVal) {
+        showToast('必須項目（ステータス・委託元・依頼元・実施日・種別）を正しく入力してください', 'warning');
         return;
       }
 
       const updated = {
         ...orders[idx],
-        status: document.getElementById('editStatus').value || 'confirmed',
-        consignor: document.getElementById('editConsignor').value.trim(),
-        client: document.getElementById('editClient').value.trim(),
-        date,
-        type,
+        status: statusVal === 'tentative' ? 'tentative' : 'confirmed',
+        consignor: consignorVal,
+        client: clientVal,
+        date: dateVal,
+        type: typeVal,
         companyName: stripCompanyPrefix(document.getElementById('editCompany').value),
         storeName: document.getElementById('editStore').value.trim(),
         performerOrEvent: document.getElementById('editPerformer').value.trim(),
-        managerName: document.getElementById('editManager').value,
+        managerName: document.getElementById('editManager').value.trim(),
         rewardAmount: Number(document.getElementById('editReward').value) || 0,
-        transportationCost: document.getElementById('editTransportation').value,
+        transportationCost: document.getElementById('editTransportation').value.trim(),
         gasolineFee: Number(document.getElementById('editGasolineFee').value) || 0,
         highwayFee: Number(document.getElementById('editHighwayFee').value) || 0,
         lunch8Fee: Number(document.getElementById('editLunch8Fee').value) || 0,
@@ -2735,7 +2747,53 @@ function doPost(e) {
       learnMastersFromOrders([updated]);
       closeEditModal();
       renderOrders();
-      showToast('案件情報を更新しました', 'success');
+      showToast('案件内容を更新しました', 'success');
+
+      if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
+        syncToGoogleSheets(false, false);
+      }
+    }
+
+    function toggleOrderStatus(orderId) {
+      const idx = orders.findIndex(item => item.id === orderId);
+      if (idx < 0) return;
+      orders[idx].status = orders[idx].status === 'confirmed' ? 'tentative' : 'confirmed';
+      saveOrdersToStorage();
+      renderOrders();
+      showToast(`ステータスを「${orders[idx].status === 'confirmed' ? '確定' : '仮案件'}」に変更しました`, 'info');
+
+      if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
+        syncToGoogleSheets(false, false);
+      }
+    }
+
+    function updateOrderDateInline(orderId, rawNewDate) {
+      const idx = orders.findIndex(item => item.id === orderId);
+      if (idx < 0) return;
+
+      const trimmed = String(rawNewDate || '').trim();
+      if (!trimmed) {
+        orders[idx].date = '';
+        saveOrdersToStorage();
+        renderOrders();
+        showToast('実施日を未設定に戻しました', 'info');
+        if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
+          syncToGoogleSheets(false, false);
+        }
+        return;
+      }
+
+      const norm = normalizeClientDate(trimmed);
+      if (!norm) {
+        showToast('2020年〜2035年の正しい日付を選択してください', 'warning');
+        renderOrders();
+        return;
+      }
+
+      orders[idx].date = norm;
+      saveOrdersToStorage();
+      renderOrders();
+      showToast(`実施日を ${norm} に更新しました`, 'success');
 
       if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
         syncToGoogleSheets(false, false);
@@ -2746,9 +2804,10 @@ function doPost(e) {
       const o = orders.find(item => item.id === orderId);
       if (!o) return;
       pendingDeleteOrderId = orderId;
-      const msg = document.getElementById('deleteConfirmMessage');
-      if (msg) {
-        msg.textContent = `【${o.date || '日付未設定'}】${o.storeName || o.companyName || ''} / ${o.performerOrEvent || o.type || ''}（ID: ${o.id}）を削除しますか？`;
+      const msgEl = document.getElementById('deleteConfirmMessage');
+      if (msgEl) {
+        const label = [o.date || '日付未定', o.storeName || o.companyName || '店舗未設定', o.performerOrEvent || ''].filter(Boolean).join(' / ');
+        msgEl.textContent = `「${label}」（管理ID: ${o.id}）を削除してよろしいですか？`;
       }
       showModalById('deleteConfirmModal');
     }
@@ -2760,7 +2819,7 @@ function doPost(e) {
 
     function executeDeleteOrder() {
       if (!pendingDeleteOrderId) return;
-      orders = orders.filter(o => o.id !== pendingDeleteOrderId);
+      orders = orders.filter(item => item.id !== pendingDeleteOrderId);
       saveOrdersToStorage();
       closeDeleteConfirmModal();
       renderOrders();
@@ -2772,48 +2831,66 @@ function doPost(e) {
     }
 
     // =========================================================================
-    // 7. 受注ボックス9項目絞り込みフィルター & カード描画
+    // 7. 受注ボックス絞り込み・整列・カード一覧描画
     // =========================================================================
-    function updateFilterDropdownOptions() {
-      const setSelectChoices = (id, rawValues, formatter) => {
-        const sel = document.getElementById(id);
-        if (!sel) return;
-        const current = sel.value || 'all';
-        const uniq = Array.from(new Set(rawValues.filter(Boolean))).sort((a, b) => a.localeCompare(b, 'ja'));
-        sel.innerHTML = '<option value="all">すべて</option>' +
-          uniq.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(formatter ? formatter(v) : v)}</option>`).join('');
-        sel.value = (current !== 'all' && uniq.includes(current)) ? current : 'all';
+    function sortOrdersList(list) {
+      return [...list].sort((a, b) => {
+        const da = (!a.date || isAbnormalDate(a.date)) ? '0000-00-00' : a.date;
+        const db = (!b.date || isAbnormalDate(b.date)) ? '0000-00-00' : b.date;
+        if (da !== db) return da.localeCompare(db);
+
+        const ta = String(a.type || '');
+        const tb = String(b.type || '');
+        if (ta !== tb) return ta.localeCompare(tb, 'ja');
+
+        const ma = String(a.managerName || '');
+        const mb = String(b.managerName || '');
+        if (ma !== mb) return ma.localeCompare(mb, 'ja');
+
+        const ca = stripCompanyPrefix(a.companyName);
+        const cb = stripCompanyPrefix(b.companyName);
+        if (ca !== cb) return ca.localeCompare(cb, 'ja');
+
+        const sa = String(a.storeName || '');
+        const sb = String(b.storeName || '');
+        if (sa !== sb) return sa.localeCompare(sb, 'ja');
+
+        return String(a.performerOrEvent || '').localeCompare(String(b.performerOrEvent || ''), 'ja');
+      });
+    }
+
+    function populateFilterDropdowns() {
+      const updateFilterOpts = (id, values, labelFormatter = v => v) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const prev = el.value || 'all';
+        const unique = Array.from(new Set(values.filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), 'ja'));
+        el.innerHTML = '<option value="all">すべて</option>' +
+          unique.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(labelFormatter(v))}</option>`).join('');
+        el.value = (prev === 'all' || unique.includes(prev)) ? prev : 'all';
       };
 
-      setSelectChoices('consignorFilter', [...masters.consignors, ...orders.map(o => o.consignor)]);
-      setSelectChoices('clientFilter', [...masters.clients, ...orders.map(o => o.client)]);
-      setSelectChoices('dateFilter', orders.map(o => o.date).filter(d => d && !isAbnormalDate(d)), formatDateWithWeekday);
-      setSelectChoices('typeFilter', ['取材', 'アテンド', 'ディレクター', '販売会', ...orders.map(o => o.type)]);
+      updateFilterOpts('consignorFilter', orders.map(o => o.consignor));
+      updateFilterOpts('clientFilter', orders.map(o => o.client));
+      updateFilterOpts('dateFilter', orders.map(o => o.date), d => isAbnormalDate(d) ? `${d} (異常日付)` : formatDateWithWeekday(d));
+      updateFilterOpts('typeFilter', orders.map(o => o.type));
 
-      const companyValues = [
-        ...masters.companies.map(stripCompanyPrefix),
-        ...orders.map(o => stripCompanyPrefix(o.companyName))
-      ];
-      setSelectChoices('companyFilter', companyValues);
+      const allCompanies = orders.map(o => stripCompanyPrefix(o.companyName));
+      updateFilterOpts('companyFilter', allCompanies);
 
-      const selectedComp = document.getElementById('companyFilter')?.value || 'all';
-      const storeValues = selectedComp !== 'all'
-        ? [
-            ...masters.companyStores.filter(cs => stripCompanyPrefix(cs.company) === selectedComp).map(cs => cs.store),
-            ...orders.filter(o => stripCompanyPrefix(o.companyName) === selectedComp).map(o => o.storeName)
-          ]
-        : [
-            ...masters.companyStores.map(cs => cs.store),
-            ...orders.map(o => o.storeName)
-          ];
-      setSelectChoices('storeFilter', storeValues);
+      const selectedCompany = document.getElementById('companyFilter')?.value || 'all';
+      const storeSource = selectedCompany === 'all'
+        ? orders
+        : orders.filter(o => stripCompanyPrefix(o.companyName) === selectedCompany);
+      updateFilterOpts('storeFilter', storeSource.map(o => o.storeName));
 
-      setSelectChoices('performerFilter', [...masters.performers, ...orders.map(o => o.performerOrEvent)]);
-      setSelectChoices('managerFilter', [...masters.managers, ...orders.map(o => o.managerName)]);
+      updateFilterOpts('performerFilter', orders.map(o => o.performerOrEvent));
+      updateFilterOpts('managerFilter', orders.map(o => o.managerName || '未定'));
     }
 
     function onCompanyFilterChange() {
-      updateFilterDropdownOptions();
+      const storeEl = document.getElementById('storeFilter');
+      if (storeEl) storeEl.value = 'all';
       renderOrders();
     }
 
@@ -2824,7 +2901,6 @@ function doPost(e) {
       });
       filterOnlyMissingDate = false;
       filterOnlyAbnormalDate = false;
-      updateFilterDropdownOptions();
       renderOrders();
     }
 
@@ -2841,10 +2917,11 @@ function doPost(e) {
     }
 
     function openClearAbnormalDateModal() {
-      const abnormalOrders = orders.filter(o => isAbnormalDate(o.date));
-      const msg = document.getElementById('clearAbnormalDateMessage');
-      if (msg) {
-        msg.textContent = `現在 ${abnormalOrders.length} 件の案件に20年以上前または不正な形式の日付が設定されています。これらを一括で空欄（未設定）に戻しますか？`;
+      const abnormalList = orders.filter(o => isAbnormalDate(o.date));
+      if (abnormalList.length === 0) return;
+      const msgEl = document.getElementById('clearAbnormalDateMessage');
+      if (msgEl) {
+        msgEl.innerHTML = `現在 <strong>${abnormalList.length} 件</strong> の案件に20年以上前などの不正な日付が入っています。<br>これらの異常日付を一括でクリア（未設定）に戻しますか？`;
       }
       showModalById('clearAbnormalDateModal');
     }
@@ -2854,18 +2931,19 @@ function doPost(e) {
     }
 
     function executeClearAbnormalDates() {
-      let cleared = 0;
-      orders.forEach(o => {
+      let clearedCount = 0;
+      orders = orders.map(o => {
         if (isAbnormalDate(o.date)) {
-          o.date = '';
-          cleared++;
+          clearedCount++;
+          return { ...o, date: '' };
         }
+        return o;
       });
-      filterOnlyAbnormalDate = false;
       saveOrdersToStorage();
+      filterOnlyAbnormalDate = false;
       closeClearAbnormalDateModal();
       renderOrders();
-      showToast(`${cleared} 件の異常日付をクリアしました`, 'success');
+      showToast(`${clearedCount} 件の異常日付をクリアしました`, 'success');
 
       if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
         syncToGoogleSheets(false, false);
@@ -2873,39 +2951,10 @@ function doPost(e) {
     }
 
     function renderOrders() {
-      updateFilterDropdownOptions();
+      populateFilterDropdowns();
 
-      const statusFilter = document.getElementById('statusFilter')?.value || 'all';
-      const consignorFilter = document.getElementById('consignorFilter')?.value || 'all';
-      const clientFilter = document.getElementById('clientFilter')?.value || 'all';
-      const dateFilter = document.getElementById('dateFilter')?.value || 'all';
-      const typeFilter = document.getElementById('typeFilter')?.value || 'all';
-      const companyFilter = document.getElementById('companyFilter')?.value || 'all';
-      const storeFilter = document.getElementById('storeFilter')?.value || 'all';
-      const performerFilter = document.getElementById('performerFilter')?.value || 'all';
-      const managerFilter = document.getElementById('managerFilter')?.value || 'all';
-
-      const hasAnyFilter = FILTER_SELECT_IDS.some(id => (document.getElementById(id)?.value || 'all') !== 'all') ||
-        filterOnlyMissingDate || filterOnlyAbnormalDate;
-      const resetBtn = document.getElementById('resetFiltersBtn');
-      if (resetBtn) {
-        resetBtn.classList.toggle('hidden', !hasAnyFilter);
-      }
-
-      const missingCount = orders.filter(o => !o.date).length;
       const abnormalCount = orders.filter(o => isAbnormalDate(o.date)).length;
-
-      const missingBadge = document.getElementById('missingDateAlertBadge');
-      const missingText = document.getElementById('missingDateAlertText');
-      if (missingBadge && missingText) {
-        if (missingCount > 0) {
-          missingBadge.classList.remove('hidden');
-          missingText.textContent = `日付未設定: ${missingCount}件${filterOnlyMissingDate ? ' (絞込中)' : ''}`;
-        } else {
-          missingBadge.classList.add('hidden');
-          filterOnlyMissingDate = false;
-        }
-      }
+      const missingCount = orders.filter(o => !o.date).length;
 
       const abnormalBadge = document.getElementById('abnormalDateAlertBadge');
       const abnormalText = document.getElementById('abnormalDateAlertText');
@@ -2914,7 +2963,7 @@ function doPost(e) {
         if (abnormalCount > 0) {
           abnormalBadge.classList.remove('hidden');
           clearAbnormalBtn.classList.remove('hidden');
-          abnormalText.textContent = `異常日付(20年以上前等): ${abnormalCount}件${filterOnlyAbnormalDate ? ' (絞込中)' : ''}`;
+          abnormalText.textContent = `異常日付(20年以上前等): ${abnormalCount}件`;
         } else {
           abnormalBadge.classList.add('hidden');
           clearAbnormalBtn.classList.add('hidden');
@@ -2922,18 +2971,50 @@ function doPost(e) {
         }
       }
 
+      const missingBadge = document.getElementById('missingDateAlertBadge');
+      const missingText = document.getElementById('missingDateAlertText');
+      if (missingBadge && missingText) {
+        if (missingCount > 0) {
+          missingBadge.classList.remove('hidden');
+          missingText.textContent = `日付未設定: ${missingCount}件`;
+        } else {
+          missingBadge.classList.add('hidden');
+          filterOnlyMissingDate = false;
+        }
+      }
+
+      const fStatus = document.getElementById('statusFilter')?.value || 'all';
+      const fConsignor = document.getElementById('consignorFilter')?.value || 'all';
+      const fClient = document.getElementById('clientFilter')?.value || 'all';
+      const fDate = document.getElementById('dateFilter')?.value || 'all';
+      const fType = document.getElementById('typeFilter')?.value || 'all';
+      const fCompany = document.getElementById('companyFilter')?.value || 'all';
+      const fStore = document.getElementById('storeFilter')?.value || 'all';
+      const fPerformer = document.getElementById('performerFilter')?.value || 'all';
+      const fManager = document.getElementById('managerFilter')?.value || 'all';
+
+      const hasAnyFilter =
+        filterOnlyAbnormalDate ||
+        filterOnlyMissingDate ||
+        [fStatus, fConsignor, fClient, fDate, fType, fCompany, fStore, fPerformer, fManager].some(v => v !== 'all');
+
+      const resetBtn = document.getElementById('resetFiltersBtn');
+      if (resetBtn) {
+        resetBtn.classList.toggle('hidden', !hasAnyFilter);
+      }
+
       const filtered = sortOrdersList(orders.filter(o => {
-        if (statusFilter !== 'all' && o.status !== statusFilter) return false;
-        if (consignorFilter !== 'all' && o.consignor !== consignorFilter) return false;
-        if (clientFilter !== 'all' && o.client !== clientFilter) return false;
-        if (dateFilter !== 'all' && o.date !== dateFilter) return false;
-        if (typeFilter !== 'all' && o.type !== typeFilter) return false;
-        if (companyFilter !== 'all' && stripCompanyPrefix(o.companyName) !== companyFilter) return false;
-        if (storeFilter !== 'all' && o.storeName !== storeFilter) return false;
-        if (performerFilter !== 'all' && o.performerOrEvent !== performerFilter) return false;
-        if (managerFilter !== 'all' && o.managerName !== managerFilter) return false;
-        if (filterOnlyMissingDate && o.date) return false;
         if (filterOnlyAbnormalDate && !isAbnormalDate(o.date)) return false;
+        if (filterOnlyMissingDate && o.date) return false;
+        if (fStatus !== 'all' && o.status !== fStatus) return false;
+        if (fConsignor !== 'all' && o.consignor !== fConsignor) return false;
+        if (fClient !== 'all' && o.client !== fClient) return false;
+        if (fDate !== 'all' && o.date !== fDate) return false;
+        if (fType !== 'all' && o.type !== fType) return false;
+        if (fCompany !== 'all' && stripCompanyPrefix(o.companyName) !== fCompany) return false;
+        if (fStore !== 'all' && o.storeName !== fStore) return false;
+        if (fPerformer !== 'all' && o.performerOrEvent !== fPerformer) return false;
+        if (fManager !== 'all' && (o.managerName || '未定') !== fManager) return false;
         return true;
       }));
 
@@ -2945,12 +3026,12 @@ function doPost(e) {
 
       if (filtered.length === 0) {
         container.innerHTML = `
-          <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center">
-            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
               <i class="ph ph-folder-open text-2xl"></i>
             </div>
             <p class="text-sm font-bold text-slate-700">表示できる受注案件がありません</p>
-            <p class="text-xs text-slate-400 mt-1">左のフォームから新規登録するか、「シートから取得」でデータを読み込んでください</p>
+            <p class="text-xs text-slate-400">左側のフォームから新規登録するか、「シートから取得」「条件リセット」をお試しください。</p>
           </div>
         `;
         return;
@@ -2960,14 +3041,30 @@ function doPost(e) {
         '取材': 'bg-emerald-50 text-emerald-700 border-emerald-200',
         'アテンド': 'bg-purple-50 text-purple-700 border-purple-200',
         'ディレクター': 'bg-sky-50 text-sky-700 border-sky-200',
-        '販売会': 'bg-amber-50 text-amber-700 border-amber-200'
+        '販売会': 'bg-amber-50 text-amber-800 border-amber-200'
       };
 
       container.innerHTML = filtered.map(o => {
         const isConfirmed = o.status === 'confirmed';
         const abnormal = isAbnormalDate(o.date);
-        const typeCls = typeBadgeStyles[o.type] || 'bg-slate-100 text-slate-700 border-slate-200';
         const cleanComp = stripCompanyPrefix(o.companyName);
+
+        const consignorUndecided = String(o.consignor || '').includes('未定');
+        const clientUndecided = String(o.client || '').includes('未定');
+        const typeUndecided = String(o.type || '').includes('未定');
+        const companyUndecided = cleanComp.includes('未定');
+        const storeText = o.storeName || '店舗未設定';
+        const storeUndecided = isUndecidedText(o.storeName);
+        const performerText = o.performerOrEvent || '演者・取材名未設定';
+        const performerUndecided = isUndecidedText(o.performerOrEvent);
+        const managerText = o.managerName || '担当未定';
+        const managerUndecided = isUndecidedText(o.managerName);
+        const transUndecided = String(o.transportationCost || '').includes('未定');
+        const notesUndecided = String(o.notes || '').includes('未定');
+
+        const typeCls = typeUndecided
+          ? 'bg-rose-50 text-rose-600 border-rose-200'
+          : (typeBadgeStyles[o.type] || 'bg-slate-100 text-slate-700 border-slate-200');
 
         return `
           <article class="bg-white rounded-2xl border ${abnormal ? 'border-rose-300 ring-1 ring-rose-200' : 'border-slate-200'} p-4 shadow-sm hover:shadow-md transition space-y-3">
@@ -2983,8 +3080,8 @@ function doPost(e) {
                   <i class="ph ${isConfirmed ? 'ph-check-circle' : 'ph-clock'} mr-1"></i>${isConfirmed ? '確定' : '仮案件'}
                 </button>
 
-                ${o.consignor ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">${escapeHtml(o.consignor)}</span>` : ''}
-                ${o.client ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700">${escapeHtml(o.client)}</span>` : ''}
+                ${o.consignor ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-lg border ${consignorUndecided ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}">${escapeHtml(o.consignor)}</span>` : ''}
+                ${o.client ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-lg ${clientUndecided ? 'bg-rose-50 text-rose-600 font-bold border border-rose-200' : 'bg-slate-100 text-slate-700'}">${escapeHtml(o.client)}</span>` : ''}
                 ${o.type ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-lg border ${typeCls}">${escapeHtml(o.type)}</span>` : ''}
                 <span class="text-[10px] font-mono text-slate-400">${escapeHtml(o.id)}</span>
               </div>
@@ -2995,7 +3092,8 @@ function doPost(e) {
                   <input type="date" min="2020-01-01" max="2035-12-31"
                     value="${abnormal ? '' : escapeHtml(o.date || '')}"
                     onchange="updateOrderDateInline('${escapeHtml(o.id)}', this.value)"
-                    class="text-xs font-bold bg-transparent outline-none text-slate-800">
+                    class="text-xs font-bold bg-transparent outline-none ${!o.date || abnormal ? 'text-rose-600' : 'text-slate-800'}">
+                  ${!o.date && !abnormal ? `<span class="text-[11px] font-bold text-rose-600">未定</span>` : ''}
                   ${o.date && !abnormal ? `<span class="text-[11px] font-semibold text-slate-500 hidden sm:inline">(${formatDateWithWeekday(o.date).slice(-2, -1)})</span>` : ''}
                 </div>
 
@@ -3018,21 +3116,23 @@ function doPost(e) {
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
               <div class="sm:col-span-7 space-y-0.5">
                 <div class="flex items-center flex-wrap gap-1.5">
-                  ${cleanComp ? `<span class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${escapeHtml(cleanComp)}</span>` : ''}
-                  <h3 class="text-sm font-bold text-slate-900">${escapeHtml(o.storeName || '店舗未設定')}</h3>
+                  ${cleanComp ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded ${companyUndecided ? 'text-rose-600 bg-rose-50 font-bold' : 'text-slate-500 bg-slate-100'}">${escapeHtml(cleanComp)}</span>` : ''}
+                  <h3 class="text-sm font-bold ${storeUndecided ? 'text-rose-600' : 'text-slate-900'}">${escapeHtml(storeText)}</h3>
                 </div>
-                <p class="text-xs font-semibold text-indigo-700 flex items-center">
-                  <i class="ph ph-microphone-stage mr-1 text-slate-400"></i>${escapeHtml(o.performerOrEvent || '演者・取材名未設定')}
+                <p class="text-xs font-semibold ${performerUndecided ? 'text-rose-600 font-bold' : 'text-indigo-700'} flex items-center">
+                  <i class="ph ph-microphone-stage mr-1 ${performerUndecided ? 'text-rose-500' : 'text-slate-400'}"></i>${escapeHtml(performerText)}
                 </p>
               </div>
 
               <div class="sm:col-span-5 flex flex-wrap sm:justify-end items-center gap-2 text-xs">
-                <span class="inline-flex items-center px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-semibold">
-                  <i class="ph ph-user mr-1 text-slate-400"></i>${escapeHtml(o.managerName || '担当未定')}
+                <span class="inline-flex items-center px-2.5 py-1 rounded-xl border font-semibold ${managerUndecided ? 'bg-rose-50 border-rose-200 text-rose-600 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700'}">
+                  <i class="ph ph-user mr-1 ${managerUndecided ? 'text-rose-500' : 'text-slate-400'}"></i>${escapeHtml(managerText)}
                 </span>
                 ${o.transportationCost ? `
                   <span class="inline-flex items-center px-2 py-1 rounded-xl text-[11px] font-bold ${
-                    o.transportationCost === '実費' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-600'
+                    transUndecided
+                      ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                      : (o.transportationCost === '実費' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-600')
                   }">交通費: ${escapeHtml(o.transportationCost)}</span>
                 ` : ''}
               </div>
@@ -3056,7 +3156,7 @@ function doPost(e) {
                 </div>
               </div>
 
-              ${o.notes ? `<p class="text-[11px] text-slate-600 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/70 max-w-full truncate"><i class="ph ph-note mr-1 text-slate-400"></i>${escapeHtml(o.notes)}</p>` : ''}
+              ${o.notes ? `<p class="text-[11px] px-2.5 py-1 rounded-lg border max-w-full truncate ${notesUndecided ? 'text-rose-600 font-bold bg-rose-50 border-rose-200' : 'text-slate-600 bg-slate-50 border-slate-200/70'}"><i class="ph ph-note mr-1 ${notesUndecided ? 'text-rose-500' : 'text-slate-400'}"></i>${escapeHtml(o.notes)}</p>` : ''}
             </div>
           </article>
         `;
