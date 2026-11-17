@@ -419,6 +419,24 @@
           <div id="gasDiagnosticBox" class="hidden bg-white/80 border border-amber-200/80 rounded-xl px-3 py-2 text-[11px] text-slate-700 font-mono break-all"></div>
         </div>
 
+        <!-- 初回・未設定時のみ表示されるクイック自動連携バー -->
+        <div id="quickGasSetupBanner" class="hidden bg-indigo-50/90 border border-indigo-200 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="flex items-center space-x-2 text-xs text-indigo-950">
+            <i class="ph ph-plugs-connected text-indigo-600 text-lg shrink-0"></i>
+            <div>
+              <p class="font-bold">スプレッドシート自動取得が未設定です</p>
+              <p class="text-[11px] text-indigo-800">GASのWebアプリURLを貼り付けると即座にデータを取得し、次回から立ち上げ時に自動取得します。</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 w-full sm:w-auto">
+            <input type="url" id="quickGasUrlInput" oninput="onQuickGasUrlInput(this.value)" placeholder="https://script.google.com/.../exec を貼付"
+              class="flex-1 sm:w-64 text-xs bg-white border border-indigo-300 rounded-xl px-3 py-1.5 text-slate-800 font-mono focus:ring-2 focus:ring-indigo-500 outline-none">
+            <button type="button" onclick="applyQuickGasUrl()" class="shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+              接続・取得
+            </button>
+          </div>
+        </div>
+
         <!-- 案件カード一覧コンテナ -->
         <div id="orderListContainer" class="space-y-4">
         </div>
@@ -878,11 +896,19 @@
           </div>
         </div>
 
-        <div class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-          <input type="checkbox" id="autoSyncCheck" onchange="toggleAutoSync(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked>
-          <label for="autoSyncCheck" class="text-xs font-medium text-slate-700 cursor-pointer">
-            案件登録・編集・ステータス変更時にスプレッドシートへ自動送信する
-          </label>
+        <div class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="autoFetchCheck" onchange="toggleAutoFetch(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked>
+            <label for="autoFetchCheck" class="text-xs font-medium text-slate-700 cursor-pointer">
+              アプリ立ち上げ時にスプレッドシートから最新データを自動取得する
+            </label>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="autoSyncCheck" onchange="toggleAutoSync(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked>
+            <label for="autoSyncCheck" class="text-xs font-medium text-slate-700 cursor-pointer">
+              案件登録・編集・ステータス変更時にスプレッドシートへ自動送信する
+            </label>
+          </div>
         </div>
 
         <!-- GAS用コード案内 -->
@@ -1471,7 +1497,7 @@ function doGet(e) {
     });
   }
 
-  return ContentService.createTextOutput(JSON.stringify({
+  var responsePayload = JSON.stringify({
     status: "ok",
     sheetName: sheet.getName(),
     orders: orders,
@@ -1481,7 +1507,16 @@ function doGet(e) {
       emptyDateRowCount: emptyDateCount,
       abnormalDateCount: abnormalCount
     }
-  })).setMimeType(ContentService.MimeType.JSON);
+  });
+
+  var callbackName = (e && e.parameter && e.parameter.callback) ? String(e.parameter.callback).replace(/[^A-Za-z0-9_$.]/g, "") : "";
+  if (callbackName) {
+    return ContentService.createTextOutput(callbackName + "(" + responsePayload + ");")
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  return ContentService.createTextOutput(responsePayload)
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 // アプリからの送信・リモート修復（POST）
@@ -1646,7 +1681,8 @@ function doPost(e) {
       ORDERS: 'order_manager_orders_v1',
       MASTERS: 'order_manager_masters_v1',
       GAS_URL: 'order_manager_gas_url_v1',
-      AUTO_SYNC: 'order_manager_auto_sync_v1'
+      AUTO_SYNC: 'order_manager_auto_sync_v1',
+      AUTO_FETCH: 'order_manager_auto_fetch_v1'
     };
 
     const GAS_IDB_CONFIG = {
@@ -1681,12 +1717,15 @@ function doPost(e) {
     let masters = JSON.parse(JSON.stringify(DEFAULT_MASTERS));
     let gasWebAppUrl = '';
     let autoSyncEnabled = true;
+    let autoFetchEnabled = true;
     let currentMasterTab = 'company';
     let pendingDeleteOrderId = null;
     let filterMissingDateOnly = false;
     let filterAbnormalDateOnly = false;
     let isSyncing = false;
     let pendingSync = false;
+    let isFetchingSheets = false;
+    let lastAutoFetchAt = 0;
 
     function escapeHtml(str) {
       return String(str === null || str === undefined ? '' : str)
@@ -2057,6 +2096,27 @@ function doPost(e) {
           }
         }
       } catch (e) {}
+
+      // 過去バージョンや別キーで保存されていたGAS URLも全ストレージから自動検出して引き継ぐ
+      const scanStorageForGasUrl = storageObj => {
+        try {
+          if (!storageObj) return '';
+          for (let i = 0; i < storageObj.length; i++) {
+            const k = storageObj.key(i);
+            if (!k) continue;
+            const val = (storageObj.getItem(k) || '').trim();
+            if (isValidGasWebAppUrl(val)) return val;
+          }
+        } catch (e) {}
+        return '';
+      };
+
+      const recoveredFromLocal = scanStorageForGasUrl(window.localStorage);
+      if (recoveredFromLocal) return recoveredFromLocal;
+
+      const recoveredFromSession = scanStorageForGasUrl(window.sessionStorage);
+      if (recoveredFromSession) return recoveredFromSession;
+
       return '';
     }
 
@@ -2124,9 +2184,12 @@ function doPost(e) {
         }
         const savedAuto = localStorage.getItem(STORAGE_KEYS.AUTO_SYNC);
         autoSyncEnabled = savedAuto === null ? true : savedAuto === 'true';
+        const savedAutoFetch = localStorage.getItem(STORAGE_KEYS.AUTO_FETCH);
+        autoFetchEnabled = savedAutoFetch === null ? true : savedAutoFetch === 'true';
       } catch (e) {
         gasWebAppUrl = DEFAULT_GAS_URL || '';
         autoSyncEnabled = true;
+        autoFetchEnabled = true;
       }
     }
 
@@ -3360,6 +3423,76 @@ function doPost(e) {
     // =========================================================================
     let gasAutoInputTimer = null;
 
+    function setSyncIndicator(text, type = 'muted') {
+      const el = document.getElementById('syncIndicator');
+      if (!el) return;
+      const colorMap = {
+        syncing: 'text-indigo-600 font-semibold',
+        success: 'text-emerald-600 font-semibold',
+        error: 'text-rose-600 font-semibold',
+        muted: 'text-slate-500 font-medium'
+      };
+      el.className = `${colorMap[type] || colorMap.muted} text-[11px] transition-all`;
+      el.textContent = text || '';
+    }
+
+    function updateEmbeddedUrlBadge() {
+      const badge = document.getElementById('embeddedUrlStatusBadge');
+      if (!badge) return;
+      if (DEFAULT_GAS_URL && isValidGasWebAppUrl(DEFAULT_GAS_URL)) {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+        badge.textContent = 'HTMLコードに固定済み';
+      } else if (gasWebAppUrl && isValidGasWebAppUrl(gasWebAppUrl)) {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300';
+        badge.textContent = 'ブラウザ・URL記憶済み';
+      } else {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-600 border border-indigo-200';
+        badge.textContent = '未設定';
+      }
+    }
+
+    function openSheetsModal() {
+      const inp = document.getElementById('gasUrlInput');
+      if (inp) {
+        inp.value = gasWebAppUrl || DEFAULT_GAS_URL || '';
+      }
+      const autoFetchChk = document.getElementById('autoFetchCheck');
+      if (autoFetchChk) {
+        autoFetchChk.checked = Boolean(autoFetchEnabled);
+      }
+      const autoSyncChk = document.getElementById('autoSyncCheck');
+      if (autoSyncChk) {
+        autoSyncChk.checked = Boolean(autoSyncEnabled);
+      }
+      updateEmbeddedUrlBadge();
+      showModalById('sheetsModal');
+    }
+
+    function closeSheetsModal() {
+      hideModalById('sheetsModal');
+    }
+
+    function saveGasUrl(isAuto = false) {
+      const inp = document.getElementById('gasUrlInput');
+      if (!inp) return;
+      const url = inp.value.trim();
+      if (!url || !isValidGasWebAppUrl(url)) {
+        if (!isAuto) {
+          showToast('有効な Google Apps Script WebアプリURL（.../exec）を入力してください', 'warning');
+        }
+        return;
+      }
+      gasWebAppUrl = url;
+      persistGasUrl(url);
+      updateRealtimeBadge();
+      updateEmbeddedUrlBadge();
+      showToast(
+        isAuto ? 'GAS URLを自動保存しました。データを取得します...' : '連携URLを保存しました。スプレッドシートからデータを取得します...',
+        'success'
+      );
+      fetchFromGoogleSheets(true);
+    }
+
     function onGasUrlAutoInput() {
       clearTimeout(gasAutoInputTimer);
       gasAutoInputTimer = setTimeout(() => {
@@ -3375,6 +3508,7 @@ function doPost(e) {
     function updateRealtimeBadge() {
       const badge = document.getElementById('realtimeStatusBadge');
       const headerBtn = document.getElementById('headerSheetsBtn');
+      const quickBanner = document.getElementById('quickGasSetupBanner');
       if (badge) {
         if (gasWebAppUrl) {
           badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
@@ -3393,61 +3527,37 @@ function doPost(e) {
           headerBtn.innerHTML = '<i class="ph ph-gear mr-1 text-sm"></i>連携設定';
         }
       }
-    }
-
-    function setSyncIndicator(text, tone = 'muted') {
-      const el = document.getElementById('syncIndicator');
-      if (!el) return;
-      const toneClass = {
-        muted: 'text-slate-500',
-        syncing: 'text-indigo-600 font-semibold',
-        success: 'text-emerald-600 font-semibold',
-        error: 'text-rose-600 font-semibold'
-      };
-      el.className = `text-[11px] transition-all ${toneClass[tone] || toneClass.muted}`;
-      el.textContent = text;
-    }
-
-    function updateEmbeddedUrlBadge() {
-      const badge = document.getElementById('embeddedUrlStatusBadge');
-      if (!badge) return;
-      if (DEFAULT_GAS_URL) {
-        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
-        badge.textContent = 'コード内に固定済み';
-      } else if (gasWebAppUrl) {
-        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300';
-        badge.textContent = 'ブラウザ・URL記憶済み';
-      } else {
-        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-500 border border-slate-200';
-        badge.textContent = '未設定';
+      if (quickBanner) {
+        if (gasWebAppUrl) {
+          quickBanner.classList.add('hidden');
+        } else {
+          quickBanner.classList.remove('hidden');
+        }
       }
     }
 
-    function openSheetsModal() {
-      document.getElementById('gasUrlInput').value = gasWebAppUrl || DEFAULT_GAS_URL || '';
-      document.getElementById('autoSyncCheck').checked = autoSyncEnabled;
-      updateEmbeddedUrlBadge();
-      showModalById('sheetsModal');
+    function onQuickGasUrlInput(val) {
+      const trimmed = String(val || '').trim();
+      if (isValidGasWebAppUrl(trimmed)) {
+        applyQuickGasUrl();
+      }
     }
 
-    function closeSheetsModal() {
-      hideModalById('sheetsModal');
-    }
-
-    function saveGasUrl(isAuto = false) {
-      const url = document.getElementById('gasUrlInput').value.trim();
+    function applyQuickGasUrl() {
+      const inp = document.getElementById('quickGasUrlInput');
+      if (!inp) return;
+      const url = inp.value.trim();
       if (!url || !isValidGasWebAppUrl(url)) {
-        if (!isAuto) {
-          showToast('有効な Google Apps Script WebアプリURL（.../exec）を入力してください', 'warning');
-        }
+        showToast('有効な Google Apps Script WebアプリURL（.../exec）を入力してください', 'warning');
         return;
       }
       gasWebAppUrl = url;
       persistGasUrl(url);
+      const modalInp = document.getElementById('gasUrlInput');
+      if (modalInp) modalInp.value = url;
       updateRealtimeBadge();
       updateEmbeddedUrlBadge();
-      closeSheetsModal();
-      showToast('連携URLを保存しました。このままブックマークすると次回以降も自動連携されます', 'success');
+      showToast('連携URLを保存しました。スプレッドシートからデータを取得します...', 'success');
       fetchFromGoogleSheets(true);
     }
 
@@ -3582,44 +3692,99 @@ function doPost(e) {
       showToast(autoSyncEnabled ? '自動送信を有効にしました' : '自動送信をオフにしました', 'info');
     }
 
-    function copyGasScript() {
-      const area = document.getElementById('gasScriptArea');
-      if (!area) return;
-      area.focus();
-      area.select();
-      area.setSelectionRange(0, area.value.length);
+    function toggleAutoFetch(checked) {
+      autoFetchEnabled = Boolean(checked);
       try {
-        const ok = document.execCommand('copy');
-        if (ok) {
-          showToast('GASコード（コード.gs用）をコピーしました。コード.gsに全上書きしてください', 'success');
-        } else {
-          showToast('コピーに失敗しました。枠内をクリックして Ctrl+A → Ctrl+C でコピーしてください', 'warning');
-        }
-      } catch (e) {
-        showToast('コピーに失敗しました。手動で選択してコピーしてください', 'error');
-      }
+        localStorage.setItem(STORAGE_KEYS.AUTO_FETCH, String(autoFetchEnabled));
+      } catch (e) {}
+      showToast(autoFetchEnabled ? '起動時の自動取得を有効にしました' : '起動時の自動取得をオフにしました', 'info');
     }
 
-    async function fetchFromGoogleSheets(manual = false) {
+    function copyGasScript() {
+      const area = document.getElementById('gasScriptArea');
+      if (!area || !area.value) {
+        showToast('GASコードが見つかりませんでした', 'error');
+        return;
+      }
+      copyTextSafely(
+        area.value,
+        'スプレッドシート側（コード.gs用）のGASコードをコピーしました',
+        'GASコードのコピーに失敗しました'
+      );
+    }
+
+    function fetchJsonpFromGas(url) {
+      return new Promise((resolve, reject) => {
+        const cbName = '__gasJsonpCb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+        const sep = url.includes('?') ? '&' : '?';
+        const script = document.createElement('script');
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error('スプレッドシートからの応答がタイムアウトしました'));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timer);
+          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+          if (script.parentNode) script.parentNode.removeChild(script);
+        }
+
+        window[cbName] = payload => {
+          cleanup();
+          resolve(payload);
+        };
+
+        script.onerror = () => {
+          cleanup();
+          reject(new Error('スクリプト通信エラー（GASのデプロイ公開設定を確認してください）'));
+        };
+
+        script.src = `${url}${sep}callback=${cbName}&_t=${Date.now()}`;
+        document.head.appendChild(script);
+      });
+    }
+
+    async function fetchFromGoogleSheets(manual = false, isStartup = false) {
       if (!gasWebAppUrl) {
         if (manual) {
           showToast('先に右上の「連携設定」からGAS WebアプリURLを設定してください', 'warning');
           openSheetsModal();
+        } else {
+          setSyncIndicator('未連携（右上の「連携設定」でURLを保存すると起動時に自動取得します）', 'muted');
         }
         return;
       }
 
-      setSyncIndicator('スプレッドシートから取得中...', 'syncing');
+      if (isFetchingSheets) return;
+      isFetchingSheets = true;
+
+      setSyncIndicator(isStartup ? '立ち上げ時：スプレッドシートから自動取得中...' : 'スプレッドシートから取得中...', 'syncing');
       try {
         const sep = gasWebAppUrl.includes('?') ? '&' : '?';
-        const res = await fetch(`${gasWebAppUrl}${sep}_t=${Date.now()}`, {
-          method: 'GET',
-          cache: 'no-store'
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (data.status !== 'ok' || !Array.isArray(data.orders)) {
-          throw new Error(data.message || '不正なレスポンス形式です');
+        // プリフライト(OPTIONS)を発生させない単純GETリクエストで取得（6秒タイムアウト付き）
+        let data = null;
+        try {
+          const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const timerId = controller ? setTimeout(() => controller.abort(), 6000) : null;
+          const res = await fetch(`${gasWebAppUrl}${sep}_t=${Date.now()}`, {
+            method: 'GET',
+            redirect: 'follow',
+            signal: controller ? controller.signal : undefined
+          });
+          if (timerId) clearTimeout(timerId);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const rawText = await res.text();
+          if (rawText.trim().startsWith('<')) {
+            throw new Error('GASのデプロイ設定で「アクセスできるユーザー」を「全員」にする必要があります');
+          }
+          data = JSON.parse(rawText);
+        } catch (fetchErr) {
+          // ブラウザ環境によりfetchがCORS遮断またはタイムアウトした場合はJSONPで自動再試行
+          data = await fetchJsonpFromGas(gasWebAppUrl);
+        }
+
+        if (!data || data.status !== 'ok' || !Array.isArray(data.orders)) {
+          throw new Error((data && data.message) || '不正なレスポンス形式です');
         }
 
         const existingMap = new Map(orders.map(o => [o.id, o]));
@@ -3634,6 +3799,7 @@ function doPost(e) {
         });
 
         orders = fetchedOrders;
+        lastAutoFetchAt = Date.now();
         learnMastersFromOrders(orders);
         saveOrdersToStorage();
         populateAllDropdowns();
@@ -3654,11 +3820,17 @@ function doPost(e) {
         }
 
         const nowStr = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-        setSyncIndicator(`最終取得: ${nowStr}（${orders.length}件）`, 'success');
-        if (manual) showToast(`スプレッドシートから ${orders.length} 件を取得しました`, 'success');
+        setSyncIndicator(`自動取得完了: ${nowStr}（${orders.length}件）`, 'success');
+        if (manual || isStartup) {
+          showToast(`スプレッドシートから ${orders.length} 件を自動取得しました`, 'success');
+        }
       } catch (err) {
-        setSyncIndicator('取得エラー（URL・デプロイ設定を確認してください）', 'error');
-        if (manual) showToast(`取得に失敗しました: ${err.message}`, 'error');
+        setSyncIndicator('自動取得エラー（連携URL・GAS公開設定を確認してください）', 'error');
+        if (manual || isStartup) {
+          showToast(`データ取得に失敗しました: ${err.message}`, 'error');
+        }
+      } finally {
+        isFetchingSheets = false;
       }
     }
 
@@ -3827,7 +3999,51 @@ function doPost(e) {
     // =========================================================================
     // 12. 初期化処理 & キーボード操作
     // =========================================================================
-    window.addEventListener('DOMContentLoaded', async () => {
+    function isAnyModalOpen() {
+      return [
+        'sheetsModal',
+        'editModal',
+        'masterModal',
+        'deleteConfirmModal',
+        'syncEmptyDateConfirmModal',
+        'clearAbnormalDateModal',
+        'excelPasteModal'
+      ].some(id => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden') && el.style.display !== 'none';
+      });
+    }
+
+    async function runStartupAutoFetch() {
+      if (!gasWebAppUrl) {
+        const idbUrl = await loadGasUrlFromIndexedDB();
+        if (idbUrl && isValidGasWebAppUrl(idbUrl)) {
+          gasWebAppUrl = idbUrl.trim();
+          persistGasUrl(gasWebAppUrl);
+        }
+      }
+
+      // ブラウザのオートフィルで入力欄にURLが自動補完された場合も拾い上げる
+      if (!gasWebAppUrl) {
+        const inp = document.getElementById('gasUrlInput');
+        if (inp && isValidGasWebAppUrl(inp.value)) {
+          gasWebAppUrl = inp.value.trim();
+          persistGasUrl(gasWebAppUrl);
+        }
+      }
+
+      updateRealtimeBadge();
+      updateEmbeddedUrlBadge();
+
+      if (gasWebAppUrl) {
+        // 立ち上げ時は常に自動でスプレッドシートから最新データを取得する
+        await fetchFromGoogleSheets(false, true);
+      } else {
+        setSyncIndicator('未連携（上のバーまたは右上の「連携設定」でURLを保存すると起動時に自動取得します）', 'muted');
+      }
+    }
+
+    async function initApp() {
       // 起動時は連携設定モーダルを含む全モーダルを確実に非表示にする
       [
         'sheetsModal',
@@ -3842,23 +4058,51 @@ function doPost(e) {
       });
 
       loadStateFromStorage();
-
-      if (!gasWebAppUrl) {
-        const idbUrl = await loadGasUrlFromIndexedDB();
-        if (idbUrl && idbUrl.startsWith('https://script.google.com/')) {
-          gasWebAppUrl = idbUrl.trim();
-          persistGasUrl(gasWebAppUrl);
-        }
-      }
-
       learnMastersFromOrders(orders);
       populateAllDropdowns();
       updateRealtimeBadge();
       updateEmbeddedUrlBadge();
       renderOrders();
 
-      if (gasWebAppUrl) {
-        fetchFromGoogleSheets(false);
+      // アプリ立ち上げ直後に自動でスプレッドシートからデータを取得
+      await runStartupAutoFetch();
+
+      // ブラウザの遅延オートフィル補完にも対応
+      if (!gasWebAppUrl) {
+        setTimeout(() => {
+          const inp = document.getElementById('gasUrlInput');
+          if (!gasWebAppUrl && inp && isValidGasWebAppUrl(inp.value)) {
+            gasWebAppUrl = inp.value.trim();
+            persistGasUrl(gasWebAppUrl);
+            updateRealtimeBadge();
+            updateEmbeddedUrlBadge();
+            if (autoFetchEnabled) {
+              fetchFromGoogleSheets(false, true);
+            }
+          }
+        }, 600);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+
+    // ブラウザの戻る／進むやホーム画面からの再表示時にも自動取得
+    window.addEventListener('pageshow', e => {
+      if (e.persisted && gasWebAppUrl && autoFetchEnabled && !isAnyModalOpen()) {
+        fetchFromGoogleSheets(false, false);
+      }
+    });
+
+    // 別タブや他アプリから戻った際、前回取得から30秒以上経過していれば自動で最新データを再取得
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && gasWebAppUrl && autoFetchEnabled && !isAnyModalOpen() && !isSyncing) {
+        if (Date.now() - lastAutoFetchAt > 30000) {
+          fetchFromGoogleSheets(false, false);
+        }
       }
     });
 
