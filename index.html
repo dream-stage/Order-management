@@ -341,44 +341,125 @@
       <!-- 右側: 受注ボックス (一覧リスト 8カラム) -->
       <section class="lg:col-span-8 space-y-4">
 
-        <!-- コントロールバー -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
-              <i class="ph ph-tray text-lg"></i>
+        <!-- コントロールバー & 9項目絞り込みフィルター -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3.5">
+          <!-- 上段: タイトル & 同期・貼付ボタン -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div class="flex items-center space-x-2">
+              <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+                <i class="ph ph-tray text-lg"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-slate-800 text-sm">受注ボックス</h2>
+                <p class="text-[11px] text-slate-400">日付ごと ➔ 種別 ➔ 担当者 ➔ 企業 ➔ 店舗 ➔ 取材名 で整列</p>
+              </div>
             </div>
-            <div>
-              <h2 class="font-bold text-slate-800 text-sm">受注ボックス</h2>
-              <p class="text-[11px] text-slate-400">日付ごと ➔ 種別 ➔ 担当者 ➔ 企業 ➔ 店舗 ➔ 取材名 で整列</p>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" onclick="fetchFromGoogleSheets(true)" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition">
+                <i class="ph ph-arrows-clockwise mr-1 text-sm"></i>シートから取得
+              </button>
+
+              <button type="button" onclick="syncAllToSheetsManual()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition">
+                <i class="ph ph-cloud-arrow-up mr-1 text-sm"></i>全件送信
+              </button>
+
+              <button type="button" onclick="repairSheetHashesRemote()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition" title="スプレッドシート上の###表示や20年以上前の異常日付を一括修復します">
+                <i class="ph ph-wrench mr-1 text-sm"></i>シート修復
+              </button>
+
+              <button type="button" onclick="openExcelPasteModal()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition">
+                <i class="ph ph-clipboard-text mr-1 text-sm"></i>Excel貼付
+              </button>
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <select id="statusFilter" onchange="renderOrders()" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 font-medium outline-none">
-              <option value="all">全ステータス</option>
-              <option value="confirmed">確定のみ</option>
-              <option value="tentative">仮案件のみ</option>
-            </select>
+          <!-- 下段: 絞り込みフィルター（ステータス→委託元→依頼元→実施日→種別→企業名→店舗名→演者名または取材名→担当者） -->
+          <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-200/80 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-slate-600 flex items-center">
+                <i class="ph ph-funnel mr-1 text-indigo-600"></i>絞り込み選択
+              </span>
+              <button type="button" id="resetFiltersBtn" onclick="resetOrderFilters()" class="hidden inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-800 transition">
+                <i class="ph ph-x-circle mr-1"></i>条件リセット
+              </button>
+            </div>
 
-            <select id="managerFilter" onchange="renderOrders()" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 font-medium outline-none">
-              <option value="all">全担当者</option>
-            </select>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <!-- 1. ステータス -->
+              <div>
+                <label for="statusFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">1. ステータス</label>
+                <select id="statusFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="all">すべて</option>
+                  <option value="confirmed">確定</option>
+                  <option value="tentative">仮案件</option>
+                </select>
+              </div>
 
-            <button type="button" onclick="fetchFromGoogleSheets(true)" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition">
-              <i class="ph ph-arrows-clockwise mr-1 text-sm"></i>シートから取得
-            </button>
+              <!-- 2. 委託元 -->
+              <div>
+                <label for="consignorFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">2. 委託元</label>
+                <select id="consignorFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="all">すべて</option>
+                </select>
+              </div>
 
-            <button type="button" onclick="syncAllToSheetsManual()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition">
-              <i class="ph ph-cloud-arrow-up mr-1 text-sm"></i>全件送信
-            </button>
+              <!-- 3. 依頼元 -->
+              <div>
+                <label for="clientFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">3. 依頼元</label>
+                <select id="clientFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="all">すべて</option>
+                </select>
+              </div>
 
-            <button type="button" onclick="repairSheetHashesRemote()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition" title="スプレッドシート上の###表示や20年以上前の異常日付を一括修復します">
-              <i class="ph ph-wrench mr-1 text-sm"></i>シート修復
-            </button>
+              <!-- 4. 実施日 -->
+              <div>
+                <label for="dateFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">4. 実施日</label>
+                <select id="dateFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="all">すべて</option>
+                </select>
+              </div>
 
-            <button type="button" onclick="openExcelPasteModal()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition">
-              <i class="ph ph-clipboard-text mr-1 text-sm"></i>Excel貼付
-            </button>
+              <!-- 5. 種別 -->
+              <div>
+                <label for="typeFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">5. 種別</label>
+                <select id="typeFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="all">すべて</option>
+                </select>
+              </div>
+
+              <!-- 6. 企業名 -->
+              <div>
+                <label for="companyFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">6. 企業名</label>
+                <select id="companyFilter" onchange="onCompanyFilterChange()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="all">すべて</option>
+                </select>
+              </div>
+
+              <!-- 7. 店舗名 -->
+              <div>
+                <label for="storeFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">7. 店舗名</label>
+                <select id="storeFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="all">すべて</option>
+                </select>
+              </div>
+
+              <!-- 8. 演者名または取材名 -->
+              <div>
+                <label for="performerFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">8. 演者名または取材名</label>
+                <select id="performerFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="all">すべて</option>
+                </select>
+              </div>
+
+              <!-- 9. 担当者 -->
+              <div>
+                <label for="managerFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">9. 担当者</label>
+                <select id="managerFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="all">すべて</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -446,7 +527,7 @@
   </main>
 
   <!-- 案件情報の編集モーダル -->
-  <div id="editModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeEditModal()">
+  <div id="editModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeEditModal()">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
         <div class="flex items-center space-x-2">
@@ -486,14 +567,14 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">委託元 <span class="text-rose-500">*</span></label>
-            <select id="editConsignorSelect" onchange="onEditConsignorSelectChange(); updateSelectColor(this);" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none mb-1">
+            <select id="editConsignorSelect" onchange="syncSelectToInput('editConsignorSelect', 'editConsignor'); updateSelectColor(this);" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none mb-1">
             </select>
             <input type="text" id="editConsignor" required
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">依頼元 <span class="text-rose-500">*</span></label>
-            <select id="editClientSelect" onchange="onEditClientSelectChange(); updateSelectColor(this);" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none mb-1">
+            <select id="editClientSelect" onchange="syncSelectToInput('editClientSelect', 'editClient'); updateSelectColor(this);" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none mb-1">
             </select>
             <input type="text" id="editClient" required
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
@@ -509,7 +590,7 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">種別 <span class="text-rose-500">*</span></label>
-            <select id="editTypeSelect" required onchange="onEditTypeSelectChange(); updateSelectColor(this);" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-medium mb-1">
+            <select id="editTypeSelect" required onchange="handleTypeToggle('editTypeSelect', 'editType'); updateSelectColor(this);" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-medium mb-1">
               <option value="" class="text-slate-400">種別を選択</option>
               <option value="取材">取材</option>
               <option value="アテンド">アテンド</option>
@@ -526,7 +607,7 @@
         <div class="grid grid-cols-2 gap-2 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200/80">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">企業名</label>
-            <input type="text" id="editCompany" list="editCompanyList" placeholder="企業名"
+            <input type="text" id="editCompany" list="editCompanyList" oninput="updateEditStoreDatalist(this.value)" placeholder="企業名"
               class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
             <datalist id="editCompanyList"></datalist>
           </div>
@@ -541,7 +622,7 @@
         <!-- 7. 演者名または取材名 -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">演者名または取材名</label>
-          <select id="editPerformerSelect" onchange="onEditPerformerSelectChange(); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium">
+          <select id="editPerformerSelect" onchange="syncSelectToInput('editPerformerSelect', 'editPerformer'); updateSelectColor(this);" class="select-subtle-empty w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none mb-1 font-medium">
             <option value="" class="text-slate-400">-- 演者名または取材名を選択 --</option>
           </select>
           <input type="text" id="editPerformer" placeholder="直接入力または選択した演者名・取材名"
@@ -561,7 +642,7 @@
             <label class="block text-xs font-semibold text-slate-700 mb-1">報酬</label>
             <div class="relative">
               <span class="absolute left-2.5 top-2 text-xs text-slate-400">¥</span>
-              <input type="number" id="editReward" min="0" step="1" oninput="calcEditBillingAndPayment()"
+              <input type="number" id="editReward" min="0" step="1" oninput="computeBillingValues('edit')"
                 class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none font-semibold">
             </div>
           </div>
@@ -581,7 +662,7 @@
             <label class="block text-xs font-semibold text-slate-700 mb-1">ガソリン代</label>
             <div class="relative">
               <span class="absolute left-2.5 top-2 text-xs text-slate-400">¥</span>
-              <input type="number" id="editGasolineFee" min="0" step="1" oninput="calcEditBillingAndPayment()"
+              <input type="number" id="editGasolineFee" min="0" step="1" oninput="computeBillingValues('edit')"
                 class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
             </div>
           </div>
@@ -589,7 +670,7 @@
             <label class="block text-xs font-semibold text-slate-700 mb-1">高速代</label>
             <div class="relative">
               <span class="absolute left-2.5 top-2 text-xs text-slate-400">¥</span>
-              <input type="number" id="editHighwayFee" min="0" step="1" oninput="calcEditBillingAndPayment()"
+              <input type="number" id="editHighwayFee" min="0" step="1" oninput="computeBillingValues('edit')"
                 class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
             </div>
           </div>
@@ -599,12 +680,12 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">昼食代(8%)</label>
-            <input type="number" id="editLunch8Fee" min="0" step="1" oninput="calcEditBillingAndPayment()"
+            <input type="number" id="editLunch8Fee" min="0" step="1" oninput="computeBillingValues('edit')"
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">昼食代</label>
-            <input type="number" id="editLunchFee" min="0" step="1" oninput="calcEditBillingAndPayment()"
+            <input type="number" id="editLunchFee" min="0" step="1" oninput="computeBillingValues('edit')"
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
           </div>
         </div>
@@ -612,7 +693,7 @@
         <!-- 15. その他経費 -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">その他経費</label>
-          <input type="number" id="editOtherExpenses" min="0" step="1" oninput="calcEditBillingAndPayment()"
+          <input type="number" id="editOtherExpenses" min="0" step="1" oninput="computeBillingValues('edit')"
             class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
         </div>
 
@@ -623,7 +704,7 @@
               <label class="block text-xs font-bold text-indigo-950">請求金額(税抜)</label>
               <span class="text-[10px] text-indigo-700 bg-indigo-100 font-bold px-1.5 py-0.5 rounded">合計自動</span>
             </div>
-            <input type="number" id="editBilling" min="0" step="1" oninput="onEditBillingExcludeChange()"
+            <input type="number" id="editBilling" min="0" step="1" oninput="syncTaxIncluded('editBilling', 'editBillingTax')"
               class="w-full text-xs bg-white border border-indigo-300 rounded-lg px-2.5 py-1.5 font-bold text-indigo-950 focus:ring-2 focus:ring-indigo-500 outline-none">
             <p class="text-[10px] text-indigo-600 mt-1 leading-tight">※報酬+全経費の合算値</p>
           </div>
@@ -642,12 +723,12 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">支払報酬(税抜)</label>
-            <input type="number" id="editPayRewardExclude" min="0" step="1" oninput="onEditManualPaymentInput()"
+            <input type="number" id="editPayRewardExclude" min="0" step="1" oninput="computePaymentTotals('edit')"
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">支払経費(税抜)</label>
-            <input type="number" id="editPayExpenseExclude" min="0" step="1" oninput="onEditManualPaymentInput()"
+            <input type="number" id="editPayExpenseExclude" min="0" step="1" oninput="computePaymentTotals('edit')"
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
           </div>
         </div>
@@ -656,7 +737,7 @@
         <div class="grid grid-cols-2 gap-2 bg-slate-100/70 p-2.5 rounded-xl border border-slate-200">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">支払総額(税抜)</label>
-            <input type="number" id="editPayTotalExclude" min="0" step="1" oninput="onEditPayTotalExcludeChange()"
+            <input type="number" id="editPayTotalExclude" min="0" step="1" oninput="syncTaxIncluded('editPayTotalExclude', 'editPayment')"
               class="w-full text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-semibold">
           </div>
           <div>
@@ -686,7 +767,7 @@
   </div>
 
   <!-- マスター管理モーダル -->
-  <div id="masterModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeMasterModal()">
+  <div id="masterModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeMasterModal()">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col p-5">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
         <h3 id="masterModalTitle" class="font-bold text-slate-800 text-sm flex items-center">
@@ -716,7 +797,7 @@
   </div>
 
   <!-- 削除確認カスタムモーダル -->
-  <div id="deleteConfirmModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeDeleteConfirmModal()">
+  <div id="deleteConfirmModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeDeleteConfirmModal()">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm p-5">
       <div class="flex items-center space-x-2.5 mb-3">
         <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
@@ -740,7 +821,7 @@
   </div>
 
   <!-- 全件送信時の日付未設定警告カスタムモーダル -->
-  <div id="syncEmptyDateConfirmModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeSyncEmptyDateModal()">
+  <div id="syncEmptyDateConfirmModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeSyncEmptyDateModal()">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-5">
       <div class="flex items-center space-x-2.5 mb-3">
         <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
@@ -767,7 +848,7 @@
   </div>
 
   <!-- 異常日付一括クリア確認モーダル -->
-  <div id="clearAbnormalDateModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeClearAbnormalDateModal()">
+  <div id="clearAbnormalDateModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeClearAbnormalDateModal()">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-5">
       <div class="flex items-center space-x-2.5 mb-3">
         <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
@@ -791,7 +872,7 @@
   </div>
 
   <!-- Excelから直接貼り付けモーダル -->
-  <div id="excelPasteModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeExcelPasteModal()">
+  <div id="excelPasteModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeExcelPasteModal()">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
         <div class="flex items-center space-x-2">
@@ -832,7 +913,7 @@
   </div>
 
   <!-- 連携設定モーダル (GAS) -->
-  <div id="sheetsModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeSheetsModal()">
+  <div id="sheetsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this) closeSheetsModal()">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
         <div class="flex items-center space-x-2">
@@ -1545,6 +1626,13 @@ function doPost(e) {
   var orderSheet = resolveOrderSheet(ss);
   var incomingOrders = Array.isArray(payload.orders) ? payload.orders : [];
 
+  if (incomingOrders.length === 0 && !payload.allowEmpty) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "skipped",
+      message: "Empty payload blocked"
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   var targetHeaders = [
     "管理ID", "ステータス", "委託元", "依頼元", "実施日", "種別", "企業名", "店舗名",
     "演者名または取材名", "担当者", "報酬", "交通費", "ガソリン代", "高速代",
@@ -1553,9 +1641,8 @@ function doPost(e) {
     "特記事項"
   ];
 
-  // 既存シートの有効日付を退避（管理ID一致 ＋ 項目シグネチャ一致による安全保護）
+  // 既存シートの有効日付を退避（管理ID一致による安全保護）
   var savedDateById = {};
-  var savedDateBySig = {};
   var exLastRow = orderSheet.getLastRow();
   var exLastCol = orderSheet.getLastColumn();
 
@@ -1568,26 +1655,13 @@ function doPost(e) {
       var exDisps = orderSheet.getRange(exHeaderRow + 1, 1, exNumRows, exLastCol).getDisplayValues();
       var cId = findColIndex(exHeaders, ["管理ID", "ID"], []);
       var cDate = findColIndex(exHeaders, ["実施日", "日付", "開催日", "稼働日", "日程", "予定日"], ["同期", "更新", "登録", "作成", "曜日"]);
-      var cCons = findColIndex(exHeaders, ["委託元"], []);
-      var cCli = findColIndex(exHeaders, ["依頼元"], []);
-      var cStore = findColIndex(exHeaders, ["店舗名", "店舗"], []);
-      var cPerf = findColIndex(exHeaders, ["演者名または取材名", "演者名", "取材名"], []);
 
-      if (cDate >= 0) {
+      if (cDate >= 0 && cId >= 0) {
         for (var r = 0; r < exVals.length; r++) {
           var dFixed = normalizeGasDate(exVals[r][cDate], tz) || normalizeGasDate(exDisps[r][cDate], tz);
-          if (!dFixed) continue;
-          if (cId >= 0 && String(exDisps[r][cId] || "").trim()) {
-            savedDateById[String(exDisps[r][cId]).trim()] = dFixed;
-          }
-          var sig = [
-            cCons >= 0 ? String(exDisps[r][cCons] || "").trim() : "",
-            cCli >= 0 ? String(exDisps[r][cCli] || "").trim() : "",
-            cStore >= 0 ? String(exDisps[r][cStore] || "").trim() : "",
-            cPerf >= 0 ? String(exDisps[r][cPerf] || "").trim() : ""
-          ].join("|");
-          if (sig !== "|||") {
-            savedDateBySig[sig] = dFixed;
+          var rowId = String(exDisps[r][cId] || "").trim();
+          if (dFixed && rowId) {
+            savedDateById[rowId] = dFixed;
           }
         }
       }
@@ -1599,20 +1673,8 @@ function doPost(e) {
     var o = incomingOrders[i] || {};
     var oid = String(o.id || ("ORD-" + (i + 1))).trim();
     var dateStr = normalizeGasDate(o.date, tz);
-    if (!dateStr) {
-      if (savedDateById[oid]) {
-        dateStr = savedDateById[oid];
-      } else {
-        var oSig = [
-          String(o.consignor || "").trim(),
-          String(o.client || "").trim(),
-          String(o.storeName || "").trim(),
-          String(o.performerOrEvent || "").trim()
-        ].join("|");
-        if (savedDateBySig[oSig]) {
-          dateStr = savedDateBySig[oSig];
-        }
-      }
+    if (!dateStr && savedDateById[oid]) {
+      dateStr = savedDateById[oid];
     }
 
     rows.push([
@@ -1721,6 +1783,28 @@ function doPost(e) {
         '低貸し取材', 'ヤドゥさん来店'
       ]
     };
+
+    const ALL_MODAL_IDS = [
+      'editModal',
+      'masterModal',
+      'deleteConfirmModal',
+      'syncEmptyDateConfirmModal',
+      'clearAbnormalDateModal',
+      'excelPasteModal',
+      'sheetsModal'
+    ];
+
+    const FILTER_SELECT_IDS = [
+      'statusFilter',
+      'consignorFilter',
+      'clientFilter',
+      'dateFilter',
+      'typeFilter',
+      'companyFilter',
+      'storeFilter',
+      'performerFilter',
+      'managerFilter'
+    ];
 
     // =========================================================================
     // 2. アプリケーション状態管理
@@ -1926,7 +2010,6 @@ function doPost(e) {
       const el = document.getElementById(id);
       if (!el) return;
       el.classList.remove('hidden');
-      el.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     }
 
@@ -1934,12 +2017,10 @@ function doPost(e) {
       const el = document.getElementById(id);
       if (!el) return;
       el.classList.add('hidden');
-      el.style.display = 'none';
-      const anyOpen = ['editModal', 'masterModal', 'deleteConfirmModal', 'syncEmptyDateConfirmModal', 'clearAbnormalDateModal', 'excelPasteModal', 'sheetsModal']
-        .some(mid => {
-          const m = document.getElementById(mid);
-          return m && !m.classList.contains('hidden');
-        });
+      const anyOpen = ALL_MODAL_IDS.some(mid => {
+        const m = document.getElementById(mid);
+        return m && !m.classList.contains('hidden');
+      });
       if (!anyOpen) {
         document.body.style.overflow = '';
       }
@@ -2026,9 +2107,10 @@ function doPost(e) {
       } catch (_) {}
       saveGasUrlToIdb(clean);
       try {
-        if (clean && window.history && window.history.replaceState) {
+        if (window.history && window.history.replaceState) {
           const base = window.location.href.split('#')[0];
-          window.history.replaceState(null, '', `${base}#gas=${encodeURIComponent(clean)}`);
+          const nextHref = clean ? `${base}#gas=${encodeURIComponent(clean)}` : base;
+          window.history.replaceState(null, '', nextHref);
         }
       } catch (_) {}
       updateEmbeddedUrlBadge();
@@ -2036,19 +2118,16 @@ function doPost(e) {
     }
 
     async function resolveInitialGasUrl() {
-      // 1. 明示的な ?gas= クエリパラメータ
       try {
         const params = new URLSearchParams(window.location.search || '');
         const qGas = (params.get('gas') || '').trim();
         if (isValidGasWebAppUrl(qGas)) return qGas;
       } catch (_) {}
 
-      // 2. コード内に直接埋め込まれた DEFAULT_GAS_URL（古いキャッシュによる上書きを防止）
       if (isValidGasWebAppUrl(DEFAULT_GAS_URL)) {
         return DEFAULT_GAS_URL.trim();
       }
 
-      // 3. URLハッシュ #gas=
       try {
         const hash = String(window.location.hash || '');
         const hashMatch = hash.match(/gas=([^&]+)/);
@@ -2058,7 +2137,6 @@ function doPost(e) {
         }
       } catch (_) {}
 
-      // 4. localStorage / sessionStorage
       try {
         const ls = (localStorage.getItem(STORAGE_KEYS.GAS_URL) || '').trim();
         if (isValidGasWebAppUrl(ls)) return ls;
@@ -2066,7 +2144,6 @@ function doPost(e) {
         if (isValidGasWebAppUrl(ss)) return ss;
       } catch (_) {}
 
-      // 5. window.name
       try {
         if (String(window.name || '').startsWith('GAS_URL:')) {
           const wn = window.name.slice(8).trim();
@@ -2074,7 +2151,6 @@ function doPost(e) {
         }
       } catch (_) {}
 
-      // 6. Cookie
       try {
         const cMatch = document.cookie.match(new RegExp('(?:^|; )' + STORAGE_KEYS.GAS_URL + '=([^;]*)'));
         if (cMatch) {
@@ -2083,7 +2159,6 @@ function doPost(e) {
         }
       } catch (_) {}
 
-      // 7. IndexedDB
       const idbUrl = await loadGasUrlFromIdb();
       if (isValidGasWebAppUrl(idbUrl)) return idbUrl;
 
@@ -2265,19 +2340,32 @@ function doPost(e) {
     }
 
     // =========================================================================
-    // 5. ドロップダウン候補の生成と連動
+    // 5. ドロップダウン候補の生成と連動（入力フォーム & 受注ボックスフィルター）
     // =========================================================================
-    function populateSelectOptions(selectId, items, placeholder) {
+    function populateSelectOptions(selectId, items, placeholder, defaultVal = '') {
       const sel = document.getElementById(selectId);
       if (!sel) return;
-      const currentVal = sel.value;
+      const currentVal = sel.value || defaultVal;
       const uniqueItems = [...new Set((items || []).map(v => String(v || '').trim()).filter(Boolean))];
-      sel.innerHTML = `<option value="" class="text-slate-400">${escapeHtml(placeholder)}</option>` +
+      sel.innerHTML = `<option value="${escapeHtml(defaultVal)}" class="text-slate-400">${escapeHtml(placeholder)}</option>` +
         uniqueItems.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join('');
-      if (currentVal && uniqueItems.includes(currentVal)) {
+      if (currentVal && (currentVal === defaultVal || uniqueItems.includes(currentVal))) {
         sel.value = currentVal;
+      } else {
+        sel.value = defaultVal;
       }
       updateSelectColor(sel);
+    }
+
+    function updateEditStoreDatalist(companyVal) {
+      const editStoreList = document.getElementById('editStoreList');
+      if (!editStoreList) return;
+      const cleanComp = stripCompanyPrefix(companyVal);
+      const filtered = cleanComp
+        ? masters.companyStores.filter(cs => stripCompanyPrefix(cs.company) === cleanComp).map(cs => cs.store)
+        : masters.companyStores.map(cs => cs.store);
+      const stores = [...new Set((filtered.length > 0 ? filtered : masters.companyStores.map(cs => cs.store)).filter(Boolean))];
+      editStoreList.innerHTML = stores.map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
     }
 
     function populateAllDropdowns() {
@@ -2294,11 +2382,7 @@ function doPost(e) {
       if (editCompanyList) {
         editCompanyList.innerHTML = cleanCompanies.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
       }
-      const editStoreList = document.getElementById('editStoreList');
-      if (editStoreList) {
-        const allStores = [...new Set(masters.companyStores.map(cs => cs.store).filter(Boolean))];
-        editStoreList.innerHTML = allStores.map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
-      }
+      updateEditStoreDatalist(document.getElementById('editCompany')?.value || '');
 
       const companyVal = stripCompanyPrefix(document.getElementById('companyInput')?.value || document.getElementById('companySelect')?.value || '');
       populateStoreDropdown(companyVal);
@@ -2306,7 +2390,6 @@ function doPost(e) {
       populateSelectOptions('performerSelect', masters.performers, '-- 演者名または取材名を選択 --');
       populateSelectOptions('editPerformerSelect', masters.performers, '-- 演者名または取材名を選択 --');
 
-      // 担当者（新規・編集・フィルター）
       const mgrSel = document.getElementById('managerSelect');
       if (mgrSel) {
         const prev = mgrSel.value;
@@ -2318,14 +2401,83 @@ function doPost(e) {
       }
 
       populateSelectOptions('editManager', masters.managers, '担当者を選択（または未定）');
+      populateFilterDropdowns();
+    }
 
-      const filterMgr = document.getElementById('managerFilter');
-      if (filterMgr) {
-        const prevF = filterMgr.value;
-        filterMgr.innerHTML = '<option value="all">全担当者</option>' +
-          masters.managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-        if (prevF) filterMgr.value = prevF;
+    // 受注ボックス側の絞り込みドロップダウン（委託元→依頼元→実施日→種別→企業名→店舗名→演者名または取材名→担当者）を更新
+    function populateFilterDropdowns() {
+      const consignorItems = [...new Set([...masters.consignors, ...orders.map(o => o.consignor)].filter(Boolean))];
+      populateSelectOptions('consignorFilter', consignorItems, 'すべて', 'all');
+
+      const clientItems = [...new Set([...masters.clients, ...orders.map(o => o.client)].filter(Boolean))];
+      populateSelectOptions('clientFilter', clientItems, 'すべて', 'all');
+
+      // 実施日（データ内の有効な日付を昇順に並べて曜日付き表示）
+      const dateSel = document.getElementById('dateFilter');
+      if (dateSel) {
+        const prevDate = dateSel.value || 'all';
+        const validDates = [...new Set(orders.map(o => o.date).filter(d => d && !isAbnormalDate(d)))].sort((a, b) => a.localeCompare(b, 'ja'));
+        dateSel.innerHTML = '<option value="all">すべて</option>' +
+          validDates.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(formatDateWithWeekday(d))}</option>`).join('');
+        dateSel.value = (prevDate === 'all' || validDates.includes(prevDate)) ? prevDate : 'all';
       }
+
+      const typeItems = [...new Set(['取材', 'アテンド', 'ディレクター', '販売会', ...orders.map(o => o.type)].filter(Boolean))];
+      populateSelectOptions('typeFilter', typeItems, 'すべて', 'all');
+
+      const companyItems = [...new Set([...masters.companies.map(stripCompanyPrefix), ...orders.map(o => stripCompanyPrefix(o.companyName))].filter(Boolean))];
+      populateSelectOptions('companyFilter', companyItems, 'すべて', 'all');
+
+      populateStoreFilterDropdown();
+
+      const performerItems = [...new Set([...masters.performers, ...orders.map(o => o.performerOrEvent)].filter(Boolean))];
+      populateSelectOptions('performerFilter', performerItems, 'すべて', 'all');
+
+      const managerItems = [...new Set([...masters.managers, ...orders.map(o => o.managerName)].filter(Boolean))];
+      populateSelectOptions('managerFilter', managerItems, 'すべて', 'all');
+    }
+
+    function populateStoreFilterDropdown() {
+      const storeSel = document.getElementById('storeFilter');
+      if (!storeSel) return;
+      const selectedCompany = stripCompanyPrefix(document.getElementById('companyFilter')?.value === 'all' ? '' : (document.getElementById('companyFilter')?.value || ''));
+      const prevStore = storeSel.value || 'all';
+
+      let storePool = [];
+      if (selectedCompany) {
+        const fromMaster = masters.companyStores
+          .filter(cs => stripCompanyPrefix(cs.company) === selectedCompany)
+          .map(cs => cs.store);
+        const fromOrders = orders
+          .filter(o => stripCompanyPrefix(o.companyName) === selectedCompany)
+          .map(o => o.storeName);
+        storePool = [...new Set([...fromMaster, ...fromOrders].filter(Boolean))];
+      } else {
+        storePool = [...new Set([
+          ...masters.companyStores.map(cs => cs.store),
+          ...orders.map(o => o.storeName)
+        ].filter(Boolean))];
+      }
+
+      storeSel.innerHTML = '<option value="all">すべて</option>' +
+        storePool.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+      storeSel.value = (prevStore === 'all' || storePool.includes(prevStore)) ? prevStore : 'all';
+    }
+
+    function onCompanyFilterChange() {
+      populateStoreFilterDropdown();
+      renderOrders();
+    }
+
+    function resetOrderFilters() {
+      FILTER_SELECT_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = 'all';
+      });
+      filterOnlyMissingDate = false;
+      filterOnlyAbnormalDate = false;
+      populateStoreFilterDropdown();
+      renderOrders();
     }
 
     function populateStoreDropdown(filterCompany) {
@@ -2381,9 +2533,6 @@ function doPost(e) {
     function onConsignorSelectChange() { syncSelectToInput('consignorSelect', 'consignor'); }
     function onClientSelectChange() { syncSelectToInput('clientSelect', 'client'); }
     function onPerformerSelectChange() { syncSelectToInput('performerSelect', 'performerOrEvent'); }
-    function onEditConsignorSelectChange() { syncSelectToInput('editConsignorSelect', 'editConsignor'); }
-    function onEditClientSelectChange() { syncSelectToInput('editClientSelect', 'editClient'); }
-    function onEditPerformerSelectChange() { syncSelectToInput('editPerformerSelect', 'editPerformer'); }
 
     function onCompanySelectChange() {
       const sel = document.getElementById('companySelect');
@@ -2429,7 +2578,6 @@ function doPost(e) {
     }
 
     function onTypeSelectChange() { handleTypeToggle('typeSelect', 'typeInput'); }
-    function onEditTypeSelectChange() { handleTypeToggle('editTypeSelect', 'editType'); }
 
     function onManagerSelectChange() {
       const sel = document.getElementById('managerSelect');
@@ -2468,19 +2616,14 @@ function doPost(e) {
     }
 
     function calcBillingAndPayment() { computeBillingValues('new'); }
-    function calcEditBillingAndPayment() { computeBillingValues('edit'); }
 
-    function onBillingExcludeChange() {
-      const ex = Number(document.getElementById('billingAmount')?.value) || 0;
-      const inEl = document.getElementById('billingTaxIncluded');
+    function syncTaxIncluded(excludeId, includeId) {
+      const ex = Number(document.getElementById(excludeId)?.value) || 0;
+      const inEl = document.getElementById(includeId);
       if (inEl) inEl.value = ex > 0 ? Math.round(ex * 1.1) : '';
     }
 
-    function onEditBillingExcludeChange() {
-      const ex = Number(document.getElementById('editBilling')?.value) || 0;
-      const inEl = document.getElementById('editBillingTax');
-      if (inEl) inEl.value = ex > 0 ? Math.round(ex * 1.1) : '';
-    }
+    function onBillingExcludeChange() { syncTaxIncluded('billingAmount', 'billingTaxIncluded'); }
 
     function computePaymentTotals(prefix) {
       const isEdit = prefix === 'edit';
@@ -2495,19 +2638,7 @@ function doPost(e) {
     }
 
     function onManualPaymentInput() { computePaymentTotals('new'); }
-    function onEditManualPaymentInput() { computePaymentTotals('edit'); }
-
-    function onPayTotalExcludeChange() {
-      const ex = Number(document.getElementById('payTotalExclude')?.value) || 0;
-      const inEl = document.getElementById('paymentAmount');
-      if (inEl) inEl.value = ex > 0 ? Math.round(ex * 1.1) : '';
-    }
-
-    function onEditPayTotalExcludeChange() {
-      const ex = Number(document.getElementById('editPayTotalExclude')?.value) || 0;
-      const inEl = document.getElementById('editPayment');
-      if (inEl) inEl.value = ex > 0 ? Math.round(ex * 1.1) : '';
-    }
+    function onPayTotalExcludeChange() { syncTaxIncluded('payTotalExclude', 'paymentAmount'); }
 
     // =========================================================================
     // 7. 新規登録・編集・ステータス切替・削除
@@ -2594,6 +2725,7 @@ function doPost(e) {
       if (!newDateVal) {
         target.date = '';
         saveOrdersToStorage();
+        populateFilterDropdowns();
         renderOrders();
         return;
       }
@@ -2604,6 +2736,7 @@ function doPost(e) {
       }
       target.date = norm;
       saveOrdersToStorage();
+      populateFilterDropdowns();
       renderOrders();
       showToast(`実施日を ${norm} に更新しました`, 'success');
       if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
@@ -2645,7 +2778,9 @@ function doPost(e) {
         editTypeInp.value = '';
       }
 
-      document.getElementById('editCompany').value = stripCompanyPrefix(o.companyName);
+      const cleanComp = stripCompanyPrefix(o.companyName);
+      document.getElementById('editCompany').value = cleanComp;
+      updateEditStoreDatalist(cleanComp);
       document.getElementById('editStore').value = o.storeName;
       document.getElementById('editPerformer').value = o.performerOrEvent;
       document.getElementById('editPerformerSelect').value = masters.performers.includes(o.performerOrEvent) ? o.performerOrEvent : '';
@@ -2748,13 +2883,15 @@ function doPost(e) {
 
     function executeDeleteOrder() {
       if (!pendingDeleteOrderId) return;
+      const wasNonEmpty = orders.length > 0;
       orders = orders.filter(o => o.id !== pendingDeleteOrderId);
       saveOrdersToStorage();
+      populateFilterDropdowns();
       renderOrders();
       closeDeleteConfirmModal();
       showToast('案件を削除しました', 'info');
       if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
-        syncToGoogleSheets(false);
+        syncToGoogleSheets(false, wasNonEmpty && orders.length === 0);
       }
     }
 
@@ -2796,6 +2933,7 @@ function doPost(e) {
       });
       filterOnlyAbnormalDate = false;
       saveOrdersToStorage();
+      populateFilterDropdowns();
       renderOrders();
       closeClearAbnormalDateModal();
       showToast(`${cleared}件の異常日付をクリアしました`, 'success');
@@ -2807,8 +2945,30 @@ function doPost(e) {
     function renderOrders() {
       const container = document.getElementById('orderListContainer');
       const countEl = document.getElementById('orderCount');
+
       const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+      const consignorFilter = document.getElementById('consignorFilter')?.value || 'all';
+      const clientFilter = document.getElementById('clientFilter')?.value || 'all';
+      const dateFilter = document.getElementById('dateFilter')?.value || 'all';
+      const typeFilter = document.getElementById('typeFilter')?.value || 'all';
+      const companyFilter = document.getElementById('companyFilter')?.value || 'all';
+      const storeFilter = document.getElementById('storeFilter')?.value || 'all';
+      const performerFilter = document.getElementById('performerFilter')?.value || 'all';
       const managerFilter = document.getElementById('managerFilter')?.value || 'all';
+
+      const hasAnyFilter = [
+        statusFilter, consignorFilter, clientFilter, dateFilter,
+        typeFilter, companyFilter, storeFilter, performerFilter, managerFilter
+      ].some(v => v !== 'all') || filterOnlyMissingDate || filterOnlyAbnormalDate;
+
+      const resetBtn = document.getElementById('resetFiltersBtn');
+      if (resetBtn) {
+        if (hasAnyFilter) {
+          resetBtn.classList.remove('hidden');
+        } else {
+          resetBtn.classList.add('hidden');
+        }
+      }
 
       const missingCount = orders.filter(o => !o.date).length;
       const abnormalCount = orders.filter(o => isAbnormalDate(o.date)).length;
@@ -2842,6 +3002,13 @@ function doPost(e) {
 
       const filtered = orders.filter(o => {
         if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+        if (consignorFilter !== 'all' && o.consignor !== consignorFilter) return false;
+        if (clientFilter !== 'all' && o.client !== clientFilter) return false;
+        if (dateFilter !== 'all' && o.date !== dateFilter) return false;
+        if (typeFilter !== 'all' && o.type !== typeFilter) return false;
+        if (companyFilter !== 'all' && stripCompanyPrefix(o.companyName) !== companyFilter) return false;
+        if (storeFilter !== 'all' && o.storeName !== storeFilter) return false;
+        if (performerFilter !== 'all' && o.performerOrEvent !== performerFilter) return false;
         if (managerFilter !== 'all' && o.managerName !== managerFilter) return false;
         if (filterOnlyMissingDate && o.date) return false;
         if (filterOnlyAbnormalDate && !isAbnormalDate(o.date)) return false;
@@ -2870,7 +3037,7 @@ function doPost(e) {
               <i class="ph ph-folder-open text-2xl"></i>
             </div>
             <p class="text-sm font-bold text-slate-700">表示できる受注案件がありません</p>
-            <p class="text-xs text-slate-400 mt-1">左のフォームから新規登録するか、「シートから取得」でデータを読み込んでください。</p>
+            <p class="text-xs text-slate-400 mt-1">${hasAnyFilter ? '絞り込み条件に一致する案件がありません。「条件リセット」で全件表示に戻せます。' : '左のフォームから新規登録するか、「シートから取得」でデータを読み込んでください。'}</p>
           </div>`;
         return;
       }
@@ -2994,24 +3161,25 @@ function doPost(e) {
 
       setSyncIndicator('スプレッドシートから取得中...', 'syncing');
 
-      const controller = new AbortController();
-      const fetchTimeout = setTimeout(() => controller.abort(), 8000);
-
       try {
         const sep = gasUrl.includes('?') ? '&' : '?';
         const reqUrl = `${gasUrl}${sep}_t=${Date.now()}`;
+        let data = null;
 
-        const fetchPromise = fetch(reqUrl, {
-          method: 'GET',
-          redirect: 'follow',
-          signal: controller.signal
-        }).then(res => {
+        try {
+          const controller = new AbortController();
+          const fetchTimeout = setTimeout(() => controller.abort(), 7000);
+          const res = await fetch(reqUrl, {
+            method: 'GET',
+            redirect: 'follow',
+            signal: controller.signal
+          });
+          clearTimeout(fetchTimeout);
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.json();
-        });
-
-        const jsonpPromise = fetchJsonpFromGas(gasUrl);
-        const data = await Promise.any([fetchPromise, jsonpPromise]);
+          data = await res.json();
+        } catch (_) {
+          data = await fetchJsonpFromGas(gasUrl);
+        }
 
         if (!data || data.status !== 'ok' || !Array.isArray(data.orders)) {
           throw new Error('無効なレスポンス形式です');
@@ -3044,16 +3212,21 @@ function doPost(e) {
         if (isManual) {
           showToast('スプレッドシートからの取得に失敗しました。GASのデプロイ設定をご確認ください。', 'error');
         }
-      } finally {
-        clearTimeout(fetchTimeout);
       }
     }
 
-    async function syncToGoogleSheets(isManual = false) {
+    async function syncToGoogleSheets(isManual = false, allowEmpty = false) {
       if (!isValidGasWebAppUrl(gasUrl)) {
         if (isManual) {
           showToast('先に「連携設定」からGAS WebアプリURLを設定してください', 'warning');
           openSheetsModal();
+        }
+        return;
+      }
+
+      if (orders.length === 0 && !allowEmpty) {
+        if (isManual) {
+          showToast('送信対象のデータが0件のため送信をスキップしました', 'warning');
         }
         return;
       }
@@ -3071,7 +3244,7 @@ function doPost(e) {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'sync', orders })
+          body: JSON.stringify({ action: 'sync', orders, allowEmpty })
         });
 
         const nowStr = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
@@ -3088,7 +3261,7 @@ function doPost(e) {
         isSyncing = false;
         if (pendingSync) {
           pendingSync = false;
-          syncToGoogleSheets(false);
+          syncToGoogleSheets(false, false);
         }
       }
     }
@@ -3103,7 +3276,7 @@ function doPost(e) {
         showModalById('syncEmptyDateConfirmModal');
         return;
       }
-      syncToGoogleSheets(true);
+      syncToGoogleSheets(true, orders.length === 0);
     }
 
     function closeSyncEmptyDateModal() {
@@ -3120,7 +3293,7 @@ function doPost(e) {
 
     function forceSyncAllToSheets() {
       closeSyncEmptyDateModal();
-      syncToGoogleSheets(true);
+      syncToGoogleSheets(true, true);
     }
 
     async function repairSheetHashesRemote() {
@@ -3320,7 +3493,6 @@ function doPost(e) {
       lines.forEach((line, idx) => {
         const cols = line.split('\t').map(c => c.trim());
         if (cols.length < 3) return;
-        // 見出し行スキップ
         if (cols.join('').includes('委託元') && (cols.join('').includes('実施日') || cols.join('').includes('依頼元'))) {
           return;
         }
@@ -3549,26 +3721,19 @@ function doPost(e) {
       const cleanUrl = isValidGasWebAppUrl(gasUrl) ? gasUrl : '';
       const cloneDoc = document.documentElement.cloneNode(true);
 
-      // すべてのモーダルを初期非表示状態へリセット
-      ['editModal', 'masterModal', 'deleteConfirmModal', 'syncEmptyDateConfirmModal', 'clearAbnormalDateModal', 'excelPasteModal', 'sheetsModal'].forEach(id => {
+      ALL_MODAL_IDS.forEach(id => {
         const m = cloneDoc.querySelector('#' + id);
-        if (m) {
-          m.classList.add('hidden');
-          m.style.display = 'none';
-        }
+        if (m) m.classList.add('hidden');
       });
 
-      // 実行時に動的生成されたDOM要素をクリーンアップ
       const cleanContainers = ['orderListContainer', 'toastContainer', 'masterItemList', 'editCompanyList', 'editStoreList'];
       cleanContainers.forEach(cid => {
         const el = cloneDoc.querySelector('#' + cid);
         if (el) el.innerHTML = '';
       });
 
-      // JSONP用に動的に挿入された一時scriptタグを除去
       cloneDoc.querySelectorAll('script[src*="callback=__gasJsonpCb_"]').forEach(s => s.remove());
 
-      // bodyのスクロールロック解除
       const bodyEl = cloneDoc.querySelector('body');
       if (bodyEl) bodyEl.style.overflow = '';
 
@@ -3601,8 +3766,7 @@ function doPost(e) {
     // 13. アプリ起動・自動データ取得初期化
     // =========================================================================
     async function initApp() {
-      ['editModal', 'masterModal', 'deleteConfirmModal', 'syncEmptyDateConfirmModal', 'clearAbnormalDateModal', 'excelPasteModal', 'sheetsModal']
-        .forEach(hideModalById);
+      ALL_MODAL_IDS.forEach(hideModalById);
 
       loadLocalData();
       populateAllDropdowns();
@@ -3622,8 +3786,7 @@ function doPost(e) {
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
-        ['editModal', 'masterModal', 'deleteConfirmModal', 'syncEmptyDateConfirmModal', 'clearAbnormalDateModal', 'excelPasteModal', 'sheetsModal']
-          .forEach(hideModalById);
+        ALL_MODAL_IDS.forEach(hideModalById);
       }
     });
 
