@@ -134,7 +134,7 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">実施日 <span class="text-rose-500">*</span></label>
-              <input type="date" id="date" required
+              <input type="date" id="date" required min="2020-01-01" max="2035-12-31"
                 class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
             </div>
             <div>
@@ -416,7 +416,6 @@
               連携設定からコードをコピー
             </button>
           </div>
-          <div id="gasDiagnosticBox" class="hidden bg-white/80 border border-amber-200/80 rounded-xl px-3 py-2 text-[11px] text-slate-700 font-mono break-all"></div>
         </div>
 
         <!-- 初回・未設定時のみ表示されるクイック自動連携バー -->
@@ -505,7 +504,7 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">実施日 <span class="text-rose-500">*</span></label>
-            <input type="date" id="editDate" required
+            <input type="date" id="editDate" required min="2020-01-01" max="2035-12-31"
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
           </div>
           <div>
@@ -527,13 +526,15 @@
         <div class="grid grid-cols-2 gap-2 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200/80">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">企業名</label>
-            <input type="text" id="editCompany" placeholder="企業名"
+            <input type="text" id="editCompany" list="editCompanyList" placeholder="企業名"
               class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
+            <datalist id="editCompanyList"></datalist>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">店舗名</label>
-            <input type="text" id="editStore" placeholder="店舗名"
+            <input type="text" id="editStore" list="editStoreList" placeholder="店舗名"
               class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
+            <datalist id="editStoreList"></datalist>
           </div>
         </div>
 
@@ -858,7 +859,6 @@
           </div>
           <div class="flex flex-col sm:flex-row gap-2">
             <input type="url" id="gasUrlInput" name="gasWebAppUrl" autocomplete="on" oninput="onGasUrlAutoInput()" onpaste="setTimeout(()=>onGasUrlAutoInput(), 50)" placeholder="GAS WebアプリURLを貼り付けると自動保存されます (https://script.google.com/.../exec)"
-              value=""
               class="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
             <div class="flex items-center space-x-2">
               <button type="button" onclick="saveGasUrl(false)" class="text-xs font-bold px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition whitespace-nowrap">
@@ -1461,10 +1461,13 @@ function doGet(e) {
     var rawDateV = cDate >= 0 ? rowV[cDate] : "";
     var rawDateD = cDate >= 0 ? rowD[cDate] : "";
     var normDate = normalizeGasDate(rawDateV, tz) || normalizeGasDate(rawDateD, tz);
+    var dateValueForApp = normDate;
     if (!normDate) {
       emptyDateCount++;
-      if (isLiteralHashString(rawDateD) || /^(?:19\d{2}|200\d|201\d)/.test(String(rawDateD))) {
+      var cleanRawD = String(rawDateD || "").replace(/^'+/, "").trim();
+      if (isLiteralHashString(cleanRawD) || /^(?:19\d{2}|200\d|201\d)[\/\-\.年]/.test(cleanRawD)) {
         abnormalCount++;
+        dateValueForApp = cleanRawD;
       }
     }
 
@@ -1476,7 +1479,7 @@ function doGet(e) {
       status: statusVal,
       consignor: cConsignor >= 0 ? String(rowD[cConsignor] || "").trim() : "",
       client: cClient >= 0 ? String(rowD[cClient] || "").trim() : "",
-      date: normDate,
+      date: dateValueForApp,
       type: cType >= 0 ? String(rowD[cType] || "").trim() : "",
       companyName: cCompany >= 0 ? String(rowD[cCompany] || "").trim() : "",
       storeName: cStore >= 0 ? String(rowD[cStore] || "").trim() : "",
@@ -1924,6 +1927,7 @@ function doPost(e) {
       if (!el) return;
       el.classList.remove('hidden');
       el.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
     }
 
     function hideModalById(id) {
@@ -1931,6 +1935,14 @@ function doPost(e) {
       if (!el) return;
       el.classList.add('hidden');
       el.style.display = 'none';
+      const anyOpen = ['editModal', 'masterModal', 'deleteConfirmModal', 'syncEmptyDateConfirmModal', 'clearAbnormalDateModal', 'excelPasteModal', 'sheetsModal']
+        .some(mid => {
+          const m = document.getElementById(mid);
+          return m && !m.classList.contains('hidden');
+        });
+      if (!anyOpen) {
+        document.body.style.overflow = '';
+      }
     }
 
     // =========================================================================
@@ -2024,7 +2036,19 @@ function doPost(e) {
     }
 
     async function resolveInitialGasUrl() {
-      // 1. URLハッシュ or クエリパラメータ
+      // 1. 明示的な ?gas= クエリパラメータ
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const qGas = (params.get('gas') || '').trim();
+        if (isValidGasWebAppUrl(qGas)) return qGas;
+      } catch (_) {}
+
+      // 2. コード内に直接埋め込まれた DEFAULT_GAS_URL（古いキャッシュによる上書きを防止）
+      if (isValidGasWebAppUrl(DEFAULT_GAS_URL)) {
+        return DEFAULT_GAS_URL.trim();
+      }
+
+      // 3. URLハッシュ #gas=
       try {
         const hash = String(window.location.hash || '');
         const hashMatch = hash.match(/gas=([^&]+)/);
@@ -2032,17 +2056,9 @@ function doPost(e) {
           const decoded = decodeURIComponent(hashMatch[1]).trim();
           if (isValidGasWebAppUrl(decoded)) return decoded;
         }
-        const params = new URLSearchParams(window.location.search || '');
-        const qGas = (params.get('gas') || '').trim();
-        if (isValidGasWebAppUrl(qGas)) return qGas;
       } catch (_) {}
 
-      // 2. コード内に直接埋め込まれた DEFAULT_GAS_URL
-      if (isValidGasWebAppUrl(DEFAULT_GAS_URL)) {
-        return DEFAULT_GAS_URL.trim();
-      }
-
-      // 3. localStorage / sessionStorage
+      // 4. localStorage / sessionStorage
       try {
         const ls = (localStorage.getItem(STORAGE_KEYS.GAS_URL) || '').trim();
         if (isValidGasWebAppUrl(ls)) return ls;
@@ -2050,7 +2066,7 @@ function doPost(e) {
         if (isValidGasWebAppUrl(ss)) return ss;
       } catch (_) {}
 
-      // 4. window.name
+      // 5. window.name
       try {
         if (String(window.name || '').startsWith('GAS_URL:')) {
           const wn = window.name.slice(8).trim();
@@ -2058,7 +2074,7 @@ function doPost(e) {
         }
       } catch (_) {}
 
-      // 5. Cookie
+      // 6. Cookie
       try {
         const cMatch = document.cookie.match(new RegExp('(?:^|; )' + STORAGE_KEYS.GAS_URL + '=([^;]*)'));
         if (cMatch) {
@@ -2067,7 +2083,7 @@ function doPost(e) {
         }
       } catch (_) {}
 
-      // 6. IndexedDB
+      // 7. IndexedDB
       const idbUrl = await loadGasUrlFromIdb();
       if (isValidGasWebAppUrl(idbUrl)) return idbUrl;
 
@@ -2168,7 +2184,9 @@ function doPost(e) {
     function saveOrdersToStorage() {
       try {
         localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-      } catch (_) {}
+      } catch (_) {
+        showToast('ブラウザの保存容量上限に達しました。CSVバックアップをおすすめします。', 'warning');
+      }
     }
 
     function saveMastersToStorage() {
@@ -2271,6 +2289,16 @@ function doPost(e) {
 
       const cleanCompanies = [...new Set(masters.companies.map(stripCompanyPrefix).filter(Boolean))];
       populateSelectOptions('companySelect', cleanCompanies, '-- 企業候補から選択 --');
+
+      const editCompanyList = document.getElementById('editCompanyList');
+      if (editCompanyList) {
+        editCompanyList.innerHTML = cleanCompanies.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+      }
+      const editStoreList = document.getElementById('editStoreList');
+      if (editStoreList) {
+        const allStores = [...new Set(masters.companyStores.map(cs => cs.store).filter(Boolean))];
+        editStoreList.innerHTML = allStores.map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
+      }
 
       const companyVal = stripCompanyPrefix(document.getElementById('companyInput')?.value || document.getElementById('companySelect')?.value || '');
       populateStoreDropdown(companyVal);
@@ -2563,6 +2591,12 @@ function doPost(e) {
     function updateOrderDateInline(orderId, newDateVal) {
       const target = orders.find(o => o.id === orderId);
       if (!target) return;
+      if (!newDateVal) {
+        target.date = '';
+        saveOrdersToStorage();
+        renderOrders();
+        return;
+      }
       const norm = normalizeClientDate(newDateVal);
       if (!norm) {
         showToast('2020年〜2035年の正しい日付を選択してください', 'warning');
@@ -2860,7 +2894,7 @@ function doPost(e) {
         const dateDisplay = (missing || abnormal)
           ? `<div class="inline-flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-lg px-2 py-0.5">
                <span class="text-[11px] font-bold text-rose-700">${abnormal ? `異常日付(${escapeHtml(o.date)})` : '日付未設定'}</span>
-               <input type="date" onchange="updateOrderDateInline('${escapeHtml(o.id)}', this.value)" class="text-[11px] bg-white border border-rose-300 rounded px-1.5 py-0.5 text-slate-800 outline-none">
+               <input type="date" min="2020-01-01" max="2035-12-31" onchange="updateOrderDateInline('${escapeHtml(o.id)}', this.value)" class="text-[11px] bg-white border border-rose-300 rounded px-1.5 py-0.5 text-slate-800 outline-none">
              </div>`
           : `<span class="text-xs font-bold text-slate-800"><i class="ph ph-calendar-blank mr-1 text-indigo-600"></i>${escapeHtml(formatDateWithWeekday(o.date))}</span>`;
 
@@ -2960,24 +2994,24 @@ function doPost(e) {
 
       setSyncIndicator('スプレッドシートから取得中...', 'syncing');
 
+      const controller = new AbortController();
+      const fetchTimeout = setTimeout(() => controller.abort(), 8000);
+
       try {
         const sep = gasUrl.includes('?') ? '&' : '?';
         const reqUrl = `${gasUrl}${sep}_t=${Date.now()}`;
 
-        const fetchPromise = fetch(reqUrl, { method: 'GET', redirect: 'follow' })
-          .then(res => {
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            return res.json();
-          });
+        const fetchPromise = fetch(reqUrl, {
+          method: 'GET',
+          redirect: 'follow',
+          signal: controller.signal
+        }).then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        });
 
         const jsonpPromise = fetchJsonpFromGas(gasUrl);
-
-        let data = null;
-        try {
-          data = await Promise.any([fetchPromise, jsonpPromise]);
-        } catch (_) {
-          data = await jsonpPromise;
-        }
+        const data = await Promise.any([fetchPromise, jsonpPromise]);
 
         if (!data || data.status !== 'ok' || !Array.isArray(data.orders)) {
           throw new Error('無効なレスポンス形式です');
@@ -3010,6 +3044,8 @@ function doPost(e) {
         if (isManual) {
           showToast('スプレッドシートからの取得に失敗しました。GASのデプロイ設定をご確認ください。', 'error');
         }
+      } finally {
+        clearTimeout(fetchTimeout);
       }
     }
 
@@ -3170,13 +3206,13 @@ function doPost(e) {
           return;
         }
 
-        listEl.innerHTML = rows.map((r, idx) => `
+        listEl.innerHTML = rows.map(r => `
           <div class="flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50">
             <div>
               ${r.company ? `<span class="font-bold text-indigo-700 mr-1.5">${escapeHtml(r.company)}</span>` : '<span class="text-slate-400 mr-1.5">(企業未設定)</span>'}
               <span class="text-slate-700">${escapeHtml(r.store || '（企業名のみ登録）')}</span>
             </div>
-            <button type="button" onclick="deleteCompanyStoreMaster('${escapeHtml(r.company)}', '${escapeHtml(r.store)}')" class="text-slate-400 hover:text-rose-600 p-1">
+            <button type="button" data-company="${escapeHtml(r.company)}" data-store="${escapeHtml(r.store)}" onclick="deleteCompanyStoreMaster(this)" class="text-slate-400 hover:text-rose-600 p-1">
               <i class="ph ph-trash"></i>
             </button>
           </div>
@@ -3237,7 +3273,9 @@ function doPost(e) {
       showToast('マスターに追加しました', 'success');
     }
 
-    function deleteCompanyStoreMaster(company, store) {
+    function deleteCompanyStoreMaster(btnEl) {
+      const company = btnEl?.dataset?.company || '';
+      const store = btnEl?.dataset?.store || '';
       if (store) {
         masters.companyStores = masters.companyStores.filter(cs => !(stripCompanyPrefix(cs.company) === company && cs.store === store));
       } else if (company) {
@@ -3510,6 +3548,8 @@ function doPost(e) {
     function buildConfiguredHtmlSource() {
       const cleanUrl = isValidGasWebAppUrl(gasUrl) ? gasUrl : '';
       const cloneDoc = document.documentElement.cloneNode(true);
+
+      // すべてのモーダルを初期非表示状態へリセット
       ['editModal', 'masterModal', 'deleteConfirmModal', 'syncEmptyDateConfirmModal', 'clearAbnormalDateModal', 'excelPasteModal', 'sheetsModal'].forEach(id => {
         const m = cloneDoc.querySelector('#' + id);
         if (m) {
@@ -3517,6 +3557,21 @@ function doPost(e) {
           m.style.display = 'none';
         }
       });
+
+      // 実行時に動的生成されたDOM要素をクリーンアップ
+      const cleanContainers = ['orderListContainer', 'toastContainer', 'masterItemList', 'editCompanyList', 'editStoreList'];
+      cleanContainers.forEach(cid => {
+        const el = cloneDoc.querySelector('#' + cid);
+        if (el) el.innerHTML = '';
+      });
+
+      // JSONP用に動的に挿入された一時scriptタグを除去
+      cloneDoc.querySelectorAll('script[src*="callback=__gasJsonpCb_"]').forEach(s => s.remove());
+
+      // bodyのスクロールロック解除
+      const bodyEl = cloneDoc.querySelector('body');
+      if (bodyEl) bodyEl.style.overflow = '';
+
       let html = '<!DOCTYPE html>\n' + cloneDoc.outerHTML;
       html = html.replace(/const DEFAULT_GAS_URL = '[^']*';/, `const DEFAULT_GAS_URL = '${cleanUrl}';`);
       return html;
