@@ -43,6 +43,53 @@
     .hidden {
       display: none !important;
     }
+    /* 請求書・支払明細書印刷・PDF出力用スタイル */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm;
+      }
+      body {
+        background: #ffffff !important;
+      }
+      header, main, #toastContainer,
+      #editModal, #masterModal, #deleteConfirmModal,
+      #syncEmptyDateConfirmModal, #clearAbnormalDateModal,
+      #excelPasteModal, #sheetsModal,
+      .no-print {
+        display: none !important;
+      }
+      body.print-mode-invoice #statementModal,
+      body.print-mode-statement #invoiceModal {
+        display: none !important;
+      }
+      body.print-mode-invoice #invoiceModal,
+      body.print-mode-statement #statementModal {
+        position: static !important;
+        inset: auto !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        padding: 0 !important;
+        display: block !important;
+        overflow: visible !important;
+      }
+      body.print-mode-invoice #invoiceModalCard,
+      body.print-mode-statement #statementModalCard {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
+      }
+      body.print-mode-invoice #invoicePrintArea,
+      body.print-mode-statement #statementPrintArea {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
@@ -76,6 +123,14 @@
         </button>
         <button type="button" onclick="openMasterModal('performer')" class="inline-flex items-center text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition whitespace-nowrap">
           <i class="ph ph-microphone-stage mr-1 text-sm"></i>演者・取材名
+        </button>
+
+        <button type="button" onclick="openInvoiceModal()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition whitespace-nowrap">
+          <i class="ph ph-file-text mr-1 text-sm"></i>請求書
+        </button>
+
+        <button type="button" onclick="openStatementModal()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 transition whitespace-nowrap">
+          <i class="ph ph-list-checks mr-1 text-sm"></i>明細書
         </button>
 
         <button type="button" onclick="exportCSV()" class="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white shadow-sm transition whitespace-nowrap">
@@ -375,7 +430,7 @@
             </div>
           </div>
 
-          <!-- 下段: 絞り込みフィルター（ステータス→委託元→依頼元→実施日→種別→企業名→店舗名→演者名または取材名→担当者） -->
+          <!-- 下段: 絞り込みフィルター -->
           <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-200/80 space-y-2.5">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-slate-600 flex items-center">
@@ -387,7 +442,6 @@
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <!-- 1. ステータス -->
               <div>
                 <label for="statusFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">1. ステータス</label>
                 <select id="statusFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -397,7 +451,6 @@
                 </select>
               </div>
 
-              <!-- 2. 委託元 -->
               <div>
                 <label for="consignorFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">2. 委託元</label>
                 <select id="consignorFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -405,7 +458,6 @@
                 </select>
               </div>
 
-              <!-- 3. 依頼元 -->
               <div>
                 <label for="clientFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">3. 依頼元</label>
                 <select id="clientFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -413,7 +465,6 @@
                 </select>
               </div>
 
-              <!-- 4. 実施日 -->
               <div>
                 <label for="dateFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">4. 実施日</label>
                 <select id="dateFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -421,7 +472,6 @@
                 </select>
               </div>
 
-              <!-- 5. 種別 -->
               <div>
                 <label for="typeFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">5. 種別</label>
                 <select id="typeFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -429,7 +479,6 @@
                 </select>
               </div>
 
-              <!-- 6. 企業名 -->
               <div>
                 <label for="companyFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">6. 企業名</label>
                 <select id="companyFilter" onchange="onCompanyFilterChange()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -437,7 +486,6 @@
                 </select>
               </div>
 
-              <!-- 7. 店舗名 -->
               <div>
                 <label for="storeFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">7. 店舗名</label>
                 <select id="storeFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -445,7 +493,6 @@
                 </select>
               </div>
 
-              <!-- 8. 演者名または取材名 -->
               <div>
                 <label for="performerFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">8. 演者名または取材名</label>
                 <select id="performerFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -453,7 +500,6 @@
                 </select>
               </div>
 
-              <!-- 9. 担当者 -->
               <div>
                 <label for="managerFilter" class="block text-[10px] font-bold text-slate-500 mb-0.5">9. 担当者</label>
                 <select id="managerFilter" onchange="renderOrders()" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -507,7 +553,7 @@
               <i class="ph ph-plugs-connected text-indigo-600 text-lg shrink-0 mt-0.5"></i>
               <div>
                 <p class="font-bold">スプレッドシート自動取得の設定（URLを貼るだけで自動接続・取得します）</p>
-                <p class="text-[11px] text-indigo-800 mt-0.5">※プレビュー画面は更新のたびに初期化されるため、<strong>チャット欄にGAS URLを貼って送信</strong>していただくか、下の「URL固定済みHTMLを保存」をご利用いただくと毎回設定不要になります。</p>
+                <p class="text-[11px] text-indigo-800 mt-0.5">※プレビュー画面は更新のたびに初期化されるため、下の「URL固定済みHTMLを保存」をご利用いただくと毎回設定不要になります。</p>
               </div>
             </div>
             <div class="flex items-center gap-1.5 w-full sm:w-auto">
@@ -955,18 +1001,17 @@
           <p class="text-[11px] text-slate-400 mt-1">※貼り付けるだけで自動保存され、URLハッシュ・ブラウザ・Cookie・IndexedDBに多重記憶します。</p>
         </div>
 
-        <!-- 恒久固定化（ブックマークURL & HTML埋め込み書き出し）ボックス -->
+        <!-- 恒久固定化ボックス -->
         <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3 space-y-2">
           <div class="flex items-center justify-between gap-2">
             <span class="text-xs font-bold text-indigo-950 flex items-center">
-              <i class="ph ph-push-pin mr-1.5 text-indigo-600 text-sm"></i>次回から設定不要で開く方法（3通り）
+              <i class="ph ph-push-pin mr-1.5 text-indigo-600 text-sm"></i>次回から設定不要で開く方法
             </span>
             <span id="embeddedUrlStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-600 border border-indigo-200">未設定</span>
           </div>
           <p class="text-[11px] text-indigo-900 leading-relaxed">
-            <strong>① ブックマークで固定（一番簡単）：</strong>URL保存後、このページをそのまま<strong>ブックマーク</strong>するか「設定済み専用URLをコピー」から開くと、PCでもローカルファイルでも毎回自動接続します。<br>
-            <strong>② HTMLファイルに固定（PC・GitHub用）：</strong>下の「HTMLファイルとして保存」でダウンロードしたファイルを使えば、どのブラウザで開いても最初から連携済みになります。<br>
-            <strong>③ Geminiプレビューで固定：</strong>ご使用中のGAS URLをチャットに貼り付けていただければ、この画面のコード自体に直接埋め込みます。
+            <strong>① ブックマークで固定：</strong>URL保存後、「設定済み専用URLをコピー」から開くと、PCでもローカルファイルでも毎回自動接続します。<br>
+            <strong>② HTMLファイルに固定：</strong>下の「URL固定済みHTMLを保存」でダウンロードしたファイルを使えば、どのブラウザで開いても最初から連携済みになります。
           </p>
           <div class="flex flex-wrap items-center gap-2 pt-0.5">
             <button type="button" onclick="copyShareableAppUrl()" class="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
@@ -1020,7 +1065,6 @@ function onOpen() {
     .addToUi();
 }
 
-// 初回手動実行用：スプレッドシートの地域設定を日本に固定し実施日列をテキストロック
 function setupJapaneseLocaleAndLock() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   ss.setSpreadsheetLocale("ja_JP");
@@ -1043,13 +1087,11 @@ function setupJapaneseLocaleAndLock() {
   fixSheetDates();
 }
 
-// セル値が文字通りの "###" やエラー表示になっていないか判定
 function isLiteralHashString(v) {
   var s = String(v === null || v === undefined ? "" : v).replace(/^'+/, "").trim();
   return /^#+$/.test(s) || s === "#VALUE!" || s === "#NUM!" || s === "#ERROR!" || s === "#N/A";
 }
 
-// 実在するカレンダー日付か検証（2020〜2035年）
 function isValidGasCalendarDate(y, m, d) {
   if (y < 2020 || y > 2035) return false;
   if (m < 1 || m > 12 || d < 1 || d > 31) return false;
@@ -1057,7 +1099,6 @@ function isValidGasCalendarDate(y, m, d) {
   return dt.getUTCFullYear() === y && (dt.getUTCMonth() + 1) === m && dt.getUTCDate() === d;
 }
 
-// シート上の###や日付書式崩れを全シート一括修復（高速バッチ処理版）
 function fixSheetDates() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var tz = ss.getSpreadsheetTimeZone() || "Asia/Tokyo";
@@ -1111,184 +1152,10 @@ function fixSheetDates() {
         }
       }
     }
-
-    var allRange = sheet.getDataRange();
-    var allVals = allRange.getValues();
-    var allDisps = allRange.getDisplayValues();
-    var allFormats = allRange.getNumberFormats();
-    var colsToResize = {};
-
-    for (var r = 0; r < allVals.length; r++) {
-      for (var c = 0; c < allVals[r].length; c++) {
-        if (dateColMap[c] && r >= headerRow) continue;
-        var dispStr = String(allDisps[r][c] || "").replace(/^'+/, "").trim();
-        var rawCellVal = allVals[r][c];
-        var fmtStr = String(allFormats[r][c] || "").toLowerCase();
-
-        var isDateObj = (Object.prototype.toString.call(rawCellVal) === "[object Date]" && !isNaN(rawCellVal.getTime()));
-        var isHashOrError = isLiteralHashString(dispStr) || isLiteralHashString(rawCellVal);
-        var hasDateFormatWithNumber = (typeof rawCellVal === "number" && (fmtStr.indexOf("yy") >= 0 || fmtStr.indexOf("mm") >= 0 || fmtStr.indexOf("dd") >= 0 || fmtStr.indexOf("年") >= 0 || fmtStr.indexOf("月") >= 0));
-        var isOutOfRangeYearText = /^(?:19\d{2}|200\d|201\d|203[6-9]|20[4-9]\d|2[1-9]\d{2})[\/\-\.年]\d{1,2}[\/\-\.月]\d{1,2}/.test(dispStr);
-
-        if (isHashOrError || isDateObj || hasDateFormatWithNumber || isOutOfRangeYearText) {
-          var cell = sheet.getRange(r + 1, c + 1);
-          var asDate = normalizeGasDate(rawCellVal, tz) || normalizeGasDate(dispStr, tz);
-          cell.breakApart();
-          cell.clearFormat();
-          cell.setNumberFormat("@");
-          cell.setFontColor("#0f172a");
-          cell.setValue(asDate || "");
-          colsToResize[c + 1] = 160;
-        }
-      }
-    }
-
-    for (var colKey in colsToResize) {
-      var colN = Number(colKey);
-      sheet.autoResizeColumn(colN);
-      if (sheet.getColumnWidth(colN) < colsToResize[colKey]) {
-        sheet.setColumnWidth(colN, colsToResize[colKey]);
-      }
-    }
   }
   SpreadsheetApp.flush();
 }
 
-// Excelの「1904年から計算する」設定による4年1日ズレ（1462日）を一括補正
-function fixExcel1904Shift() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var tz = ss.getSpreadsheetTimeZone() || "Asia/Tokyo";
-  var sheet = resolveOrderSheet(ss);
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
-  if (lastRow < 2 || lastCol < 1) return;
-
-  var headerRow = findHeaderRow(sheet);
-  var headers = sheet.getRange(headerRow, 1, 1, lastCol).getDisplayValues()[0].map(normHeader);
-  var cDate = findColIndex(headers, ["実施日", "日付", "開催日", "稼働日", "日程", "予定日"], ["同期", "更新", "登録", "作成", "曜日"]);
-  if (cDate < 0 || lastRow <= headerRow) return;
-
-  var dateColNum = cDate + 1;
-  var numRows = lastRow - headerRow;
-  var range = sheet.getRange(headerRow + 1, dateColNum, numRows, 1);
-  var vals = range.getValues();
-  var disps = range.getDisplayValues();
-  var currentYear = Number(Utilities.formatDate(new Date(), tz, "yyyy"));
-  var out = [];
-
-  for (var i = 0; i < numRows; i++) {
-    var norm = normalizeGasDate(vals[i][0], tz) || normalizeGasDate(disps[i][0], tz);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(norm)) {
-      var parts = norm.split("-").map(Number);
-      if (parts[0] >= currentYear + 3) {
-        var shifted = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] - 1462));
-        out.push([Utilities.formatDate(shifted, "UTC", "yyyy-MM-dd")]);
-      } else {
-        out.push([norm]);
-      }
-    } else {
-      out.push([String(disps[i][0] || "").replace(/^'+/, "").trim()]);
-    }
-  }
-
-  range.clearFormat();
-  range.setNumberFormat("@");
-  range.setValues(out);
-  sheet.setColumnWidth(dateColNum, 160);
-  SpreadsheetApp.flush();
-}
-
-// 選択中のセルで月と日が逆転（例: 8/1 → 1/8）した日付を入れ替えて復元
-function swapSelectedMonthDay() {
-  var sheet = SpreadsheetApp.getActiveSheet();
-  var range = sheet.getActiveRange();
-  if (!range) return;
-  var tz = sheet.getParent().getSpreadsheetTimeZone() || "Asia/Tokyo";
-  var vals = range.getValues();
-  var disps = range.getDisplayValues();
-  var out = [];
-  for (var r = 0; r < vals.length; r++) {
-    var rowOut = [];
-    for (var c = 0; c < vals[r].length; c++) {
-      var norm = normalizeGasDate(vals[r][c], tz) || normalizeGasDate(disps[r][c], tz);
-      if (/^\d{4}-\d{2}-\d{2}$/.test(norm)) {
-        var p = norm.split("-");
-        if (Number(p[2]) <= 12 && isValidGasCalendarDate(Number(p[0]), Number(p[2]), Number(p[1]))) {
-          rowOut.push(p[0] + "-" + p[2] + "-" + p[1]);
-        } else {
-          rowOut.push(norm);
-        }
-      } else {
-        rowOut.push(String(disps[r][c] || vals[r][c] || "").replace(/^'+/, ""));
-      }
-    }
-    out.push(rowOut);
-  }
-  range.clearFormat();
-  range.setNumberFormat("@");
-  range.setValues(out);
-}
-
-// Excel等からスプレッドシートへコピー＆ペーストした瞬間に自動起動
-function onEdit(e) {
-  if (!e || !e.range) return;
-  var sheet = e.range.getSheet();
-  var ss = sheet.getParent();
-  var tz = ss.getSpreadsheetTimeZone() || "Asia/Tokyo";
-  var lastCol = sheet.getLastColumn();
-  if (lastCol === 0) return;
-
-  var headerRow = findHeaderRow(sheet);
-  var headers = sheet.getRange(headerRow, 1, 1, lastCol).getDisplayValues()[0].map(normHeader);
-  var cDate = findColIndex(headers, ["実施日", "日付", "開催日", "稼働日", "日程", "予定日", "年月日", "月日", "取材日", "来店日", "日時", "Date", "DATE"], ["同期", "更新", "登録", "作成", "曜日"]);
-  if (cDate < 0) return;
-
-  var dateColNum = cDate + 1;
-  var startCol = e.range.getColumn();
-  var endCol = startCol + e.range.getNumColumns() - 1;
-  if (dateColNum < startCol || dateColNum > endCol) return;
-
-  var startRow = Math.max(headerRow + 1, e.range.getRow());
-  var endRow = e.range.getRow() + e.range.getNumRows() - 1;
-  if (endRow < startRow) return;
-
-  var numRows = endRow - startRow + 1;
-  var targetRange = sheet.getRange(startRow, dateColNum, numRows, 1);
-  var vals = targetRange.getValues();
-  var disps = targetRange.getDisplayValues();
-  var currentYear = Number(Utilities.formatDate(new Date(), tz, "yyyy"));
-  var hasAnyConverted = false;
-  var out = [];
-
-  for (var i = 0; i < numRows; i++) {
-    var rawV = vals[i][0];
-    var rawD = String(disps[i][0] || "").replace(/^'+/, "").trim();
-    var fixed = normalizeGasDate(rawV, tz) || normalizeGasDate(rawD, tz);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(fixed)) {
-      var parts = fixed.split("-").map(Number);
-      if (parts[0] >= currentYear + 3) {
-        var shifted = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] - 1462));
-        fixed = Utilities.formatDate(shifted, "UTC", "yyyy-MM-dd");
-      }
-      out.push([fixed]);
-      hasAnyConverted = true;
-    } else {
-      out.push([isLiteralHashString(rawD) ? "" : rawD]);
-    }
-  }
-
-  if (hasAnyConverted) {
-    sheet.clearConditionalFormatRules();
-    targetRange.breakApart();
-    targetRange.clearFormat();
-    targetRange.setNumberFormat("@");
-    targetRange.setFontColor("#0f172a");
-    targetRange.setValues(out);
-    sheet.setColumnWidth(dateColNum, 160);
-  }
-}
-
-// 見出し行の位置を1〜15行目から自動検出
 function findHeaderRow(sheet) {
   var maxScan = Math.min(15, sheet.getLastRow());
   var lastCol = sheet.getLastColumn();
@@ -1303,7 +1170,6 @@ function findHeaderRow(sheet) {
   return 1;
 }
 
-// 対象となる受注管理シートを自動特定
 function resolveOrderSheet(ss) {
   var sheets = ss.getSheets();
   var bestSheet = null;
@@ -1315,7 +1181,7 @@ function resolveOrderSheet(ss) {
     var lastRow = s.getLastRow();
     var lastCol = s.getLastColumn();
     var score = 0;
-    if (name === "受注管理") score += 20;
+    if (name === "受注管理" || name === "取材・アテンド・ディレクター管理") score += 20;
     if (lastRow > 1 && lastCol > 0) {
       score += Math.min(lastRow, 50);
       var hRow = findHeaderRow(s);
@@ -1358,7 +1224,6 @@ function findColIndex(headers, includes, excludes) {
   return -1;
 }
 
-// あらゆる日付形式を YYYY-MM-DD に変換（カレンダー実在日チェック・2020〜2035年制限付き）
 function normalizeGasDate(val, tz) {
   if (val === null || val === undefined || val === "") return "";
   tz = tz || "Asia/Tokyo";
@@ -1385,7 +1250,6 @@ function normalizeGasDate(val, tz) {
         return s8.slice(0, 4) + "-" + s8.slice(4, 6) + "-" + s8.slice(6, 8);
       }
     }
-    // Excelシリアル値（2020-01-01 = 43831 ～ 2035-12-31 = 49674）
     if (val >= 43831 && val <= 49674) {
       var utcMs = Math.round((val - 25569) * 86400 * 1000);
       var dt = new Date(utcMs);
@@ -1405,19 +1269,11 @@ function normalizeGasDate(val, tz) {
 
   if (!str || isLiteralHashString(str)) return "";
 
-  // 8桁数字
   var m8str = str.match(/^(20\d{2})(\d{2})(\d{2})$/);
-  if (m8str) {
-    var yy8 = Number(m8str[1]);
-    var mm8 = Number(m8str[2]);
-    var dd8 = Number(m8str[3]);
-    if (isValidGasCalendarDate(yy8, mm8, dd8)) {
-      return m8str[1] + "-" + m8str[2] + "-" + m8str[3];
-    }
-    return "";
+  if (m8str && isValidGasCalendarDate(Number(m8str[1]), Number(m8str[2]), Number(m8str[3]))) {
+    return m8str[1] + "-" + m8str[2] + "-" + m8str[3];
   }
 
-  // 4桁年 + 月 + 日
   var mYmd = str.match(/(\d{4})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
   if (mYmd) {
     var yy = Number(mYmd[1]);
@@ -1427,49 +1283,11 @@ function normalizeGasDate(val, tz) {
     if (isValidGasCalendarDate(yy, mm, dd)) {
       return yy + "-" + ("0" + mm).slice(-2) + "-" + ("0" + dd).slice(-2);
     }
-    return "";
-  }
-
-  // 和暦（令和）
-  var mReiwa = str.match(/(?:令和|R|r)\s*(\d{1,2})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
-  if (mReiwa) {
-    var ry = 2018 + Number(mReiwa[1]);
-    var rm = Number(mReiwa[2]);
-    var rd = Number(mReiwa[3]);
-    if (isValidGasCalendarDate(ry, rm, rd)) {
-      return ry + "-" + ("0" + rm).slice(-2) + "-" + ("0" + rd).slice(-2);
-    }
-    return "";
-  }
-
-  // 英語月表記（01-Aug-2026 等）
-  var monthMap = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
-  var mEng = str.match(/(\d{1,2})[\s\-\/]([A-Za-z]{3,9})[\s\-\/,]+(\d{4})/);
-  if (mEng) {
-    var em = monthMap[mEng[2].slice(0, 3).toLowerCase()];
-    var ey = Number(mEng[3]);
-    var ed = Number(mEng[1]);
-    if (em && isValidGasCalendarDate(ey, em, ed)) {
-      return ey + "-" + ("0" + em).slice(-2) + "-" + ("0" + ed).slice(-2);
-    }
-    return "";
-  }
-
-  // 2桁年（26/8/1 など）
-  var m2y = str.match(/^(\d{2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})$/);
-  if (m2y) {
-    var y2 = 2000 + Number(m2y[1]);
-    var m2 = Number(m2y[2]);
-    var d2 = Number(m2y[3]);
-    if (isValidGasCalendarDate(y2, m2, d2)) {
-      return y2 + "-" + ("0" + m2).slice(-2) + "-" + ("0" + d2).slice(-2);
-    }
   }
 
   return "";
 }
 
-// アプリからの取得（GET）
 function doGet(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var tz = ss.getSpreadsheetTimeZone() || "Asia/Tokyo";
@@ -1488,15 +1306,6 @@ function doGet(e) {
   var headerRow = findHeaderRow(sheet);
   var headers = sheet.getRange(headerRow, 1, 1, lastCol).getDisplayValues()[0].map(normHeader);
   var numDataRows = lastRow - headerRow;
-  if (numDataRows < 1) {
-    return ContentService.createTextOutput(JSON.stringify({
-      status: "ok",
-      sheetName: sheet.getName(),
-      orders: [],
-      diagnostic: { headerRow: headerRow, detectedDateCol: -1, emptyDateRowCount: 0, abnormalDateCount: 0 }
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-
   var values = sheet.getRange(headerRow + 1, 1, numDataRows, lastCol).getValues();
   var displayValues = sheet.getRange(headerRow + 1, 1, numDataRows, lastCol).getDisplayValues();
 
@@ -1526,9 +1335,6 @@ function doGet(e) {
   var cNotes = findColIndex(headers, ["特記事項", "備考", "メモ"], []);
 
   var orders = [];
-  var emptyDateCount = 0;
-  var abnormalCount = 0;
-
   function toNum(v) {
     if (typeof v === "number") return isNaN(v) ? 0 : Math.round(v);
     var n = Number(String(v || "").replace(/[^\d\-]/g, ""));
@@ -1538,31 +1344,17 @@ function doGet(e) {
   for (var i = 0; i < values.length; i++) {
     var rowV = values[i];
     var rowD = displayValues[i];
-    var joined = rowD.join("").trim();
-    if (!joined) continue;
+    if (!rowD.join("").trim()) continue;
 
-    var rawDateV = cDate >= 0 ? rowV[cDate] : "";
-    var rawDateD = cDate >= 0 ? rowD[cDate] : "";
-    var normDate = normalizeGasDate(rawDateV, tz) || normalizeGasDate(rawDateD, tz);
-    var dateValueForApp = normDate;
-    if (!normDate) {
-      emptyDateCount++;
-      var cleanRawD = String(rawDateD || "").replace(/^'+/, "").trim();
-      if (isLiteralHashString(cleanRawD) || /^(?:19\d{2}|200\d|201\d)[\/\-\.年]/.test(cleanRawD)) {
-        abnormalCount++;
-        dateValueForApp = cleanRawD;
-      }
-    }
-
+    var normDate = cDate >= 0 ? (normalizeGasDate(rowV[cDate], tz) || normalizeGasDate(rowD[cDate], tz)) : "";
     var rawStatus = cStatus >= 0 ? String(rowD[cStatus] || "").trim() : "";
-    var statusVal = (rawStatus === "仮案件" || rawStatus === "tentative") ? "tentative" : "confirmed";
 
     orders.push({
       id: (cId >= 0 && String(rowD[cId] || "").trim()) ? String(rowD[cId]).trim() : ("ORD-SHEET-" + (i + 1)),
-      status: statusVal,
+      status: (rawStatus === "仮案件" || rawStatus === "tentative") ? "tentative" : "confirmed",
       consignor: cConsignor >= 0 ? String(rowD[cConsignor] || "").trim() : "",
       client: cClient >= 0 ? String(rowD[cClient] || "").trim() : "",
-      date: dateValueForApp,
+      date: normDate,
       type: cType >= 0 ? String(rowD[cType] || "").trim() : "",
       companyName: cCompany >= 0 ? String(rowD[cCompany] || "").trim() : "",
       storeName: cStore >= 0 ? String(rowD[cStore] || "").trim() : "",
@@ -1589,12 +1381,7 @@ function doGet(e) {
     status: "ok",
     sheetName: sheet.getName(),
     orders: orders,
-    diagnostic: {
-      headerRow: headerRow,
-      detectedDateCol: cDate >= 0 ? (cDate + 1) : -1,
-      emptyDateRowCount: emptyDateCount,
-      abnormalDateCount: abnormalCount
-    }
+    diagnostic: { headerRow: headerRow, detectedDateCol: cDate >= 0 ? (cDate + 1) : -1 }
   });
 
   var callbackName = (e && e.parameter && e.parameter.callback) ? String(e.parameter.callback).replace(/[^A-Za-z0-9_$.]/g, "") : "";
@@ -1602,22 +1389,13 @@ function doGet(e) {
     return ContentService.createTextOutput(callbackName + "(" + responsePayload + ");")
       .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
-
-  return ContentService.createTextOutput(responsePayload)
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(responsePayload).setMimeType(ContentService.MimeType.JSON);
 }
 
-// アプリからの送信・リモート修復（POST）
 function doPost(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var tz = ss.getSpreadsheetTimeZone() || "Asia/Tokyo";
-  var payload = {};
-  try {
-    payload = JSON.parse(e.postData.contents || "{}");
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Invalid JSON" }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  var payload = JSON.parse(e.postData.contents || "{}");
 
   if (payload.action === "fixDates") {
     fixSheetDates();
@@ -1627,64 +1405,24 @@ function doPost(e) {
 
   var orderSheet = resolveOrderSheet(ss);
   var incomingOrders = Array.isArray(payload.orders) ? payload.orders : [];
-
   if (incomingOrders.length === 0 && !payload.allowEmpty) {
-    return ContentService.createTextOutput(JSON.stringify({
-      status: "skipped",
-      message: "Empty payload blocked"
-    })).setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ status: "skipped" })).setMimeType(ContentService.MimeType.JSON);
   }
 
   var targetHeaders = [
     "管理ID", "ステータス", "委託元", "依頼元", "実施日", "種別", "企業名", "店舗名",
     "演者名または取材名", "担当者", "報酬", "交通費", "ガソリン代", "高速代",
     "昼食代(8%)", "昼食代", "その他経費", "請求金額(税抜)", "請求金額(税込)",
-    "支払報酬(税抜)", "支払経費(税抜)", "支払総額(税抜)", "支払総額(税込)",
-    "特記事項"
+    "支払報酬(税抜)", "支払経費(税抜)", "支払総額(税抜)", "支払総額(税込)", "特記事項"
   ];
 
-  // 既存シートの有効日付を退避（管理ID一致による安全保護）
-  var savedDateById = {};
-  var exLastRow = orderSheet.getLastRow();
-  var exLastCol = orderSheet.getLastColumn();
-
-  if (exLastRow > 1 && exLastCol > 0) {
-    var exHeaderRow = findHeaderRow(orderSheet);
-    var exHeaders = orderSheet.getRange(exHeaderRow, 1, 1, exLastCol).getDisplayValues()[0].map(normHeader);
-    var exNumRows = exLastRow - exHeaderRow;
-    if (exNumRows > 0) {
-      var exVals = orderSheet.getRange(exHeaderRow + 1, 1, exNumRows, exLastCol).getValues();
-      var exDisps = orderSheet.getRange(exHeaderRow + 1, 1, exNumRows, exLastCol).getDisplayValues();
-      var cId = findColIndex(exHeaders, ["管理ID", "ID"], []);
-      var cDate = findColIndex(exHeaders, ["実施日", "日付", "開催日", "稼働日", "日程", "予定日"], ["同期", "更新", "登録", "作成", "曜日"]);
-
-      if (cDate >= 0 && cId >= 0) {
-        for (var r = 0; r < exVals.length; r++) {
-          var dFixed = normalizeGasDate(exVals[r][cDate], tz) || normalizeGasDate(exDisps[r][cDate], tz);
-          var rowId = String(exDisps[r][cId] || "").trim();
-          if (dFixed && rowId) {
-            savedDateById[rowId] = dFixed;
-          }
-        }
-      }
-    }
-  }
-
-  var rows = [];
-  for (var i = 0; i < incomingOrders.length; i++) {
-    var o = incomingOrders[i] || {};
-    var oid = String(o.id || ("ORD-" + (i + 1))).trim();
-    var dateStr = normalizeGasDate(o.date, tz);
-    if (!dateStr && savedDateById[oid]) {
-      dateStr = savedDateById[oid];
-    }
-
-    rows.push([
-      oid,
+  var rows = incomingOrders.map(function(o, i) {
+    return [
+      String(o.id || ("ORD-" + (i + 1))).trim(),
       o.status === "tentative" ? "仮案件" : "確定",
       String(o.consignor || ""),
       String(o.client || ""),
-      dateStr,
+      normalizeGasDate(o.date, tz),
       String(o.type || ""),
       String(o.companyName || ""),
       String(o.storeName || ""),
@@ -1704,13 +1442,10 @@ function doPost(e) {
       Number(o.payTotalExclude) || 0,
       Number(o.paymentAmount) || 0,
       String(o.notes || "")
-    ]);
-  }
+    ];
+  });
 
-  orderSheet.clearConditionalFormatRules();
   orderSheet.clearContents();
-
-  // ヘッダー書き込み
   var headerRange = orderSheet.getRange(1, 1, 1, targetHeaders.length);
   headerRange.setValues([targetHeaders]);
   headerRange.setFontWeight("bold");
@@ -1718,22 +1453,315 @@ function doPost(e) {
 
   if (rows.length > 0) {
     var dataRange = orderSheet.getRange(2, 1, rows.length, targetHeaders.length);
-    dataRange.clearFormat();
-    // E列（5列目：実施日）とA列（管理ID）を純粋テキスト書式（@）に固定
     orderSheet.getRange(2, 1, rows.length, 1).setNumberFormat("@");
     orderSheet.getRange(2, 5, rows.length, 1).setNumberFormat("@");
     dataRange.setValues(rows);
   }
-
-  orderSheet.setColumnWidth(1, 160);
-  orderSheet.setColumnWidth(5, 160);
   SpreadsheetApp.flush();
 
-  return ContentService.createTextOutput(JSON.stringify({
-    status: "ok",
-    count: rows.length
-  })).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify({ status: "ok", count: rows.length }))
+    .setMimeType(ContentService.MimeType.JSON);
 }</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 請求書作成・プレビュー・印刷モーダル -->
+  <div id="invoiceModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-4" onclick="if(event.target===this) closeInvoiceModal()">
+    <div id="invoiceModalCard" class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-6xl max-h-[94vh] flex flex-col overflow-hidden">
+      <div class="no-print flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 border-b border-slate-200 bg-slate-50">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+            <i class="ph ph-file-text text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">請求書作成・プレビュー（インボイス制度対応）</h3>
+            <p class="text-[11px] text-slate-500">月別・請求先別のまとめ請求や個別案件の請求書をそのまま印刷・PDF保存できます</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="printInvoice()" class="inline-flex items-center text-xs font-bold px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+            <i class="ph ph-printer mr-1.5 text-base"></i>印刷 / PDF保存
+          </button>
+          <button type="button" onclick="closeInvoiceModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1.5 rounded-lg hover:bg-slate-200/60 transition">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12">
+        <!-- 左側コントロールパネル -->
+        <div class="no-print lg:col-span-4 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50/70 p-4 space-y-4 overflow-y-auto">
+          <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 flex items-center">
+                <i class="ph ph-funnel mr-1 text-indigo-600"></i>1. 請求対象の抽出条件
+              </span>
+              <span id="invoiceTargetModeBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">一括集計</span>
+            </div>
+
+            <div id="invoiceSingleNotice" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-2 text-[11px] text-amber-900 flex items-center justify-between gap-2">
+              <span>個別案件モードで表示中</span>
+              <button type="button" onclick="switchInvoiceToBatchMode()" class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700 transition shrink-0">
+                一括集計に戻す
+              </button>
+            </div>
+
+            <div id="invoiceBatchControls" class="space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">対象年月</label>
+                  <select id="invoiceMonthSelect" onchange="onInvoiceFilterChange(true)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 font-medium outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="all">すべての期間</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">案件ステータス</label>
+                  <select id="invoiceStatusSelect" onchange="renderInvoicePreview()" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 font-medium outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="confirmed">確定案件のみ</option>
+                    <option value="all">すべて（仮案件含む）</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">請求先区分</label>
+                  <select id="invoiceTargetFieldSelect" onchange="populateInvoiceTargetValues(); onInvoiceFilterChange(true);" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 font-medium outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="consignor">委託元で絞込</option>
+                    <option value="client">依頼元で絞込</option>
+                    <option value="companyName">企業名で絞込</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">請求先を選択</label>
+                  <select id="invoiceTargetValueSelect" onchange="onInvoiceFilterChange(true)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 font-medium outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="all">すべて</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2.5">
+            <span class="text-xs font-bold text-slate-800 flex items-center">
+              <i class="ph ph-note-pencil mr-1 text-indigo-600"></i>2. 請求書記載内容
+            </span>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">請求先宛名</label>
+              <input type="text" id="invRecipientName" oninput="renderInvoicePreview()" placeholder="例: 株式会社ユナイト 御中"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">件名</label>
+              <input type="text" id="invSubject" oninput="renderInvoicePreview()" placeholder="例: 2026年11月度 取材・アテンド・ディレクター業務委託費"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-3 gap-1.5">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">請求書番号</label>
+                <input type="text" id="invNumber" oninput="renderInvoicePreview()"
+                  class="w-full text-[11px] font-mono bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">発行日</label>
+                <input type="date" id="invIssueDate" onchange="renderInvoicePreview()"
+                  class="w-full text-[11px] bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">お支払期限</label>
+                <input type="date" id="invDueDate" onchange="renderInvoicePreview()"
+                  class="w-full text-[11px] bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">備考欄</label>
+              <textarea id="invRemarks" rows="2" oninput="saveInvoiceProfile(); renderInvoicePreview();" placeholder="振込手数料は貴社にてご負担をお願いいたします。"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 flex items-center">
+                <i class="ph ph-bank mr-1 text-indigo-600"></i>3. 発行元・振込先（自動保存）
+              </span>
+              <span class="text-[10px] text-emerald-600 font-semibold">ブラウザ記憶済</span>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">自社名 / 屋号・氏名</label>
+              <input type="text" id="invSenderName" oninput="saveInvoiceProfile(); renderInvoicePreview();" placeholder="例: 株式会社〇〇 / 担当者名"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">適格請求書発行事業者 登録番号（任意）</label>
+              <input type="text" id="invRegNumber" oninput="saveInvoiceProfile(); renderInvoicePreview();" placeholder="例: T1234567890123"
+                class="w-full text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">発行元 住所・連絡先</label>
+              <textarea id="invSenderAddress" rows="2" oninput="saveInvoiceProfile(); renderInvoicePreview();" placeholder="〒000-0000 都道府県市区町村...&#10;TEL: 000-0000-0000"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">お振込先口座情報</label>
+              <textarea id="invBankInfo" rows="3" oninput="saveInvoiceProfile(); renderInvoicePreview();" placeholder="〇〇銀行 〇〇支店&#10;普通 1234567&#10;口座名義: カ）〇〇"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側 A4請求書リアルタイムプレビュー -->
+        <div class="lg:col-span-8 bg-slate-200/70 p-3 sm:p-6 overflow-y-auto">
+          <div id="invoicePrintArea" class="bg-white text-slate-900 mx-auto max-w-[210mm] min-h-[260mm] p-6 sm:p-10 rounded-xl shadow-md border border-slate-300 flex flex-col justify-between">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 支払明細書作成・プレビュー・印刷モーダル -->
+  <div id="statementModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-4" onclick="if(event.target===this) closeStatementModal()">
+    <div id="statementModalCard" class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-6xl max-h-[94vh] flex flex-col overflow-hidden">
+      <div class="no-print flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 border-b border-slate-200 bg-slate-50">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+            <i class="ph ph-list-checks text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">支払明細書作成・プレビュー（担当者別集計・個別明細対応）</h3>
+            <p class="text-[11px] text-slate-500">担当者ごとの支払報酬・支払経費のグループ集計一覧や、個人宛ての支払明細書を印刷・PDF保存できます</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="printStatement()" class="inline-flex items-center text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition">
+            <i class="ph ph-printer mr-1.5 text-base"></i>印刷 / PDF保存
+          </button>
+          <button type="button" onclick="closeStatementModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1.5 rounded-lg hover:bg-slate-200/60 transition">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12">
+        <!-- 左側コントロールパネル -->
+        <div class="no-print lg:col-span-4 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50/70 p-4 space-y-4 overflow-y-auto">
+          <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 flex items-center">
+                <i class="ph ph-funnel mr-1 text-teal-600"></i>1. 明細書の抽出・表示条件
+              </span>
+              <span id="statementModeBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700">担当者別一覧</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">対象年月</label>
+                <select id="statementMonthSelect" onchange="onStatementFilterChange(true)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 font-medium outline-none focus:ring-2 focus:ring-teal-500">
+                  <option value="all">すべての期間</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">案件ステータス</label>
+                <select id="statementStatusSelect" onchange="renderStatementPreview()" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 font-medium outline-none focus:ring-2 focus:ring-teal-500">
+                  <option value="confirmed">確定案件のみ</option>
+                  <option value="all">すべて（仮案件含む）</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">対象担当者</label>
+              <select id="statementManagerSelect" onchange="onStatementFilterChange(true)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 font-semibold outline-none focus:ring-2 focus:ring-teal-500">
+                <option value="all">すべての担当者（担当者別グループ集計）</option>
+              </select>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-1">
+              <input type="checkbox" id="stmtShowCheckCol" checked onchange="renderStatementPreview()" class="rounded text-teal-600 focus:ring-teal-500 w-3.5 h-3.5">
+              <label for="stmtShowCheckCol" class="text-[11px] font-medium text-slate-700 cursor-pointer">
+                右端に確認チェック欄（☑）を表示する
+              </label>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2.5">
+            <span class="text-xs font-bold text-slate-800 flex items-center">
+              <i class="ph ph-note-pencil mr-1 text-teal-600"></i>2. 明細書記載内容
+            </span>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">宛名 / 表題サブタイトル</label>
+              <input type="text" id="stmtRecipientName" oninput="renderStatementPreview()" placeholder="例: 担当者別 支払明細一覧 / 〇〇 様"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 font-semibold outline-none focus:ring-2 focus:ring-teal-500">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">件名</label>
+              <input type="text" id="stmtSubject" oninput="renderStatementPreview()" placeholder="例: 2026年11月度 業務委託 支払明細書"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-teal-500">
+            </div>
+
+            <div class="grid grid-cols-3 gap-1.5">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">明細書番号</label>
+                <input type="text" id="stmtNumber" oninput="renderStatementPreview()"
+                  class="w-full text-[11px] font-mono bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-teal-500">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">発行日</label>
+                <input type="date" id="stmtIssueDate" onchange="renderStatementPreview()"
+                  class="w-full text-[11px] bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-teal-500">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-0.5">お支払予定日</label>
+                <input type="date" id="stmtPayDate" onchange="renderStatementPreview()"
+                  class="w-full text-[11px] bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-teal-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">備考・連絡事項</label>
+              <textarea id="stmtRemarks" rows="2" oninput="saveStatementProfile(); renderStatementPreview();" placeholder="内容をご確認のうえ、相違がある場合はご連絡ください。"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-teal-500 resize-none"></textarea>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 flex items-center">
+                <i class="ph ph-buildings mr-1 text-teal-600"></i>3. 発行元情報（自動保存）
+              </span>
+              <span class="text-[10px] text-emerald-600 font-semibold">ブラウザ記憶済</span>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">発行元 会社名 / 屋号</label>
+              <input type="text" id="stmtSenderName" oninput="saveStatementProfile(); renderStatementPreview();" placeholder="例: 株式会社〇〇"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 font-semibold outline-none focus:ring-2 focus:ring-teal-500">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">発行元 住所・連絡先</label>
+              <textarea id="stmtSenderAddress" rows="2" oninput="saveStatementProfile(); renderStatementPreview();" placeholder="〒000-0000 都道府県市区町村...&#10;TEL: 000-0000-0000"
+                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:ring-2 focus:ring-teal-500 resize-none"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側 A4支払明細書リアルタイムプレビュー -->
+        <div class="lg:col-span-8 bg-slate-200/70 p-3 sm:p-6 overflow-y-auto">
+          <div id="statementPrintArea" class="bg-white text-slate-900 mx-auto max-w-[210mm] min-h-[260mm] p-6 sm:p-10 rounded-xl shadow-md border border-slate-300 flex flex-col justify-between">
+          </div>
         </div>
       </div>
     </div>
@@ -1742,7 +1770,7 @@ function doPost(e) {
   <!-- アプリケーション本体スクリプト -->
   <script>
     // =========================================================================
-    // 1. 初期定数・マスター初期データ定義
+    // 1. 初期定数・グローバル状態定義
     // =========================================================================
     const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbx0tNfutkC7M4afzdT7KQaYvphr743BXm-CY0-ViavOo60HUR0ZnVZhQYg2TU1SttgERg/exec';
 
@@ -1751,39 +1779,15 @@ function doPost(e) {
       MASTERS: 'order_manager_masters_v1',
       GAS_URL: 'order_manager_gas_url_v1',
       AUTO_FETCH: 'order_manager_auto_fetch_v1',
-      AUTO_SYNC: 'order_manager_auto_sync_v1'
+      AUTO_SYNC: 'order_manager_auto_sync_v1',
+      INVOICE_PROFILE: 'order_manager_invoice_profile_v1',
+      STATEMENT_PROFILE: 'order_manager_statement_profile_v1'
     };
 
     const GAS_IDB_CONFIG = {
-      DB_NAME: 'OrderManagerPersistDB',
+      DB_NAME: 'OrderManagerGasDB',
       STORE_NAME: 'settings',
-      KEY: 'gas_url'
-    };
-
-    const DEFAULT_MASTERS = {
-      consignors: ['ユナイト', 'PUSH'],
-      clients: ['アツ姫', 'でちゃう', 'パチ7', 'スロパチステーション', 'ジャンバリ', 'DMMぱちタウン'],
-      companies: ['マルハン', 'ワンダーランド', 'つかさ', 'ユーコーラッキー', 'フェイス', 'プラザ', '玉屋', 'EVO'],
-      companyStores: [
-        { company: 'マルハン', store: 'マルハン小山店' },
-        { company: 'マルハン', store: 'マルハン鹿児島新港店' },
-        { company: 'ワンダーランド', store: 'ワンダーランド臼杵店' },
-        { company: 'ワンダーランド', store: 'ワンダーランド大分皆春店' },
-        { company: 'つかさ', store: 'つかさ菊陽店' },
-        { company: 'EVO', store: 'EVO37宮崎' }
-      ],
-      managers: [
-        '荒金 尚子', '新城 大志', '松本 亮', '東 善寛', '山本 朱美',
-        '糸原 美幸', '櫛山 豊', '草留 麻美', '宗貞 貴洋', '橋口 豊',
-        '浅谷 悠河', '宮崎 豪'
-      ],
-      performers: [
-        'ワンデー取材', '集結マルエイ取材M', 'ZIZAI取材', '大分合同ズナーキー取材',
-        'せせりくん', '半赫取材', 'ネッタイ低機アツ', 'ぶっ叩け取材',
-        'なっきー来店', '皐月みる来店', '高崎たぬち来店', '俺たちまるみつでぃ取材',
-        'ヤマタノオロチ討伐戦', 'ジャグラー愛してますか取材', 'スロパチデータ（青）',
-        '低貸し取材', 'ヤドゥさん来店'
-      ]
+      KEY: 'gasWebAppUrl'
     };
 
     const ALL_MODAL_IDS = [
@@ -1793,7 +1797,9 @@ function doPost(e) {
       'syncEmptyDateConfirmModal',
       'clearAbnormalDateModal',
       'excelPasteModal',
-      'sheetsModal'
+      'sheetsModal',
+      'invoiceModal',
+      'statementModal'
     ];
 
     const FILTER_SELECT_IDS = [
@@ -1808,27 +1814,36 @@ function doPost(e) {
       'managerFilter'
     ];
 
-    // =========================================================================
-    // 2. アプリケーション状態管理
-    // =========================================================================
     let orders = [];
-    let masters = JSON.parse(JSON.stringify(DEFAULT_MASTERS));
-    let gasUrl = DEFAULT_GAS_URL;
+    let masters = {
+      consignors: ['ユナイト', 'アツ姫編集部', 'プロモーション事業部'],
+      clients: ['アツ姫', 'DMMぱちタウン', 'ジャンバリ', 'direct'],
+      companies: ['マルハン', 'ガイア', 'ダイナム', 'キコーナ'],
+      companyStores: [
+        { company: 'マルハン', store: 'マルハン新宿東宝ビル店' },
+        { company: 'マルハン', store: 'マルハンメガシティ柏' },
+        { company: 'ガイア', store: 'メガガイア調布店' },
+        { company: 'キコーナ', store: 'キコーナ蒲田店' }
+      ],
+      performers: ['プレミアム取材', '超アツ姫取材', '来店実戦イベント', '新台入替レポート'],
+      managers: ['未定', '佐藤', '鈴木', '高橋', '田中'],
+      types: ['取材', 'アテンド', 'ディレクター', '販売会']
+    };
+
+    let gasUrl = '';
     let autoFetchEnabled = true;
     let autoSyncEnabled = true;
-
+    let isSyncing = false;
+    let pendingSync = false;
+    let pendingAllowEmpty = false;
+    let lastAutoFetchAt = 0;
     let currentMasterCategory = 'company';
     let pendingDeleteOrderId = null;
     let filterOnlyMissingDate = false;
     let filterOnlyAbnormalDate = false;
 
-    let isSyncing = false;
-    let pendingSync = false;
-    let pendingAllowEmpty = false;
-    let lastAutoFetchAt = 0;
-
     // =========================================================================
-    // 3. 共通ユーティリティ・日付バリデーション
+    // 2. 汎用ユーティリティ・日付正規化・UIヘルパー
     // =========================================================================
     function escapeHtml(str) {
       return String(str === null || str === undefined ? '' : str)
@@ -1839,19 +1854,51 @@ function doPost(e) {
         .replace(/'/g, '&#39;');
     }
 
-    function stripCompanyPrefix(name) {
-      return String(name || '')
-        .replace(/^(?:株式会社|有限会社|合同会社|（株）|\(株\)|㈱)\s*/g, '')
-        .replace(/\s*(?:株式会社|有限会社|合同会社|（株）|\(株\)|㈱)$/g, '')
-        .trim();
+    function formatCurrency(val) {
+      const n = Number(val) || 0;
+      return '¥' + Math.round(n).toLocaleString('ja-JP');
     }
 
     function getLocalTodayYMD() {
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth() + 1).padStart(2, '0');
-      const d = String(now.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function stripCompanyPrefix(name) {
+      return String(name || '')
+        .replace(/^[\s\u3000]*(?:株式会社|（株）|\(株\)|有限会社|（有）|\(有\))[\s\u3000]*/g, '')
+        .trim();
+    }
+
+    function isUndecidedValue(val) {
+      const s = String(val || '').trim();
+      return s === '未定' || s === '未設定';
+    }
+
+    function updateInputUndecidedColor(el) {
+      if (!el) return;
+      if (isUndecidedValue(el.value)) {
+        el.classList.add('text-rose-600', 'font-bold');
+      } else {
+        el.classList.remove('text-rose-600', 'font-bold');
+      }
+    }
+
+    function updateSelectColor(sel) {
+      if (!sel) return;
+      if (!sel.value) {
+        sel.classList.add('select-subtle-empty');
+      } else {
+        sel.classList.remove('select-subtle-empty');
+      }
+      if (isUndecidedValue(sel.value)) {
+        sel.classList.add('text-rose-600', 'font-bold');
+      } else {
+        sel.classList.remove('text-rose-600', 'font-bold');
+      }
     }
 
     function isValidCalendarDate(y, m, d) {
@@ -1861,36 +1908,34 @@ function doPost(e) {
       return dt.getUTCFullYear() === y && (dt.getUTCMonth() + 1) === m && dt.getUTCDate() === d;
     }
 
-    function isAbnormalDate(dateStr) {
-      const s = String(dateStr || '').trim();
-      if (!s) return false;
-      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (!m) return true;
-      return !isValidCalendarDate(Number(m[1]), Number(m[2]), Number(m[3]));
-    }
-
     function normalizeClientDate(val) {
       if (val === null || val === undefined || val === '') return '';
+      if (val instanceof Date && !isNaN(val.getTime())) {
+        const y = val.getFullYear();
+        const m = val.getMonth() + 1;
+        const d = val.getDate();
+        return isValidCalendarDate(y, m, d)
+          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+          : '';
+      }
+
       if (typeof val === 'number') {
         if (val >= 20200101 && val <= 20351231) {
           const s8 = String(Math.floor(val));
           const y8 = Number(s8.slice(0, 4));
           const m8 = Number(s8.slice(4, 6));
           const d8 = Number(s8.slice(6, 8));
-          if (isValidCalendarDate(y8, m8, d8)) {
-            return `${s8.slice(0, 4)}-${s8.slice(4, 6)}-${s8.slice(6, 8)}`;
-          }
+          return isValidCalendarDate(y8, m8, d8) ? `${s8.slice(0, 4)}-${s8.slice(4, 6)}-${s8.slice(6, 8)}` : '';
         }
-        // Excelシリアル値（2020-01-01 = 43831 ～ 2035-12-31 = 49674）
         if (val >= 43831 && val <= 49674) {
           const utcMs = Math.round((val - 25569) * 86400 * 1000);
           const dt = new Date(utcMs);
           const ys = dt.getUTCFullYear();
           const ms = dt.getUTCMonth() + 1;
           const ds = dt.getUTCDate();
-          if (isValidCalendarDate(ys, ms, ds)) {
-            return `${ys}-${String(ms).padStart(2, '0')}-${String(ds).padStart(2, '0')}`;
-          }
+          return isValidCalendarDate(ys, ms, ds)
+            ? `${ys}-${String(ms).padStart(2, '0')}-${String(ds).padStart(2, '0')}`
+            : '';
         }
         return '';
       }
@@ -1903,141 +1948,72 @@ function doPost(e) {
 
       if (!str || /^#+$/.test(str)) return '';
 
-      // 8桁数字
-      const m8str = str.match(/^(20\d{2})(\d{2})(\d{2})$/);
-      if (m8str) {
-        const y = Number(m8str[1]);
-        const m = Number(m8str[2]);
-        const d = Number(m8str[3]);
-        return isValidCalendarDate(y, m, d) ? `${m8str[1]}-${m8str[2]}-${m8str[3]}` : '';
+      // 5桁のExcelシリアル文字列
+      if (/^\d{5}$/.test(str)) {
+        const num = Number(str);
+        if (num >= 43831 && num <= 49674) {
+          return normalizeClientDate(num);
+        }
       }
 
-      // YYYY/MM/DD, YYYY-MM-DD, YYYY年M月D日
+      // 8桁数字 YYYYMMDD
+      const m8 = str.match(/^(20\d{2})(\d{2})(\d{2})$/);
+      if (m8 && isValidCalendarDate(Number(m8[1]), Number(m8[2]), Number(m8[3]))) {
+        return `${m8[1]}-${m8[2]}-${m8[3]}`;
+      }
+
+      // YYYY-MM-DD / YYYY/M/D / YYYY年M月D日
       const mYmd = str.match(/(\d{4})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
       if (mYmd) {
-        const y = Number(mYmd[1]);
-        const m = Number(mYmd[2]);
-        const d = Number(mYmd[3]);
-        return isValidCalendarDate(y, m, d)
-          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-          : '';
+        let yy = Number(mYmd[1]);
+        const mm = Number(mYmd[2]);
+        const dd = Number(mYmd[3]);
+        if (yy >= 1920 && yy <= 1935) yy += 100;
+        if (isValidCalendarDate(yy, mm, dd)) {
+          return `${yy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+        }
+        return '';
       }
 
       // 和暦（令和）
       const mReiwa = str.match(/(?:令和|R|r)\s*(\d{1,2})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
       if (mReiwa) {
-        const y = 2018 + Number(mReiwa[1]);
-        const m = Number(mReiwa[2]);
-        const d = Number(mReiwa[3]);
-        return isValidCalendarDate(y, m, d)
-          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-          : '';
+        const ry = 2018 + Number(mReiwa[1]);
+        const rm = Number(mReiwa[2]);
+        const rd = Number(mReiwa[3]);
+        if (isValidCalendarDate(ry, rm, rd)) {
+          return `${ry}-${String(rm).padStart(2, '0')}-${String(rd).padStart(2, '0')}`;
+        }
       }
 
-      // 英語月表記（01-Aug-2026 等）
-      const monthMap = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
-      const mEng = str.match(/(\d{1,2})[\s\-\/]([A-Za-z]{3,9})[\s\-\/,]+(\d{4})/);
-      if (mEng) {
-        const m = monthMap[mEng[2].slice(0, 3).toLowerCase()];
-        const y = Number(mEng[3]);
-        const d = Number(mEng[1]);
-        return (m && isValidCalendarDate(y, m, d))
-          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-          : '';
-      }
-
-      // 2桁年（26/8/1 等）
+      // 2桁年 YY/M/D
       const m2y = str.match(/^(\d{2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})$/);
       if (m2y) {
-        const y = 2000 + Number(m2y[1]);
-        const m = Number(m2y[2]);
-        const d = Number(m2y[3]);
-        return isValidCalendarDate(y, m, d)
-          ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-          : '';
+        const y2 = 2000 + Number(m2y[1]);
+        const m2 = Number(m2y[2]);
+        const d2 = Number(m2y[3]);
+        if (isValidCalendarDate(y2, m2, d2)) {
+          return `${y2}-${String(m2).padStart(2, '0')}-${String(d2).padStart(2, '0')}`;
+        }
       }
 
       return '';
     }
 
-    function formatDateWithWeekday(dateStr) {
+    function isAbnormalDateString(dateStr) {
       const s = String(dateStr || '').trim();
-      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (!m) return s;
-      const y = Number(m[1]);
-      const mo = Number(m[2]);
-      const d = Number(m[3]);
-      const dt = new Date(Date.UTC(y, mo - 1, d));
-      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-      return `${y}/${String(mo).padStart(2, '0')}/${String(d).padStart(2, '0')} (${weekdays[dt.getUTCDay()]})`;
+      if (!s) return false;
+      return !normalizeClientDate(s);
     }
 
-    function formatCurrency(num) {
-      const n = Math.round(Number(num) || 0);
-      return '¥' + n.toLocaleString('ja-JP');
-    }
-
-    function isUndecidedText(val) {
-      const s = String(val || '').trim();
-      return !s || s.includes('未定') || s.includes('未設定');
-    }
-
-    function updateSelectColor(selectEl) {
-      if (!selectEl) return;
-      if (!selectEl.value) {
-        selectEl.classList.add('select-subtle-empty');
-        selectEl.classList.remove('text-rose-600', 'font-bold');
-      } else {
-        selectEl.classList.remove('select-subtle-empty');
-        if (selectEl.value.includes('未定')) {
-          selectEl.classList.add('text-rose-600', 'font-bold');
-        } else {
-          selectEl.classList.remove('text-rose-600', 'font-bold');
-        }
-      }
-    }
-
-    function updateInputUndecidedColor(inputEl) {
-      if (!inputEl) return;
-      const val = String(inputEl.value || '').trim();
-      if (val && val.includes('未定')) {
-        inputEl.classList.add('text-rose-600', 'font-bold');
-        inputEl.classList.remove('text-slate-800');
-      } else {
-        inputEl.classList.remove('text-rose-600', 'font-bold');
-        inputEl.classList.add('text-slate-800');
-      }
-    }
-
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      if (!container) return;
-
-      const styles = {
-        success: 'bg-emerald-600 text-white border-emerald-700',
-        error: 'bg-rose-600 text-white border-rose-700',
-        warning: 'bg-amber-500 text-white border-amber-600',
-        info: 'bg-slate-800 text-white border-slate-900'
-      };
-      const icons = {
-        success: 'ph-check-circle',
-        error: 'ph-warning-octagon',
-        warning: 'ph-warning',
-        info: 'ph-info'
-      };
-
-      const toast = document.createElement('div');
-      toast.className = `pointer-events-auto flex items-center space-x-2 px-3.5 py-2.5 rounded-xl border shadow-lg text-xs font-semibold transition-all duration-200 ${styles[type] || styles.info}`;
-      toast.innerHTML = `<i class="ph ${icons[type] || icons.info} text-base shrink-0"></i><span>${escapeHtml(message)}</span>`;
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(6px)';
-        setTimeout(() => {
-          if (toast.parentNode) toast.parentNode.removeChild(toast);
-        }, 200);
-      }, 3200);
+    function formatDateWithWeekday(ymd) {
+      const norm = normalizeClientDate(ymd);
+      if (!norm) return String(ymd || '').trim() || '日付未定';
+      const [y, m, d] = norm.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      const days = ['日', '月', '火', '水', '木', '金', '土'];
+      const w = days[dt.getUTCDay()];
+      return `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}(${w})`;
     }
 
     function showModalById(id) {
@@ -2051,130 +2027,134 @@ function doPost(e) {
       const el = document.getElementById(id);
       if (!el) return;
       el.classList.add('hidden');
-      const anyOpen = ALL_MODAL_IDS.some(mid => {
-        const m = document.getElementById(mid);
+      const anyStillOpen = ALL_MODAL_IDS.some(mId => {
+        const m = document.getElementById(mId);
         return m && !m.classList.contains('hidden');
       });
-      if (!anyOpen) {
+      if (!anyStillOpen) {
         document.body.style.overflow = '';
       }
     }
 
-    // =========================================================================
-    // 4. 永続ストレージ・GAS URL解決
-    // =========================================================================
-    function isValidGasWebAppUrl(url) {
-      const s = String(url || '').trim();
-      return /^https:\/\/script\.google\.com\/(?:a\/[^\/]+\/)?macros\/s\/[A-Za-z0-9_-]+\/exec(?:\?.*)?$/i.test(s);
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const styles = {
+        success: 'bg-emerald-600 text-white border-emerald-700',
+        warning: 'bg-amber-600 text-white border-amber-700',
+        error: 'bg-rose-600 text-white border-rose-700',
+        info: 'bg-slate-800 text-white border-slate-900'
+      };
+      const icons = {
+        success: 'ph-check-circle',
+        warning: 'ph-warning',
+        error: 'ph-x-circle',
+        info: 'ph-info'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center space-x-2 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transition-all duration-300 ${styles[type] || styles.info}`;
+      toast.innerHTML = `<i class="ph ${icons[type] || icons.info} text-base shrink-0"></i><span>${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
+        setTimeout(() => {
+          if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 300);
+      }, 3200);
     }
 
-    function openGasIdb() {
-      return new Promise((resolve, reject) => {
-        if (!window.indexedDB) {
-          reject(new Error('No IndexedDB'));
-          return;
+    // =========================================================================
+    // 3. ストレージ & GAS URL 多重永続化管理
+    // =========================================================================
+    function isValidGasWebAppUrl(url) {
+      return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec(?:\?.*)?$/i.test(String(url || '').trim());
+    }
+
+    function saveGasUrlToIdb(url) {
+      return new Promise(resolve => {
+        try {
+          if (!window.indexedDB) return resolve();
+          const req = indexedDB.open(GAS_IDB_CONFIG.DB_NAME, 1);
+          req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(GAS_IDB_CONFIG.STORE_NAME)) {
+              db.createObjectStore(GAS_IDB_CONFIG.STORE_NAME);
+            }
+          };
+          req.onsuccess = () => {
+            try {
+              const db = req.result;
+              const tx = db.transaction(GAS_IDB_CONFIG.STORE_NAME, 'readwrite');
+              tx.objectStore(GAS_IDB_CONFIG.STORE_NAME).put(url || '', GAS_IDB_CONFIG.KEY);
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => resolve();
+            } catch (_) {
+              resolve();
+            }
+          };
+          req.onerror = () => resolve();
+        } catch (_) {
+          resolve();
         }
-        const req = indexedDB.open(GAS_IDB_CONFIG.DB_NAME, 1);
-        req.onupgradeneeded = e => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains(GAS_IDB_CONFIG.STORE_NAME)) {
-            db.createObjectStore(GAS_IDB_CONFIG.STORE_NAME);
-          }
-        };
-        req.onsuccess = e => resolve(e.target.result);
-        req.onerror = e => reject(e.target.error);
       });
     }
 
-    async function saveGasUrlToIdb(url) {
-      try {
-        const db = await openGasIdb();
-        await new Promise((resolve, reject) => {
-          const tx = db.transaction(GAS_IDB_CONFIG.STORE_NAME, 'readwrite');
-          tx.objectStore(GAS_IDB_CONFIG.STORE_NAME).put(url, GAS_IDB_CONFIG.KEY);
-          tx.oncomplete = () => resolve();
-          tx.onerror = e => reject(e.target.error);
-        });
-      } catch (_) {}
-    }
-
-    async function loadGasUrlFromIdb() {
-      try {
-        const db = await openGasIdb();
-        return await new Promise((resolve, reject) => {
-          const tx = db.transaction(GAS_IDB_CONFIG.STORE_NAME, 'readonly');
-          const req = tx.objectStore(GAS_IDB_CONFIG.STORE_NAME).get(GAS_IDB_CONFIG.KEY);
-          req.onsuccess = () => resolve(req.result || '');
-          req.onerror = e => reject(e.target.error);
-        });
-      } catch (_) {
-        return '';
-      }
+    function loadGasUrlFromIdb() {
+      return new Promise(resolve => {
+        try {
+          if (!window.indexedDB) return resolve('');
+          const req = indexedDB.open(GAS_IDB_CONFIG.DB_NAME, 1);
+          req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(GAS_IDB_CONFIG.STORE_NAME)) {
+              db.createObjectStore(GAS_IDB_CONFIG.STORE_NAME);
+            }
+          };
+          req.onsuccess = () => {
+            try {
+              const db = req.result;
+              const tx = db.transaction(GAS_IDB_CONFIG.STORE_NAME, 'readonly');
+              const getReq = tx.objectStore(GAS_IDB_CONFIG.STORE_NAME).get(GAS_IDB_CONFIG.KEY);
+              getReq.onsuccess = () => resolve(String(getReq.result || ''));
+              getReq.onerror = () => resolve('');
+            } catch (_) {
+              resolve('');
+            }
+          };
+          req.onerror = () => resolve('');
+        } catch (_) {
+          resolve('');
+        }
+      });
     }
 
     function persistGasUrlEverywhere(url) {
       const clean = String(url || '').trim();
+      try { localStorage.setItem(STORAGE_KEYS.GAS_URL, clean); } catch (_) {}
+      try { sessionStorage.setItem(STORAGE_KEYS.GAS_URL, clean); } catch (_) {}
       try {
-        if (clean) {
-          localStorage.setItem(STORAGE_KEYS.GAS_URL, clean);
-        } else {
-          localStorage.removeItem(STORAGE_KEYS.GAS_URL);
-        }
+        document.cookie = `${STORAGE_KEYS.GAS_URL}=${encodeURIComponent(clean)}; max-age=31536000; path=/; SameSite=Lax`;
       } catch (_) {}
-
-      try {
-        if (clean) {
-          sessionStorage.setItem(STORAGE_KEYS.GAS_URL, clean);
-        } else {
-          sessionStorage.removeItem(STORAGE_KEYS.GAS_URL);
-        }
-      } catch (_) {}
-
-      try {
-        window.name = clean ? `GAS_URL:${clean}` : '';
-      } catch (_) {}
-
-      try {
-        if (clean) {
-          document.cookie = `order_mgr_gas=${encodeURIComponent(clean)}; max-age=31536000; path=/; SameSite=Lax`;
-        } else {
-          document.cookie = 'order_mgr_gas=; max-age=0; path=/; SameSite=Lax';
-        }
-      } catch (_) {}
-
-      try {
-        if (clean) {
-          history.replaceState(null, '', `#gas=${encodeURIComponent(clean)}`);
-        } else if (location.hash.startsWith('#gas=')) {
-          history.replaceState(null, '', location.pathname + location.search);
-        }
-      } catch (_) {}
-
       saveGasUrlToIdb(clean);
     }
 
     function resolveInitialGasUrl() {
-      // 1. URLクエリパラメータ (?gas=...) またはハッシュ (#gas=...)
       try {
-        const params = new URLSearchParams(location.search);
-        const qUrl = params.get('gas');
-        if (isValidGasWebAppUrl(qUrl)) return qUrl.trim();
+        const params = new URLSearchParams(window.location.search);
+        const qGas = params.get('gas');
+        if (isValidGasWebAppUrl(qGas)) return qGas.trim();
       } catch (_) {}
 
       try {
-        if (location.hash && location.hash.includes('gas=')) {
-          const hParams = new URLSearchParams(location.hash.replace(/^#/, ''));
-          const hUrl = hParams.get('gas');
-          if (isValidGasWebAppUrl(hUrl)) return hUrl.trim();
-        }
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const hGas = hashParams.get('gas');
+        if (isValidGasWebAppUrl(hGas)) return hGas.trim();
       } catch (_) {}
 
-      // 2. コード内に直接埋め込まれた DEFAULT_GAS_URL を優先
-      if (isValidGasWebAppUrl(DEFAULT_GAS_URL)) {
-        return DEFAULT_GAS_URL.trim();
-      }
-
-      // 3. localStorage / sessionStorage / window.name / Cookie
       try {
         const ls = localStorage.getItem(STORAGE_KEYS.GAS_URL);
         if (isValidGasWebAppUrl(ls)) return ls.trim();
@@ -2186,21 +2166,26 @@ function doPost(e) {
       } catch (_) {}
 
       try {
-        if (window.name && window.name.startsWith('GAS_URL:')) {
-          const wn = window.name.slice(8).trim();
-          if (isValidGasWebAppUrl(wn)) return wn;
+        const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${STORAGE_KEYS.GAS_URL}=([^;]*)`));
+        if (match) {
+          const ck = decodeURIComponent(match[1]);
+          if (isValidGasWebAppUrl(ck)) return ck.trim();
         }
       } catch (_) {}
 
+      return isValidGasWebAppUrl(DEFAULT_GAS_URL) ? DEFAULT_GAS_URL.trim() : '';
+    }
+
+    function saveOrdersToStorage() {
       try {
-        const m = document.cookie.match(/(?:^|;\s*)order_mgr_gas=([^;]+)/);
-        if (m) {
-          const ck = decodeURIComponent(m[1]).trim();
-          if (isValidGasWebAppUrl(ck)) return ck;
-        }
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
       } catch (_) {}
+    }
 
-      return '';
+    function saveMastersToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.MASTERS, JSON.stringify(masters));
+      } catch (_) {}
     }
 
     function loadStateFromStorage() {
@@ -2217,17 +2202,16 @@ function doPost(e) {
       try {
         const rawMasters = localStorage.getItem(STORAGE_KEYS.MASTERS);
         if (rawMasters) {
-          const parsedM = JSON.parse(rawMasters);
-          if (parsedM && typeof parsedM === 'object') {
+          const parsed = JSON.parse(rawMasters);
+          if (parsed && typeof parsed === 'object') {
             masters = {
-              consignors: Array.isArray(parsedM.consignors) ? parsedM.consignors : [...DEFAULT_MASTERS.consignors],
-              clients: Array.isArray(parsedM.clients) ? parsedM.clients : [...DEFAULT_MASTERS.clients],
-              companies: Array.isArray(parsedM.companies) ? parsedM.companies.map(stripCompanyPrefix).filter(Boolean) : [...DEFAULT_MASTERS.companies],
-              companyStores: Array.isArray(parsedM.companyStores)
-                ? parsedM.companyStores.map(cs => ({ company: stripCompanyPrefix(cs.company), store: String(cs.store || '').trim() }))
-                : [...DEFAULT_MASTERS.companyStores],
-              managers: Array.isArray(parsedM.managers) ? parsedM.managers : [...DEFAULT_MASTERS.managers],
-              performers: Array.isArray(parsedM.performers) ? parsedM.performers : [...DEFAULT_MASTERS.performers]
+              consignors: Array.isArray(parsed.consignors) ? parsed.consignors : masters.consignors,
+              clients: Array.isArray(parsed.clients) ? parsed.clients : masters.clients,
+              companies: Array.isArray(parsed.companies) ? parsed.companies : masters.companies,
+              companyStores: Array.isArray(parsed.companyStores) ? parsed.companyStores : masters.companyStores,
+              performers: Array.isArray(parsed.performers) ? parsed.performers : masters.performers,
+              managers: Array.isArray(parsed.managers) ? parsed.managers : masters.managers,
+              types: Array.isArray(parsed.types) ? parsed.types : masters.types
             };
           }
         }
@@ -2239,23 +2223,45 @@ function doPost(e) {
         const as = localStorage.getItem(STORAGE_KEYS.AUTO_SYNC);
         if (as !== null) autoSyncEnabled = as !== 'false';
       } catch (_) {}
+
+      if (orders.length === 0) {
+        const today = getLocalTodayYMD();
+        orders = [
+          {
+            id: 'ORD-SAMPLE-001',
+            status: 'confirmed',
+            consignor: 'ユナイト',
+            client: 'アツ姫',
+            date: today,
+            type: '取材',
+            companyName: 'マルハン',
+            storeName: 'マルハン新宿東宝ビル店',
+            performerOrEvent: 'プレミアム取材',
+            managerName: '佐藤',
+            rewardAmount: 25000,
+            transportationCost: '実費',
+            gasolineFee: 1500,
+            highwayFee: 1200,
+            lunch8Fee: 800,
+            lunchFee: 0,
+            otherExpenses: 0,
+            billingAmount: 28500,
+            billingTaxIncluded: 31350,
+            payRewardExclude: 15000,
+            payExpenseExclude: 3500,
+            payTotalExclude: 18500,
+            paymentAmount: 20350,
+            notes: '朝9:30集合・撮影許可証持参'
+          }
+        ];
+        saveOrdersToStorage();
+      }
+      learnMastersFromOrders(orders);
     }
 
-    function saveOrdersToStorage() {
-      try {
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-      } catch (_) {}
-    }
-
-    function saveMastersToStorage() {
-      try {
-        localStorage.setItem(STORAGE_KEYS.MASTERS, JSON.stringify(masters));
-      } catch (_) {}
-    }
-
-    function learnMastersFromOrders(orderList) {
+    function learnMastersFromOrders(list) {
       let changed = false;
-      (orderList || []).forEach(o => {
+      (list || []).forEach(o => {
         if (o.consignor && !masters.consignors.includes(o.consignor)) {
           masters.consignors.push(o.consignor);
           changed = true;
@@ -2276,23 +2282,24 @@ function doPost(e) {
             changed = true;
           }
         }
-        if (o.managerName && o.managerName !== '未定' && !masters.managers.includes(o.managerName)) {
-          masters.managers.push(o.managerName);
-          changed = true;
-        }
         if (o.performerOrEvent && !masters.performers.includes(o.performerOrEvent)) {
           masters.performers.push(o.performerOrEvent);
           changed = true;
         }
+        if (o.managerName && !masters.managers.includes(o.managerName)) {
+          masters.managers.push(o.managerName);
+          changed = true;
+        }
+        if (o.type && !masters.types.includes(o.type)) {
+          masters.types.push(o.type);
+          changed = true;
+        }
       });
-      if (changed) {
-        saveMastersToStorage();
-      }
-      populateAllDropdowns();
+      if (changed) saveMastersToStorage();
     }
 
     // =========================================================================
-    // 5. ドロップダウン・フォーム連動・自動金額計算
+    // 4. フォーム連携・自動計算・ドロップダウン構築
     // =========================================================================
     function syncSelectToInput(selectId, inputId) {
       const sel = document.getElementById(selectId);
@@ -2310,61 +2317,50 @@ function doPost(e) {
       if (!sel || !inp) return;
       if (sel.value === '__DIRECT__') {
         inp.classList.remove('hidden');
-        inp.required = true;
         inp.value = '';
         inp.focus();
       } else {
         inp.classList.add('hidden');
-        inp.required = false;
-        inp.value = sel.value || '';
+        inp.value = sel.value;
       }
-      updateInputUndecidedColor(inp);
     }
 
     function onCompanySelectChange() {
-      const sel = document.getElementById('companySelect');
-      const inp = document.getElementById('companyInput');
-      const storeInp = document.getElementById('storeInput');
-      if (!sel || !inp) return;
-      const cleanComp = stripCompanyPrefix(sel.value);
-      inp.value = cleanComp;
-      updateInputUndecidedColor(inp);
-      if (storeInp) {
-        storeInp.value = '';
-        updateInputUndecidedColor(storeInp);
+      const compSel = document.getElementById('companySelect');
+      const compInp = document.getElementById('companyInput');
+      if (!compSel || !compInp) return;
+      if (compSel.value) {
+        compInp.value = compSel.value;
+        updateInputUndecidedColor(compInp);
       }
-      populateStoreDropdown(cleanComp);
+      refreshStoreSelectForCompany(compInp.value);
     }
 
     function onCompanyInputChange() {
-      const inp = document.getElementById('companyInput');
-      const sel = document.getElementById('companySelect');
-      if (!inp) return;
-      const cleanComp = stripCompanyPrefix(inp.value);
-      if (sel) {
-        const matchOpt = Array.from(sel.options).find(opt => stripCompanyPrefix(opt.value) === cleanComp);
-        sel.value = matchOpt ? matchOpt.value : '';
-        updateSelectColor(sel);
-      }
-      populateStoreDropdown(cleanComp);
+      const compInp = document.getElementById('companyInput');
+      if (!compInp) return;
+      refreshStoreSelectForCompany(compInp.value);
     }
 
-    function populateStoreDropdown(filterCompany) {
+    function refreshStoreSelectForCompany(companyName) {
       const storeSel = document.getElementById('storeSelect');
       const hintBadge = document.getElementById('storeFilterHintBadge');
       if (!storeSel) return;
 
-      const cleanComp = stripCompanyPrefix(filterCompany);
+      const cleanComp = stripCompanyPrefix(companyName);
       if (!cleanComp) {
         storeSel.disabled = true;
         storeSel.classList.add('bg-slate-100', 'text-slate-400', 'select-subtle-empty');
         storeSel.classList.remove('bg-white', 'text-slate-800');
         storeSel.innerHTML = '<option value="" class="text-slate-400">-- 先に上の「企業名」を選択してください --</option>';
-        if (hintBadge) hintBadge.textContent = '企業選択後に店舗を表示';
+        if (hintBadge) {
+          hintBadge.textContent = '企業選択後に店舗を表示';
+          hintBadge.className = 'text-[10px] text-slate-400 font-medium';
+        }
         return;
       }
 
-      const matchedStores = Array.from(new Set(
+      const stores = Array.from(new Set(
         masters.companyStores
           .filter(cs => stripCompanyPrefix(cs.company) === cleanComp)
           .map(cs => cs.store)
@@ -2374,16 +2370,24 @@ function doPost(e) {
       storeSel.disabled = false;
       storeSel.classList.remove('bg-slate-100', 'text-slate-400');
       storeSel.classList.add('bg-white', 'text-slate-800');
-
-      if (matchedStores.length === 0) {
-        storeSel.innerHTML = '<option value="" class="text-slate-400">-- 登録店舗なし（下の欄へ直接入力） --</option>';
-        if (hintBadge) hintBadge.textContent = `${cleanComp}: 直接入力可`;
-      } else {
-        storeSel.innerHTML = `<option value="" class="text-slate-400">-- ${escapeHtml(cleanComp)} の店舗を選択 (${matchedStores.length}件) --</option>` +
-          matchedStores.map(st => `<option value="${escapeHtml(st)}">${escapeHtml(st)}</option>`).join('');
-        if (hintBadge) hintBadge.textContent = `${cleanComp}: ${matchedStores.length}店舗`;
-      }
+      storeSel.innerHTML = `<option value="" class="text-slate-400">-- ${escapeHtml(cleanComp)} の店舗を選択 (${stores.length}件) --</option>` +
+        stores.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
       updateSelectColor(storeSel);
+
+      if (hintBadge) {
+        hintBadge.textContent = `${stores.length}店舗が候補に表示中`;
+        hintBadge.className = 'text-[10px] text-emerald-600 font-bold';
+      }
+    }
+
+    function updateEditStoreDatalist(companyVal) {
+      const dl = document.getElementById('editStoreList');
+      if (!dl) return;
+      const cleanComp = stripCompanyPrefix(companyVal);
+      const filtered = cleanComp
+        ? masters.companyStores.filter(cs => stripCompanyPrefix(cs.company) === cleanComp).map(cs => cs.store)
+        : masters.companyStores.map(cs => cs.store);
+      dl.innerHTML = Array.from(new Set(filtered)).map(s => `<option value="${escapeHtml(s)}">`).join('');
     }
 
     function onManagerSelectChange() {
@@ -2396,215 +2400,162 @@ function doPost(e) {
         inp.focus();
       } else {
         inp.classList.add('hidden');
-        inp.value = sel.value || '';
-      }
-      updateInputUndecidedColor(inp);
-    }
-
-    function updateEditStoreDatalist(companyVal) {
-      const storeListEl = document.getElementById('editStoreList');
-      if (!storeListEl) return;
-      const cleanComp = stripCompanyPrefix(companyVal);
-      const stores = cleanComp
-        ? masters.companyStores.filter(cs => stripCompanyPrefix(cs.company) === cleanComp).map(cs => cs.store)
-        : masters.companyStores.map(cs => cs.store);
-      const uniqueStores = Array.from(new Set(stores.filter(Boolean)));
-      storeListEl.innerHTML = uniqueStores.map(st => `<option value="${escapeHtml(st)}"></option>`).join('');
-    }
-
-    function populateAllDropdowns() {
-      const fillSelect = (id, items, placeholder) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const prev = el.value;
-        el.innerHTML = `<option value="" class="text-slate-400">${escapeHtml(placeholder)}</option>` +
-          items.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join('');
-        if (prev && items.includes(prev)) el.value = prev;
-        updateSelectColor(el);
-      };
-
-      fillSelect('consignorSelect', masters.consignors, '-- 委託元を選択 --');
-      fillSelect('editConsignorSelect', masters.consignors, '-- 委託元を選択 --');
-      fillSelect('clientSelect', masters.clients, '-- 依頼元を選択 --');
-      fillSelect('editClientSelect', masters.clients, '-- 依頼元を選択 --');
-
-      const cleanCompanies = Array.from(new Set(masters.companies.map(stripCompanyPrefix).filter(Boolean)));
-      fillSelect('companySelect', cleanCompanies, '-- 企業候補から選択 --');
-
-      fillSelect('performerSelect', masters.performers, '-- 演者名または取材名を選択 --');
-      fillSelect('editPerformerSelect', masters.performers, '-- 演者名または取材名を選択 --');
-
-      const managerSel = document.getElementById('managerSelect');
-      if (managerSel) {
-        const prev = managerSel.value;
-        managerSel.innerHTML = '<option value="" class="text-slate-400">担当者を選択</option>' +
-          '<option value="未定" class="text-rose-600 font-bold">未定</option>' +
-          masters.managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('') +
-          '<option value="__DIRECT__">＋ 直接入力</option>';
-        if (prev) managerSel.value = prev;
-        updateSelectColor(managerSel);
-      }
-
-      const editManagerSel = document.getElementById('editManager');
-      if (editManagerSel) {
-        const prevE = editManagerSel.value;
-        editManagerSel.innerHTML = '<option value="" class="text-slate-400">担当者を選択</option>' +
-          '<option value="未定" class="text-rose-600 font-bold">未定</option>' +
-          masters.managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-        if (prevE) {
-          if (prevE !== '未定' && !masters.managers.includes(prevE)) {
-            editManagerSel.innerHTML += `<option value="${escapeHtml(prevE)}">${escapeHtml(prevE)}</option>`;
-          }
-          editManagerSel.value = prevE;
-        }
-        updateSelectColor(editManagerSel);
-      }
-
-      const editCompanyList = document.getElementById('editCompanyList');
-      if (editCompanyList) {
-        editCompanyList.innerHTML = cleanCompanies.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
-      }
-      updateEditStoreDatalist(document.getElementById('editCompany')?.value || '');
-    }
-
-    function syncTaxIncluded(excludeInputId, includeInputId) {
-      const exVal = Number(document.getElementById(excludeInputId)?.value) || 0;
-      const incEl = document.getElementById(includeInputId);
-      if (incEl) {
-        incEl.value = exVal > 0 ? Math.round(exVal * 1.1) : '';
+        inp.value = sel.value;
       }
     }
 
     function computeBillingValues(mode) {
-      const ids = mode === 'edit'
-        ? {
-            reward: 'editReward',
-            gas: 'editGasolineFee',
-            highway: 'editHighwayFee',
-            lunch8: 'editLunch8Fee',
-            lunch: 'editLunchFee',
-            other: 'editOtherExpenses',
-            billEx: 'editBilling',
-            billIn: 'editBillingTax'
-          }
-        : {
-            reward: 'rewardAmount',
-            gas: 'gasolineFee',
-            highway: 'highwayFee',
-            lunch8: 'lunch8Fee',
-            lunch: 'lunchFee',
-            other: 'otherExpenses',
-            billEx: 'billingAmount',
-            billIn: 'billingTaxIncluded'
-          };
+      const isEdit = mode === 'edit';
+      const reward = Number(document.getElementById(isEdit ? 'editReward' : 'rewardAmount')?.value) || 0;
+      const gas = Number(document.getElementById(isEdit ? 'editGasolineFee' : 'gasolineFee')?.value) || 0;
+      const highway = Number(document.getElementById(isEdit ? 'editHighwayFee' : 'highwayFee')?.value) || 0;
+      const lunch8 = Number(document.getElementById(isEdit ? 'editLunch8Fee' : 'lunch8Fee')?.value) || 0;
+      const lunch = Number(document.getElementById(isEdit ? 'editLunchFee' : 'lunchFee')?.value) || 0;
+      const other = Number(document.getElementById(isEdit ? 'editOtherExpenses' : 'otherExpenses')?.value) || 0;
 
-      const totalEx =
-        (Number(document.getElementById(ids.reward)?.value) || 0) +
-        (Number(document.getElementById(ids.gas)?.value) || 0) +
-        (Number(document.getElementById(ids.highway)?.value) || 0) +
-        (Number(document.getElementById(ids.lunch8)?.value) || 0) +
-        (Number(document.getElementById(ids.lunch)?.value) || 0) +
-        (Number(document.getElementById(ids.other)?.value) || 0);
+      const sumEx = reward + gas + highway + lunch8 + lunch + other;
+      const sumIn = Math.round(sumEx * 1.1);
 
-      const exEl = document.getElementById(ids.billEx);
-      const inEl = document.getElementById(ids.billIn);
-      if (exEl) exEl.value = totalEx > 0 ? totalEx : '';
-      if (inEl) inEl.value = totalEx > 0 ? Math.round(totalEx * 1.1) : '';
+      const billExEl = document.getElementById(isEdit ? 'editBilling' : 'billingAmount');
+      const billInEl = document.getElementById(isEdit ? 'editBillingTax' : 'billingTaxIncluded');
+      if (billExEl) billExEl.value = sumEx > 0 ? sumEx : '';
+      if (billInEl) billInEl.value = sumIn > 0 ? sumIn : '';
+    }
+
+    function syncTaxIncluded(excludeId, includeId) {
+      const exVal = Number(document.getElementById(excludeId)?.value) || 0;
+      const inEl = document.getElementById(includeId);
+      if (inEl) {
+        inEl.value = exVal > 0 ? Math.round(exVal * 1.1) : '';
+      }
     }
 
     function computePaymentTotals(mode) {
-      const ids = mode === 'edit'
-        ? { rew: 'editPayRewardExclude', exp: 'editPayExpenseExclude', totEx: 'editPayTotalExclude', totIn: 'editPayment' }
-        : { rew: 'payRewardExclude', exp: 'payExpenseExclude', totEx: 'payTotalExclude', totIn: 'paymentAmount' };
+      const isEdit = mode === 'edit';
+      const rew = Number(document.getElementById(isEdit ? 'editPayRewardExclude' : 'payRewardExclude')?.value) || 0;
+      const exp = Number(document.getElementById(isEdit ? 'editPayExpenseExclude' : 'payExpenseExclude')?.value) || 0;
+      const totEx = rew + exp;
+      const totIn = Math.round(totEx * 1.1);
 
-      const totEx =
-        (Number(document.getElementById(ids.rew)?.value) || 0) +
-        (Number(document.getElementById(ids.exp)?.value) || 0);
+      const totExEl = document.getElementById(isEdit ? 'editPayTotalExclude' : 'payTotalExclude');
+      const totInEl = document.getElementById(isEdit ? 'editPayment' : 'paymentAmount');
+      if (totExEl) totExEl.value = totEx > 0 ? totEx : '';
+      if (totInEl) totInEl.value = totIn > 0 ? totIn : '';
+    }
 
-      const exEl = document.getElementById(ids.totEx);
-      const inEl = document.getElementById(ids.totIn);
-      if (exEl) exEl.value = totEx > 0 ? totEx : '';
-      if (inEl) inEl.value = totEx > 0 ? Math.round(totEx * 1.1) : '';
+    function populateAllDropdowns() {
+      const fillSelect = (id, placeholder, items, extraOptions = []) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const prev = sel.value;
+        const uniqueItems = Array.from(new Set((items || []).filter(Boolean)));
+        sel.innerHTML =
+          `<option value="" class="text-slate-400">${escapeHtml(placeholder)}</option>` +
+          uniqueItems.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('') +
+          extraOptions.map(opt => `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`).join('');
+        if (prev && Array.from(sel.options).some(o => o.value === prev)) {
+          sel.value = prev;
+        }
+        updateSelectColor(sel);
+      };
+
+      fillSelect('consignorSelect', '候補から選択', masters.consignors);
+      fillSelect('editConsignorSelect', '候補から選択', masters.consignors);
+
+      fillSelect('clientSelect', '候補から選択', masters.clients);
+      fillSelect('editClientSelect', '候補から選択', masters.clients);
+
+      const cleanCompanies = Array.from(new Set(masters.companies.map(stripCompanyPrefix).filter(Boolean)));
+      fillSelect('companySelect', '-- 企業候補から選択 --', cleanCompanies);
+      const editCompDl = document.getElementById('editCompanyList');
+      if (editCompDl) {
+        editCompDl.innerHTML = cleanCompanies.map(c => `<option value="${escapeHtml(c)}">`).join('');
+      }
+
+      fillSelect('performerSelect', '-- 演者名または取材名を選択 --', masters.performers);
+      fillSelect('editPerformerSelect', '-- 演者名または取材名を選択 --', masters.performers);
+
+      fillSelect('managerSelect', '担当者を選択', masters.managers, [{ value: '__DIRECT__', label: '＋ 直接入力（新規追加）' }]);
+      fillSelect('editManager', '担当者を選択', masters.managers);
+
+      const baseTypes = ['取材', 'アテンド', 'ディレクター', '販売会'];
+      const mergedTypes = Array.from(new Set([...baseTypes, ...(masters.types || [])]));
+      fillSelect('typeSelect', '種別を選択', mergedTypes, [{ value: '__DIRECT__', label: '＋ 直接入力（新規追加）' }]);
+      fillSelect('editTypeSelect', '種別を選択', mergedTypes, [{ value: '__DIRECT__', label: '＋ 直接入力（新規追加）' }]);
+
+      updateFilterDropdownOptions();
     }
 
     // =========================================================================
-    // 6. 新規登録・編集・ステータス変更・削除ハンドラ
+    // 5. 新規登録・編集・削除・インライン更新ハンドラ
     // =========================================================================
-    function generateOrderId() {
-      const stamp = Date.now().toString(36).toUpperCase();
-      const rand = Math.random().toString(36).slice(2, 5).toUpperCase();
-      return `ORD-${stamp}-${rand}`;
-    }
-
     function handleNewOrderSubmit(event) {
       event.preventDefault();
 
-      const statusVal = document.getElementById('status').value;
-      const consignorVal = document.getElementById('consignor').value.trim();
-      const clientVal = document.getElementById('client').value.trim();
-      const dateVal = normalizeClientDate(document.getElementById('date').value);
-      const typeSelVal = document.getElementById('typeSelect').value;
-      const typeVal = typeSelVal === '__DIRECT__'
-        ? document.getElementById('typeInput').value.trim()
-        : typeSelVal.trim();
+      const status = document.getElementById('status')?.value || 'confirmed';
+      const consignor = document.getElementById('consignor')?.value.trim() || '';
+      const client = document.getElementById('client')?.value.trim() || '';
+      const dateRaw = document.getElementById('date')?.value || '';
+      const date = normalizeClientDate(dateRaw) || dateRaw;
 
-      if (!statusVal || !consignorVal || !clientVal || !dateVal || !typeVal) {
-        showToast('必須項目（ステータス・委託元・依頼元・実施日・種別）を正しく入力してください', 'warning');
+      const typeSelVal = document.getElementById('typeSelect')?.value || '';
+      const type = typeSelVal === '__DIRECT__'
+        ? (document.getElementById('typeInput')?.value.trim() || '')
+        : (document.getElementById('typeInput')?.value.trim() || typeSelVal);
+
+      if (!consignor || !client || !date || !type) {
+        showToast('必須項目（ステータス・委託元・依頼元・実施日・種別）を入力してください', 'warning');
         return;
       }
 
-      const managerSelVal = document.getElementById('managerSelect').value;
-      const managerVal = managerSelVal === '__DIRECT__'
-        ? document.getElementById('managerName').value.trim()
-        : managerSelVal.trim();
+      const mgrSelVal = document.getElementById('managerSelect')?.value || '';
+      const managerName = mgrSelVal === '__DIRECT__'
+        ? (document.getElementById('managerName')?.value.trim() || '未定')
+        : (document.getElementById('managerName')?.value.trim() || mgrSelVal || '未定');
 
       const newOrder = {
-        id: generateOrderId(),
-        status: statusVal === 'tentative' ? 'tentative' : 'confirmed',
-        consignor: consignorVal,
-        client: clientVal,
-        date: dateVal,
-        type: typeVal,
-        companyName: stripCompanyPrefix(document.getElementById('companyInput').value),
-        storeName: document.getElementById('storeInput').value.trim(),
-        performerOrEvent: document.getElementById('performerOrEvent').value.trim(),
-        managerName: managerVal,
-        rewardAmount: Number(document.getElementById('rewardAmount').value) || 0,
-        transportationCost: document.getElementById('transportationCost').value.trim(),
-        gasolineFee: Number(document.getElementById('gasolineFee').value) || 0,
-        highwayFee: Number(document.getElementById('highwayFee').value) || 0,
-        lunch8Fee: Number(document.getElementById('lunch8Fee').value) || 0,
-        lunchFee: Number(document.getElementById('lunchFee').value) || 0,
-        otherExpenses: Number(document.getElementById('otherExpenses').value) || 0,
-        billingAmount: Number(document.getElementById('billingAmount').value) || 0,
-        billingTaxIncluded: Number(document.getElementById('billingTaxIncluded').value) || 0,
-        payRewardExclude: Number(document.getElementById('payRewardExclude').value) || 0,
-        payExpenseExclude: Number(document.getElementById('payExpenseExclude').value) || 0,
-        payTotalExclude: Number(document.getElementById('payTotalExclude').value) || 0,
-        paymentAmount: Number(document.getElementById('paymentAmount').value) || 0,
-        notes: document.getElementById('notes').value.trim()
+        id: `ORD-${Date.now().toString(36).toUpperCase()}`,
+        status,
+        consignor,
+        client,
+        date,
+        type,
+        companyName: stripCompanyPrefix(document.getElementById('companyInput')?.value || ''),
+        storeName: document.getElementById('storeInput')?.value.trim() || '',
+        performerOrEvent: document.getElementById('performerOrEvent')?.value.trim() || '',
+        managerName,
+        rewardAmount: Number(document.getElementById('rewardAmount')?.value) || 0,
+        transportationCost: document.getElementById('transportationCost')?.value || '',
+        gasolineFee: Number(document.getElementById('gasolineFee')?.value) || 0,
+        highwayFee: Number(document.getElementById('highwayFee')?.value) || 0,
+        lunch8Fee: Number(document.getElementById('lunch8Fee')?.value) || 0,
+        lunchFee: Number(document.getElementById('lunchFee')?.value) || 0,
+        otherExpenses: Number(document.getElementById('otherExpenses')?.value) || 0,
+        billingAmount: Number(document.getElementById('billingAmount')?.value) || 0,
+        billingTaxIncluded: Number(document.getElementById('billingTaxIncluded')?.value) || 0,
+        payRewardExclude: Number(document.getElementById('payRewardExclude')?.value) || 0,
+        payExpenseExclude: Number(document.getElementById('payExpenseExclude')?.value) || 0,
+        payTotalExclude: Number(document.getElementById('payTotalExclude')?.value) || 0,
+        paymentAmount: Number(document.getElementById('paymentAmount')?.value) || 0,
+        notes: document.getElementById('notes')?.value.trim() || ''
       };
 
-      orders.push(newOrder);
+      orders.unshift(newOrder);
       saveOrdersToStorage();
       learnMastersFromOrders([newOrder]);
+      populateAllDropdowns();
 
       const form = document.getElementById('newOrderForm');
       if (form) form.reset();
-      document.getElementById('typeInput').classList.add('hidden');
-      document.getElementById('typeInput').required = false;
-      document.getElementById('managerName').classList.add('hidden');
-      populateStoreDropdown('');
-
-      ['status', 'consignorSelect', 'clientSelect', 'typeSelect', 'companySelect', 'storeSelect', 'performerSelect', 'managerSelect', 'transportationCost'].forEach(id => {
+      document.getElementById('typeInput')?.classList.add('hidden');
+      document.getElementById('managerName')?.classList.add('hidden');
+      refreshStoreSelectForCompany('');
+      ['status', 'consignorSelect', 'clientSelect', 'typeSelect', 'companySelect', 'performerSelect', 'managerSelect', 'transportationCost'].forEach(id => {
         updateSelectColor(document.getElementById(id));
-      });
-      ['consignor', 'client', 'typeInput', 'companyInput', 'storeInput', 'performerOrEvent', 'managerName', 'notes'].forEach(id => {
-        updateInputUndecidedColor(document.getElementById(id));
       });
 
       renderOrders();
-      showToast('新規案件を登録しました', 'success');
+      showToast('案件を受注登録しました', 'success');
 
       if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
         syncToGoogleSheets(false, false);
@@ -2612,79 +2563,71 @@ function doPost(e) {
     }
 
     function openEditModal(orderId) {
-      const o = orders.find(item => item.id === orderId);
-      if (!o) return;
+      const target = orders.find(o => o.id === orderId);
+      if (!target) return;
 
-      populateAllDropdowns();
+      document.getElementById('editOrderId').value = target.id;
+      document.getElementById('editOrderIdDisplay').textContent = target.id;
 
-      document.getElementById('editOrderId').value = o.id;
-      document.getElementById('editOrderIdDisplay').textContent = o.id;
-      document.getElementById('editStatus').value = o.status || 'confirmed';
+      const setVal = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.value = v !== undefined && v !== null ? v : '';
+      };
 
-      document.getElementById('editConsignor').value = o.consignor || '';
-      const editConsSel = document.getElementById('editConsignorSelect');
-      editConsSel.value = masters.consignors.includes(o.consignor) ? o.consignor : '';
+      setVal('editStatus', target.status || 'confirmed');
+      setVal('editConsignorSelect', masters.consignors.includes(target.consignor) ? target.consignor : '');
+      setVal('editConsignor', target.consignor || '');
+      setVal('editClientSelect', masters.clients.includes(target.client) ? target.client : '');
+      setVal('editClient', target.client || '');
+      setVal('editDate', normalizeClientDate(target.date) || '');
 
-      document.getElementById('editClient').value = o.client || '';
-      const editCliSel = document.getElementById('editClientSelect');
-      editCliSel.value = masters.clients.includes(o.client) ? o.client : '';
-
-      document.getElementById('editDate').value = isAbnormalDate(o.date) ? '' : (o.date || '');
-
-      const editTypeSel = document.getElementById('editTypeSelect');
-      const editTypeInp = document.getElementById('editType');
-      const presetTypes = ['取材', 'アテンド', 'ディレクター', '販売会'];
-      if (!o.type) {
-        editTypeSel.value = '';
-        editTypeInp.classList.add('hidden');
-        editTypeInp.required = false;
-        editTypeInp.value = '';
-      } else if (presetTypes.includes(o.type)) {
-        editTypeSel.value = o.type;
-        editTypeInp.classList.add('hidden');
-        editTypeInp.required = false;
-        editTypeInp.value = o.type;
+      const typeSel = document.getElementById('editTypeSelect');
+      const typeInp = document.getElementById('editType');
+      if (typeSel && Array.from(typeSel.options).some(opt => opt.value === target.type)) {
+        typeSel.value = target.type;
+        typeInp?.classList.add('hidden');
+        if (typeInp) typeInp.value = target.type;
       } else {
-        editTypeSel.value = '__DIRECT__';
-        editTypeInp.classList.remove('hidden');
-        editTypeInp.required = true;
-        editTypeInp.value = o.type;
+        if (typeSel) typeSel.value = '__DIRECT__';
+        typeInp?.classList.remove('hidden');
+        if (typeInp) typeInp.value = target.type || '';
       }
 
-      const cleanComp = stripCompanyPrefix(o.companyName);
-      document.getElementById('editCompany').value = cleanComp;
-      updateEditStoreDatalist(cleanComp);
-      document.getElementById('editStore').value = o.storeName || '';
+      setVal('editCompany', stripCompanyPrefix(target.companyName));
+      updateEditStoreDatalist(target.companyName);
+      setVal('editStore', target.storeName || '');
 
-      document.getElementById('editPerformer').value = o.performerOrEvent || '';
-      const editPerfSel = document.getElementById('editPerformerSelect');
-      editPerfSel.value = masters.performers.includes(o.performerOrEvent) ? o.performerOrEvent : '';
+      setVal('editPerformerSelect', masters.performers.includes(target.performerOrEvent) ? target.performerOrEvent : '');
+      setVal('editPerformer', target.performerOrEvent || '');
 
-      const editManagerSel = document.getElementById('editManager');
-      if (o.managerName && o.managerName !== '未定' && !masters.managers.includes(o.managerName)) {
-        editManagerSel.innerHTML += `<option value="${escapeHtml(o.managerName)}">${escapeHtml(o.managerName)}</option>`;
+      const mgrSel = document.getElementById('editManager');
+      if (mgrSel && target.managerName && !Array.from(mgrSel.options).some(opt => opt.value === target.managerName)) {
+        const opt = document.createElement('option');
+        opt.value = target.managerName;
+        opt.textContent = target.managerName;
+        mgrSel.appendChild(opt);
       }
-      editManagerSel.value = o.managerName || '';
+      setVal('editManager', target.managerName || '');
 
-      document.getElementById('editReward').value = o.rewardAmount || '';
-      document.getElementById('editTransportation').value = o.transportationCost || '';
-      document.getElementById('editGasolineFee').value = o.gasolineFee || '';
-      document.getElementById('editHighwayFee').value = o.highwayFee || '';
-      document.getElementById('editLunch8Fee').value = o.lunch8Fee || '';
-      document.getElementById('editLunchFee').value = o.lunchFee || '';
-      document.getElementById('editOtherExpenses').value = o.otherExpenses || '';
-      document.getElementById('editBilling').value = o.billingAmount || '';
-      document.getElementById('editBillingTax').value = o.billingTaxIncluded || '';
-      document.getElementById('editPayRewardExclude').value = o.payRewardExclude || '';
-      document.getElementById('editPayExpenseExclude').value = o.payExpenseExclude || '';
-      document.getElementById('editPayTotalExclude').value = o.payTotalExclude || '';
-      document.getElementById('editPayment').value = o.paymentAmount || '';
-      document.getElementById('editNotes').value = o.notes || '';
+      setVal('editReward', target.rewardAmount || '');
+      setVal('editTransportation', target.transportationCost || '');
+      setVal('editGasolineFee', target.gasolineFee || '');
+      setVal('editHighwayFee', target.highwayFee || '');
+      setVal('editLunch8Fee', target.lunch8Fee || '');
+      setVal('editLunchFee', target.lunchFee || '');
+      setVal('editOtherExpenses', target.otherExpenses || '');
+      setVal('editBilling', target.billingAmount || '');
+      setVal('editBillingTax', target.billingTaxIncluded || '');
+      setVal('editPayRewardExclude', target.payRewardExclude || '');
+      setVal('editPayExpenseExclude', target.payExpenseExclude || '');
+      setVal('editPayTotalExclude', target.payTotalExclude || '');
+      setVal('editPayment', target.paymentAmount || '');
+      setVal('editNotes', target.notes || '');
 
       ['editStatus', 'editConsignorSelect', 'editClientSelect', 'editTypeSelect', 'editPerformerSelect', 'editManager', 'editTransportation'].forEach(id => {
         updateSelectColor(document.getElementById(id));
       });
-      ['editConsignor', 'editClient', 'editType', 'editCompany', 'editStore', 'editPerformer', 'editNotes'].forEach(id => {
+      ['editConsignor', 'editClient', 'editCompany', 'editStore', 'editPerformer', 'editNotes'].forEach(id => {
         updateInputUndecidedColor(document.getElementById(id));
       });
 
@@ -2697,103 +2640,50 @@ function doPost(e) {
 
     function handleEditSubmit(event) {
       event.preventDefault();
-      const id = document.getElementById('editOrderId').value;
-      const idx = orders.findIndex(item => item.id === id);
+      const id = document.getElementById('editOrderId')?.value;
+      const idx = orders.findIndex(o => o.id === id);
       if (idx < 0) return;
 
-      const statusVal = document.getElementById('editStatus').value;
-      const consignorVal = document.getElementById('editConsignor').value.trim();
-      const clientVal = document.getElementById('editClient').value.trim();
-      const dateVal = normalizeClientDate(document.getElementById('editDate').value);
-      const editTypeSelVal = document.getElementById('editTypeSelect').value;
-      const typeVal = editTypeSelVal === '__DIRECT__'
-        ? document.getElementById('editType').value.trim()
-        : editTypeSelVal.trim();
+      const typeSelVal = document.getElementById('editTypeSelect')?.value || '';
+      const type = typeSelVal === '__DIRECT__'
+        ? (document.getElementById('editType')?.value.trim() || '')
+        : (document.getElementById('editType')?.value.trim() || typeSelVal);
 
-      if (!statusVal || !consignorVal || !clientVal || !dateVal || !typeVal) {
-        showToast('必須項目（ステータス・委託元・依頼元・実施日・種別）を正しく入力してください', 'warning');
-        return;
-      }
+      const dateRaw = document.getElementById('editDate')?.value || '';
 
-      const updated = {
+      orders[idx] = {
         ...orders[idx],
-        status: statusVal === 'tentative' ? 'tentative' : 'confirmed',
-        consignor: consignorVal,
-        client: clientVal,
-        date: dateVal,
-        type: typeVal,
-        companyName: stripCompanyPrefix(document.getElementById('editCompany').value),
-        storeName: document.getElementById('editStore').value.trim(),
-        performerOrEvent: document.getElementById('editPerformer').value.trim(),
-        managerName: document.getElementById('editManager').value.trim(),
-        rewardAmount: Number(document.getElementById('editReward').value) || 0,
-        transportationCost: document.getElementById('editTransportation').value.trim(),
-        gasolineFee: Number(document.getElementById('editGasolineFee').value) || 0,
-        highwayFee: Number(document.getElementById('editHighwayFee').value) || 0,
-        lunch8Fee: Number(document.getElementById('editLunch8Fee').value) || 0,
-        lunchFee: Number(document.getElementById('editLunchFee').value) || 0,
-        otherExpenses: Number(document.getElementById('editOtherExpenses').value) || 0,
-        billingAmount: Number(document.getElementById('editBilling').value) || 0,
-        billingTaxIncluded: Number(document.getElementById('editBillingTax').value) || 0,
-        payRewardExclude: Number(document.getElementById('editPayRewardExclude').value) || 0,
-        payExpenseExclude: Number(document.getElementById('editPayExpenseExclude').value) || 0,
-        payTotalExclude: Number(document.getElementById('editPayTotalExclude').value) || 0,
-        paymentAmount: Number(document.getElementById('editPayment').value) || 0,
-        notes: document.getElementById('editNotes').value.trim()
+        status: document.getElementById('editStatus')?.value || 'confirmed',
+        consignor: document.getElementById('editConsignor')?.value.trim() || '',
+        client: document.getElementById('editClient')?.value.trim() || '',
+        date: normalizeClientDate(dateRaw) || dateRaw,
+        type,
+        companyName: stripCompanyPrefix(document.getElementById('editCompany')?.value || ''),
+        storeName: document.getElementById('editStore')?.value.trim() || '',
+        performerOrEvent: document.getElementById('editPerformer')?.value.trim() || '',
+        managerName: document.getElementById('editManager')?.value.trim() || '',
+        rewardAmount: Number(document.getElementById('editReward')?.value) || 0,
+        transportationCost: document.getElementById('editTransportation')?.value || '',
+        gasolineFee: Number(document.getElementById('editGasolineFee')?.value) || 0,
+        highwayFee: Number(document.getElementById('editHighwayFee')?.value) || 0,
+        lunch8Fee: Number(document.getElementById('editLunch8Fee')?.value) || 0,
+        lunchFee: Number(document.getElementById('editLunchFee')?.value) || 0,
+        otherExpenses: Number(document.getElementById('editOtherExpenses')?.value) || 0,
+        billingAmount: Number(document.getElementById('editBilling')?.value) || 0,
+        billingTaxIncluded: Number(document.getElementById('editBillingTax')?.value) || 0,
+        payRewardExclude: Number(document.getElementById('editPayRewardExclude')?.value) || 0,
+        payExpenseExclude: Number(document.getElementById('editPayExpenseExclude')?.value) || 0,
+        payTotalExclude: Number(document.getElementById('editPayTotalExclude')?.value) || 0,
+        paymentAmount: Number(document.getElementById('editPayment')?.value) || 0,
+        notes: document.getElementById('editNotes')?.value.trim() || ''
       };
 
-      orders[idx] = updated;
       saveOrdersToStorage();
-      learnMastersFromOrders([updated]);
+      learnMastersFromOrders([orders[idx]]);
+      populateAllDropdowns();
       closeEditModal();
       renderOrders();
-      showToast('案件内容を更新しました', 'success');
-
-      if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
-        syncToGoogleSheets(false, false);
-      }
-    }
-
-    function toggleOrderStatus(orderId) {
-      const idx = orders.findIndex(item => item.id === orderId);
-      if (idx < 0) return;
-      orders[idx].status = orders[idx].status === 'confirmed' ? 'tentative' : 'confirmed';
-      saveOrdersToStorage();
-      renderOrders();
-      showToast(`ステータスを「${orders[idx].status === 'confirmed' ? '確定' : '仮案件'}」に変更しました`, 'info');
-
-      if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
-        syncToGoogleSheets(false, false);
-      }
-    }
-
-    function updateOrderDateInline(orderId, rawNewDate) {
-      const idx = orders.findIndex(item => item.id === orderId);
-      if (idx < 0) return;
-
-      const trimmed = String(rawNewDate || '').trim();
-      if (!trimmed) {
-        orders[idx].date = '';
-        saveOrdersToStorage();
-        renderOrders();
-        showToast('実施日を未設定に戻しました', 'info');
-        if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
-          syncToGoogleSheets(false, false);
-        }
-        return;
-      }
-
-      const norm = normalizeClientDate(trimmed);
-      if (!norm) {
-        showToast('2020年〜2035年の正しい日付を選択してください', 'warning');
-        renderOrders();
-        return;
-      }
-
-      orders[idx].date = norm;
-      saveOrdersToStorage();
-      renderOrders();
-      showToast(`実施日を ${norm} に更新しました`, 'success');
+      showToast('案件情報を更新しました', 'success');
 
       if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
         syncToGoogleSheets(false, false);
@@ -2801,13 +2691,17 @@ function doPost(e) {
     }
 
     function openDeleteConfirmModal(orderId) {
-      const o = orders.find(item => item.id === orderId);
-      if (!o) return;
+      const target = orders.find(o => o.id === orderId);
+      if (!target) return;
       pendingDeleteOrderId = orderId;
       const msgEl = document.getElementById('deleteConfirmMessage');
       if (msgEl) {
-        const label = [o.date || '日付未定', o.storeName || o.companyName || '店舗未設定', o.performerOrEvent || ''].filter(Boolean).join(' / ');
-        msgEl.textContent = `「${label}」（管理ID: ${o.id}）を削除してよろしいですか？`;
+        const label = [
+          target.date ? formatDateWithWeekday(target.date) : '日付未定',
+          target.storeName || stripCompanyPrefix(target.companyName) || '',
+          target.performerOrEvent || target.type || ''
+        ].filter(Boolean).join(' / ');
+        msgEl.textContent = `管理ID: ${target.id}（${label}）を削除しますか？`;
       }
       showModalById('deleteConfirmModal');
     }
@@ -2819,7 +2713,7 @@ function doPost(e) {
 
     function executeDeleteOrder() {
       if (!pendingDeleteOrderId) return;
-      orders = orders.filter(item => item.id !== pendingDeleteOrderId);
+      orders = orders.filter(o => o.id !== pendingDeleteOrderId);
       saveOrdersToStorage();
       closeDeleteConfirmModal();
       renderOrders();
@@ -2830,67 +2724,88 @@ function doPost(e) {
       }
     }
 
+    function updateOrderStatusInline(orderId, newStatus) {
+      const idx = orders.findIndex(o => o.id === orderId);
+      if (idx < 0) return;
+      orders[idx].status = newStatus === 'tentative' ? 'tentative' : 'confirmed';
+      saveOrdersToStorage();
+      renderOrders();
+      showToast(`ステータスを「${orders[idx].status === 'confirmed' ? '確定' : '仮案件'}」に変更しました`, 'success');
+      if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
+        syncToGoogleSheets(false, false);
+      }
+    }
+
+    function updateOrderDateInline(orderId, newDate) {
+      const idx = orders.findIndex(o => o.id === orderId);
+      if (idx < 0) return;
+      orders[idx].date = normalizeClientDate(newDate) || newDate;
+      saveOrdersToStorage();
+      populateAllDropdowns();
+      renderOrders();
+      showToast('実施日を更新しました', 'success');
+      if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
+        syncToGoogleSheets(false, false);
+      }
+    }
+
     // =========================================================================
-    // 7. 受注ボックス絞り込み・整列・カード一覧描画
+    // 6. ソート・絞り込みフィルター・異常日付ハンドラ
     // =========================================================================
     function sortOrdersList(list) {
-      return [...list].sort((a, b) => {
-        const da = (!a.date || isAbnormalDate(a.date)) ? '0000-00-00' : a.date;
-        const db = (!b.date || isAbnormalDate(b.date)) ? '0000-00-00' : b.date;
+      const typeOrder = { '取材': 1, 'アテンド': 2, 'ディレクター': 3, '販売会': 4 };
+      return [...(list || [])].sort((a, b) => {
+        const da = normalizeClientDate(a.date) || '9999-99-99';
+        const db = normalizeClientDate(b.date) || '9999-99-99';
         if (da !== db) return da.localeCompare(db);
 
-        const ta = String(a.type || '');
-        const tb = String(b.type || '');
-        if (ta !== tb) return ta.localeCompare(tb, 'ja');
+        const ta = typeOrder[a.type] || 99;
+        const tb = typeOrder[b.type] || 99;
+        if (ta !== tb) return ta - tb;
+        if ((a.type || '') !== (b.type || '')) return (a.type || '').localeCompare(b.type || '', 'ja');
 
-        const ma = String(a.managerName || '');
-        const mb = String(b.managerName || '');
+        const ma = a.managerName || 'んんん';
+        const mb = b.managerName || 'んんん';
         if (ma !== mb) return ma.localeCompare(mb, 'ja');
 
         const ca = stripCompanyPrefix(a.companyName);
         const cb = stripCompanyPrefix(b.companyName);
         if (ca !== cb) return ca.localeCompare(cb, 'ja');
 
-        const sa = String(a.storeName || '');
-        const sb = String(b.storeName || '');
-        if (sa !== sb) return sa.localeCompare(sb, 'ja');
-
-        return String(a.performerOrEvent || '').localeCompare(String(b.performerOrEvent || ''), 'ja');
+        if ((a.storeName || '') !== (b.storeName || '')) return (a.storeName || '').localeCompare(b.storeName || '', 'ja');
+        return (a.performerOrEvent || '').localeCompare(b.performerOrEvent || '', 'ja');
       });
     }
 
-    function populateFilterDropdowns() {
-      const updateFilterOpts = (id, values, labelFormatter = v => v) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const prev = el.value || 'all';
-        const unique = Array.from(new Set(values.filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), 'ja'));
-        el.innerHTML = '<option value="all">すべて</option>' +
-          unique.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(labelFormatter(v))}</option>`).join('');
-        el.value = (prev === 'all' || unique.includes(prev)) ? prev : 'all';
+    function updateFilterDropdownOptions() {
+      const populateFilter = (id, values, formatter = v => v) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const prev = sel.value;
+        const unique = Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, 'ja'));
+        sel.innerHTML = '<option value="all">すべて</option>' +
+          unique.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(formatter(v))}</option>`).join('');
+        sel.value = (prev && (prev === 'all' || unique.includes(prev))) ? prev : 'all';
       };
 
-      updateFilterOpts('consignorFilter', orders.map(o => o.consignor));
-      updateFilterOpts('clientFilter', orders.map(o => o.client));
-      updateFilterOpts('dateFilter', orders.map(o => o.date), d => isAbnormalDate(d) ? `${d} (異常日付)` : formatDateWithWeekday(d));
-      updateFilterOpts('typeFilter', orders.map(o => o.type));
-
-      const allCompanies = orders.map(o => stripCompanyPrefix(o.companyName));
-      updateFilterOpts('companyFilter', allCompanies);
+      populateFilter('consignorFilter', orders.map(o => o.consignor));
+      populateFilter('clientFilter', orders.map(o => o.client));
+      populateFilter('dateFilter', orders.map(o => normalizeClientDate(o.date)), formatDateWithWeekday);
+      populateFilter('typeFilter', orders.map(o => o.type));
+      populateFilter('companyFilter', orders.map(o => stripCompanyPrefix(o.companyName)));
 
       const selectedCompany = document.getElementById('companyFilter')?.value || 'all';
-      const storeSource = selectedCompany === 'all'
-        ? orders
-        : orders.filter(o => stripCompanyPrefix(o.companyName) === selectedCompany);
-      updateFilterOpts('storeFilter', storeSource.map(o => o.storeName));
+      const storeValues = orders
+        .filter(o => selectedCompany === 'all' || stripCompanyPrefix(o.companyName) === selectedCompany)
+        .map(o => o.storeName);
+      populateFilter('storeFilter', storeValues);
 
-      updateFilterOpts('performerFilter', orders.map(o => o.performerOrEvent));
-      updateFilterOpts('managerFilter', orders.map(o => o.managerName || '未定'));
+      populateFilter('performerFilter', orders.map(o => o.performerOrEvent));
+      populateFilter('managerFilter', orders.map(o => o.managerName));
     }
 
     function onCompanyFilterChange() {
-      const storeEl = document.getElementById('storeFilter');
-      if (storeEl) storeEl.value = 'all';
+      updateFilterDropdownOptions();
       renderOrders();
     }
 
@@ -2901,12 +2816,7 @@ function doPost(e) {
       });
       filterOnlyMissingDate = false;
       filterOnlyAbnormalDate = false;
-      renderOrders();
-    }
-
-    function toggleAbnormalDateFilter() {
-      filterOnlyAbnormalDate = !filterOnlyAbnormalDate;
-      if (filterOnlyAbnormalDate) filterOnlyMissingDate = false;
+      updateFilterDropdownOptions();
       renderOrders();
     }
 
@@ -2916,12 +2826,18 @@ function doPost(e) {
       renderOrders();
     }
 
+    function toggleAbnormalDateFilter() {
+      filterOnlyAbnormalDate = !filterOnlyAbnormalDate;
+      if (filterOnlyAbnormalDate) filterOnlyMissingDate = false;
+      renderOrders();
+    }
+
     function openClearAbnormalDateModal() {
-      const abnormalList = orders.filter(o => isAbnormalDate(o.date));
-      if (abnormalList.length === 0) return;
+      const abnormalOrders = orders.filter(o => isAbnormalDateString(o.date));
+      if (abnormalOrders.length === 0) return;
       const msgEl = document.getElementById('clearAbnormalDateMessage');
       if (msgEl) {
-        msgEl.innerHTML = `現在 <strong>${abnormalList.length} 件</strong> の案件に20年以上前などの不正な日付が入っています。<br>これらの異常日付を一括でクリア（未設定）に戻しますか？`;
+        msgEl.textContent = `現在 ${abnormalOrders.length} 件の案件に異常な日付文字列が含まれています。これらを一括で空欄（未設定）に戻しますか？`;
       }
       showModalById('clearAbnormalDateModal');
     }
@@ -2932,42 +2848,46 @@ function doPost(e) {
 
     function executeClearAbnormalDates() {
       let clearedCount = 0;
-      orders = orders.map(o => {
-        if (isAbnormalDate(o.date)) {
+      orders.forEach(o => {
+        if (isAbnormalDateString(o.date)) {
+          o.date = '';
           clearedCount++;
-          return { ...o, date: '' };
         }
-        return o;
       });
       saveOrdersToStorage();
       filterOnlyAbnormalDate = false;
       closeClearAbnormalDateModal();
       renderOrders();
       showToast(`${clearedCount} 件の異常日付をクリアしました`, 'success');
-
       if (autoSyncEnabled && isValidGasWebAppUrl(gasUrl)) {
         syncToGoogleSheets(false, false);
       }
     }
 
+    // =========================================================================
+    // 7. 受注一覧カード描画 (renderOrders)
+    // =========================================================================
     function renderOrders() {
-      populateFilterDropdowns();
+      const container = document.getElementById('orderListContainer');
+      const countEl = document.getElementById('orderCount');
+      const resetBtn = document.getElementById('resetFiltersBtn');
+      if (!container) return;
 
-      const abnormalCount = orders.filter(o => isAbnormalDate(o.date)).length;
-      const missingCount = orders.filter(o => !o.date).length;
+      // 異常日付・未設定日付の集計
+      const abnormalCount = orders.filter(o => isAbnormalDateString(o.date)).length;
+      const missingCount = orders.filter(o => !String(o.date || '').trim()).length;
 
       const abnormalBadge = document.getElementById('abnormalDateAlertBadge');
       const abnormalText = document.getElementById('abnormalDateAlertText');
       const clearAbnormalBtn = document.getElementById('clearAbnormalDateBtn');
-      if (abnormalBadge && abnormalText && clearAbnormalBtn) {
+      if (abnormalBadge && abnormalText) {
         if (abnormalCount > 0) {
           abnormalBadge.classList.remove('hidden');
-          clearAbnormalBtn.classList.remove('hidden');
           abnormalText.textContent = `異常日付(20年以上前等): ${abnormalCount}件`;
+          clearAbnormalBtn?.classList.remove('hidden');
         } else {
           abnormalBadge.classList.add('hidden');
-          clearAbnormalBtn.classList.add('hidden');
-          filterOnlyAbnormalDate = false;
+          clearAbnormalBtn?.classList.add('hidden');
         }
       }
 
@@ -2979,7 +2899,6 @@ function doPost(e) {
           missingText.textContent = `日付未設定: ${missingCount}件`;
         } else {
           missingBadge.classList.add('hidden');
-          filterOnlyMissingDate = false;
         }
       }
 
@@ -2993,36 +2912,32 @@ function doPost(e) {
       const fPerformer = document.getElementById('performerFilter')?.value || 'all';
       const fManager = document.getElementById('managerFilter')?.value || 'all';
 
-      const hasAnyFilter =
-        filterOnlyAbnormalDate ||
-        filterOnlyMissingDate ||
-        [fStatus, fConsignor, fClient, fDate, fType, fCompany, fStore, fPerformer, fManager].some(v => v !== 'all');
+      const isAnyFilterActive =
+        fStatus !== 'all' || fConsignor !== 'all' || fClient !== 'all' ||
+        fDate !== 'all' || fType !== 'all' || fCompany !== 'all' ||
+        fStore !== 'all' || fPerformer !== 'all' || fManager !== 'all' ||
+        filterOnlyMissingDate || filterOnlyAbnormalDate;
 
-      const resetBtn = document.getElementById('resetFiltersBtn');
       if (resetBtn) {
-        resetBtn.classList.toggle('hidden', !hasAnyFilter);
+        resetBtn.classList.toggle('hidden', !isAnyFilterActive);
       }
 
       const filtered = sortOrdersList(orders.filter(o => {
-        if (filterOnlyAbnormalDate && !isAbnormalDate(o.date)) return false;
-        if (filterOnlyMissingDate && o.date) return false;
+        if (filterOnlyMissingDate && String(o.date || '').trim() !== '') return false;
+        if (filterOnlyAbnormalDate && !isAbnormalDateString(o.date)) return false;
         if (fStatus !== 'all' && o.status !== fStatus) return false;
         if (fConsignor !== 'all' && o.consignor !== fConsignor) return false;
         if (fClient !== 'all' && o.client !== fClient) return false;
-        if (fDate !== 'all' && o.date !== fDate) return false;
+        if (fDate !== 'all' && normalizeClientDate(o.date) !== fDate) return false;
         if (fType !== 'all' && o.type !== fType) return false;
         if (fCompany !== 'all' && stripCompanyPrefix(o.companyName) !== fCompany) return false;
         if (fStore !== 'all' && o.storeName !== fStore) return false;
         if (fPerformer !== 'all' && o.performerOrEvent !== fPerformer) return false;
-        if (fManager !== 'all' && (o.managerName || '未定') !== fManager) return false;
+        if (fManager !== 'all' && o.managerName !== fManager) return false;
         return true;
       }));
 
-      const countEl = document.getElementById('orderCount');
-      if (countEl) countEl.textContent = String(filtered.length);
-
-      const container = document.getElementById('orderListContainer');
-      if (!container) return;
+      if (countEl) countEl.textContent = filtered.length;
 
       if (filtered.length === 0) {
         container.innerHTML = `
@@ -3030,73 +2945,73 @@ function doPost(e) {
             <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
               <i class="ph ph-folder-open text-2xl"></i>
             </div>
-            <p class="text-sm font-bold text-slate-700">表示できる受注案件がありません</p>
-            <p class="text-xs text-slate-400">左側のフォームから新規登録するか、「シートから取得」「条件リセット」をお試しください。</p>
+            <p class="text-sm font-bold text-slate-700">表示できる案件がありません</p>
+            <p class="text-xs text-slate-400">左側のフォームから新規登録するか、絞り込み条件をリセットしてください。</p>
           </div>
         `;
         return;
       }
 
       const typeBadgeStyles = {
-        '取材': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        'アテンド': 'bg-purple-50 text-purple-700 border-purple-200',
-        'ディレクター': 'bg-sky-50 text-sky-700 border-sky-200',
+        '取材': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'アテンド': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'ディレクター': 'bg-purple-50 text-purple-700 border-purple-200',
         '販売会': 'bg-amber-50 text-amber-800 border-amber-200'
       };
 
       container.innerHTML = filtered.map(o => {
-        const isConfirmed = o.status === 'confirmed';
-        const abnormal = isAbnormalDate(o.date);
+        const normDate = normalizeClientDate(o.date);
+        const abnormal = isAbnormalDateString(o.date);
         const cleanComp = stripCompanyPrefix(o.companyName);
-
-        const consignorUndecided = String(o.consignor || '').includes('未定');
-        const clientUndecided = String(o.client || '').includes('未定');
-        const typeUndecided = String(o.type || '').includes('未定');
-        const companyUndecided = cleanComp.includes('未定');
         const storeText = o.storeName || '店舗未設定';
-        const storeUndecided = isUndecidedText(o.storeName);
         const performerText = o.performerOrEvent || '演者・取材名未設定';
-        const performerUndecided = isUndecidedText(o.performerOrEvent);
-        const managerText = o.managerName || '担当未定';
-        const managerUndecided = isUndecidedText(o.managerName);
-        const transUndecided = String(o.transportationCost || '').includes('未定');
-        const notesUndecided = String(o.notes || '').includes('未定');
+        const managerText = o.managerName || '未定';
 
-        const typeCls = typeUndecided
-          ? 'bg-rose-50 text-rose-600 border-rose-200'
-          : (typeBadgeStyles[o.type] || 'bg-slate-100 text-slate-700 border-slate-200');
+        const companyUndecided = isUndecidedValue(cleanComp);
+        const storeUndecided = isUndecidedValue(o.storeName) || !o.storeName;
+        const performerUndecided = isUndecidedValue(o.performerOrEvent);
+        const managerUndecided = isUndecidedValue(managerText);
+        const transUndecided = isUndecidedValue(o.transportationCost);
+        const notesUndecided = isUndecidedValue(o.notes);
+
+        const isConfirmed = o.status === 'confirmed';
+        const typeStyle = typeBadgeStyles[o.type] || 'bg-slate-100 text-slate-700 border-slate-200';
 
         return `
           <article class="bg-white rounded-2xl border ${abnormal ? 'border-rose-300 ring-1 ring-rose-200' : 'border-slate-200'} p-4 shadow-sm hover:shadow-md transition space-y-3">
-            <!-- 上段: ステータス・タグ・実施日・操作ボタン -->
+            <!-- 上段: ステータス・日付・種別・委託元/依頼元・アクションボタン -->
             <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
               <div class="flex flex-wrap items-center gap-1.5">
-                <button type="button" onclick="toggleOrderStatus('${escapeHtml(o.id)}')" title="クリックで確定／仮案件を切替"
-                  class="inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-full border transition ${
-                    isConfirmed
-                      ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
-                      : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                  }">
-                  <i class="ph ${isConfirmed ? 'ph-check-circle' : 'ph-clock'} mr-1"></i>${isConfirmed ? '確定' : '仮案件'}
-                </button>
+                <select onchange="updateOrderStatusInline('${escapeHtml(o.id)}', this.value)" class="text-[11px] font-bold px-2.5 py-1 rounded-xl border outline-none cursor-pointer ${
+                  isConfirmed
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                }">
+                  <option value="confirmed" ${isConfirmed ? 'selected' : ''}>確定</option>
+                  <option value="tentative" ${!isConfirmed ? 'selected' : ''}>仮案件</option>
+                </select>
 
-                ${o.consignor ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-lg border ${consignorUndecided ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}">${escapeHtml(o.consignor)}</span>` : ''}
-                ${o.client ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-lg ${clientUndecided ? 'bg-rose-50 text-rose-600 font-bold border border-rose-200' : 'bg-slate-100 text-slate-700'}">${escapeHtml(o.client)}</span>` : ''}
-                ${o.type ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-lg border ${typeCls}">${escapeHtml(o.type)}</span>` : ''}
-                <span class="text-[10px] font-mono text-slate-400">${escapeHtml(o.id)}</span>
-              </div>
-
-              <div class="flex items-center gap-1.5">
-                <div class="flex items-center gap-1 bg-slate-50 border ${!o.date || abnormal ? 'border-rose-300 bg-rose-50/60' : 'border-slate-200'} rounded-xl px-2 py-1">
-                  <i class="ph ph-calendar-blank text-xs ${!o.date || abnormal ? 'text-rose-600' : 'text-indigo-600'}"></i>
-                  <input type="date" min="2020-01-01" max="2035-12-31"
-                    value="${abnormal ? '' : escapeHtml(o.date || '')}"
+                <div class="inline-flex items-center bg-slate-50 border ${abnormal || !normDate ? 'border-rose-300 bg-rose-50/60' : 'border-slate-200'} rounded-xl px-2 py-0.5">
+                  <i class="ph ph-calendar-blank text-slate-400 text-xs mr-1"></i>
+                  <input type="date" value="${escapeHtml(normDate)}" min="2020-01-01" max="2035-12-31"
                     onchange="updateOrderDateInline('${escapeHtml(o.id)}', this.value)"
-                    class="text-xs font-bold bg-transparent outline-none ${!o.date || abnormal ? 'text-rose-600' : 'text-slate-800'}">
-                  ${!o.date && !abnormal ? `<span class="text-[11px] font-bold text-rose-600">未定</span>` : ''}
-                  ${o.date && !abnormal ? `<span class="text-[11px] font-semibold text-slate-500 hidden sm:inline">(${formatDateWithWeekday(o.date).slice(-2, -1)})</span>` : ''}
+                    class="text-xs font-bold bg-transparent outline-none ${!normDate ? 'text-rose-600' : 'text-slate-800'}">
                 </div>
 
+                ${o.type ? `<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-xl border ${typeStyle}">${escapeHtml(o.type)}</span>` : ''}
+
+                <span class="text-[11px] text-slate-500 font-medium px-2 py-0.5 bg-slate-100 rounded-lg">
+                  ${escapeHtml(o.consignor || '-')} → ${escapeHtml(o.client || '-')}
+                </span>
+              </div>
+
+              <div class="flex items-center space-x-1">
+                <button type="button" onclick="openInvoiceModalForOrder('${escapeHtml(o.id)}')" class="p-1.5 rounded-xl bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 transition" title="この案件の請求書を作成">
+                  <i class="ph ph-file-text text-base"></i>
+                </button>
+                <button type="button" onclick="openStatementModalForOrder('${escapeHtml(o.id)}')" class="p-1.5 rounded-xl bg-slate-100 hover:bg-teal-100 text-slate-600 hover:text-teal-700 transition" title="この担当者の支払明細書を作成">
+                  <i class="ph ph-list-checks text-base"></i>
+                </button>
                 <button type="button" onclick="openEditModal('${escapeHtml(o.id)}')" class="p-1.5 rounded-xl bg-slate-100 hover:bg-indigo-100 text-slate-600 hover:text-indigo-700 transition" title="編集">
                   <i class="ph ph-pencil-simple text-base"></i>
                 </button>
@@ -3452,6 +3367,7 @@ function doPost(e) {
 
       saveOrdersToStorage();
       learnMastersFromOrders(orders);
+      populateAllDropdowns();
       renderOrders();
 
       const nowTime = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
@@ -3738,7 +3654,6 @@ function doPost(e) {
             notes: getV(colMap.notes)
           });
         } else {
-          // 見出しなしの場合：先頭が管理ID(ORD-...)か、ステータス(確定/仮案件)かを自動判別
           const c0 = String(r[0] || '').trim();
           const c1 = String(r[1] || '').trim();
           let offset = 0;
@@ -3805,6 +3720,7 @@ function doPost(e) {
       orders.push(...imported);
       saveOrdersToStorage();
       learnMastersFromOrders(imported);
+      populateAllDropdowns();
       closeExcelPasteModal();
       renderOrders();
       showToast(`${imported.length} 件の案件を取り込みました`, 'success');
@@ -3868,19 +3784,39 @@ function doPost(e) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('CSVファイルをダウンロードしました', 'success');
+      showToast(`CSVファイルを出力しました（${sorted.length}件）`, 'success');
+    }
+
+    function copyTextToClipboard(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length);
+      let ok = false;
+      try {
+        ok = document.execCommand('copy');
+      } catch (_) {
+        ok = false;
+      }
+      document.body.removeChild(ta);
+      return ok;
     }
 
     // =========================================================================
-    // 11. 連携設定モーダル & HTML/GASコード出力
+    // 11. 連携設定モーダル & URL固定化機能
     // =========================================================================
     function openSheetsModal() {
-      const inp = document.getElementById('gasUrlInput');
-      if (inp) inp.value = gasUrl || '';
-      const af = document.getElementById('autoFetchCheck');
-      if (af) af.checked = autoFetchEnabled;
-      const as = document.getElementById('autoSyncCheck');
-      if (as) as.checked = autoSyncEnabled;
+      const input = document.getElementById('gasUrlInput');
+      if (input) input.value = gasUrl || '';
+      const afCheck = document.getElementById('autoFetchCheck');
+      if (afCheck) afCheck.checked = autoFetchEnabled;
+      const asCheck = document.getElementById('autoSyncCheck');
+      if (asCheck) asCheck.checked = autoSyncEnabled;
       updateEmbeddedUrlBadge();
       showModalById('sheetsModal');
     }
@@ -3889,103 +3825,110 @@ function doPost(e) {
       hideModalById('sheetsModal');
     }
 
-    function onGasUrlAutoInput() {
-      const val = document.getElementById('gasUrlInput')?.value.trim() || '';
-      if (isValidGasWebAppUrl(val) && val !== gasUrl) {
-        saveGasUrl(true);
-      }
-    }
-
-    function saveGasUrl(silent = false) {
-      const val = document.getElementById('gasUrlInput')?.value.trim() || '';
-      if (!isValidGasWebAppUrl(val)) {
-        if (!silent) {
-          showToast('有効なGAS WebアプリURL（https://script.google.com/.../exec）を入力してください', 'warning');
-        }
-        return;
-      }
-      gasUrl = val;
-      persistGasUrlEverywhere(gasUrl);
-      updateEmbeddedUrlBadge();
-      setSyncIndicator('URL保存済み・取得中...', 'syncing');
-      if (!silent) {
-        showToast('GAS連携URLを保存しました。データを取得します', 'success');
-      }
-      fetchFromGoogleSheets(false);
-    }
-
-    function clearGasUrl() {
-      gasUrl = '';
-      const inp = document.getElementById('gasUrlInput');
-      if (inp) inp.value = '';
-      persistGasUrlEverywhere('');
-      updateEmbeddedUrlBadge();
-      setSyncIndicator('');
-      showToast('GAS連携URLをクリアしました', 'info');
-    }
-
     function onQuickGasUrlInput(val) {
-      const clean = String(val || '').trim();
-      if (isValidGasWebAppUrl(clean)) {
-        gasUrl = clean;
+      const trimmed = String(val || '').trim();
+      if (isValidGasWebAppUrl(trimmed)) {
+        gasUrl = trimmed;
         persistGasUrlEverywhere(gasUrl);
         updateEmbeddedUrlBadge();
-        showToast('GAS URLを自動保存しました。データを取得します', 'success');
+        setSyncIndicator('GAS URLを自動保存しました', 'success');
+        showToast('GAS URLを接続・保存しました。最新データを取得します...', 'success');
         fetchFromGoogleSheets(false);
       }
     }
 
     function applyQuickGasUrl() {
-      const val = document.getElementById('quickGasUrlInput')?.value.trim() || '';
-      if (!isValidGasWebAppUrl(val)) {
-        showToast('有効なGAS WebアプリURLを入力してください', 'warning');
+      const input = document.getElementById('quickGasUrlInput');
+      const trimmed = String(input?.value || '').trim();
+      if (!isValidGasWebAppUrl(trimmed)) {
+        showToast('有効なGAS WebアプリURL（https://script.google.com/macros/s/.../exec）を入力してください', 'warning');
         return;
       }
-      gasUrl = val;
+      gasUrl = trimmed;
       persistGasUrlEverywhere(gasUrl);
       updateEmbeddedUrlBadge();
       fetchFromGoogleSheets(true);
     }
 
+    function onGasUrlAutoInput() {
+      const input = document.getElementById('gasUrlInput');
+      const trimmed = String(input?.value || '').trim();
+      if (isValidGasWebAppUrl(trimmed) && trimmed !== gasUrl) {
+        gasUrl = trimmed;
+        persistGasUrlEverywhere(gasUrl);
+        updateEmbeddedUrlBadge();
+        setSyncIndicator('GAS URLを自動保存しました', 'success');
+        showToast('GAS WebアプリURLを自動保存しました', 'success');
+      }
+    }
+
     async function pasteAndSaveGasUrlFromClipboard() {
       try {
-        const text = await navigator.clipboard.readText();
-        const clean = String(text || '').trim();
-        if (!isValidGasWebAppUrl(clean)) {
-          showToast('クリップボードに有効なGAS WebアプリURLが見つかりませんでした', 'warning');
-          return;
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = (await navigator.clipboard.readText()).trim();
+          if (isValidGasWebAppUrl(text)) {
+            const input = document.getElementById('gasUrlInput');
+            if (input) input.value = text;
+            gasUrl = text;
+            persistGasUrlEverywhere(gasUrl);
+            updateEmbeddedUrlBadge();
+            showToast('クリップボードのURLを保存し、データを取得します...', 'success');
+            fetchFromGoogleSheets(true);
+            return;
+          }
         }
-        const inp = document.getElementById('gasUrlInput');
-        if (inp) inp.value = clean;
-        saveGasUrl(false);
-      } catch (_) {
-        showToast('入力欄に直接貼り付け（Ctrl+V / 長押し貼付）してください', 'info');
+      } catch (_) {}
+      const input = document.getElementById('gasUrlInput');
+      if (input) {
+        input.focus();
+        input.select();
       }
+      showToast('入力欄に貼り付け（Ctrl+V / Cmd+V）してください', 'info');
+    }
+
+    function saveGasUrl(silent = false) {
+      const input = document.getElementById('gasUrlInput');
+      const trimmed = String(input?.value || '').trim();
+      if (!trimmed) {
+        clearGasUrl();
+        return;
+      }
+      if (!isValidGasWebAppUrl(trimmed)) {
+        showToast('有効なGAS WebアプリURL（.../exec）を入力してください', 'warning');
+        return;
+      }
+      gasUrl = trimmed;
+      persistGasUrlEverywhere(gasUrl);
+      updateEmbeddedUrlBadge();
+      setSyncIndicator('URL保存済み', 'success');
+      if (!silent) {
+        showToast('GAS WebアプリURLを保存しました', 'success');
+        fetchFromGoogleSheets(true);
+      }
+    }
+
+    function clearGasUrl() {
+      gasUrl = '';
+      persistGasUrlEverywhere('');
+      const input = document.getElementById('gasUrlInput');
+      if (input) input.value = '';
+      const quickInput = document.getElementById('quickGasUrlInput');
+      if (quickInput) quickInput.value = '';
+      updateEmbeddedUrlBadge();
+      setSyncIndicator('URL未設定', 'neutral');
+      showToast('GAS WebアプリURLをクリアしました', 'info');
     }
 
     function toggleAutoFetch(checked) {
       autoFetchEnabled = Boolean(checked);
       try { localStorage.setItem(STORAGE_KEYS.AUTO_FETCH, String(autoFetchEnabled)); } catch (_) {}
+      showToast(`起動時の自動取得を${autoFetchEnabled ? 'ON' : 'OFF'}にしました`, 'info');
     }
 
     function toggleAutoSync(checked) {
       autoSyncEnabled = Boolean(checked);
       try { localStorage.setItem(STORAGE_KEYS.AUTO_SYNC, String(autoSyncEnabled)); } catch (_) {}
-    }
-
-    function copyTextFallback(text) {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      try {
-        document.execCommand('copy');
-      } finally {
-        document.body.removeChild(ta);
-      }
+      showToast(`変更時の自動送信を${autoSyncEnabled ? 'ON' : 'OFF'}にしました`, 'info');
     }
 
     function copyShareableAppUrl() {
@@ -3993,124 +3936,858 @@ function doPost(e) {
         showToast('先にGAS WebアプリURLを保存してください', 'warning');
         return;
       }
-      const base = location.href.split('#')[0].split('?')[0];
-      const shareUrl = `${base}?gas=${encodeURIComponent(gasUrl)}`;
-      copyTextFallback(shareUrl);
-      showToast('設定済み専用URLをコピーしました', 'success');
+      const base = window.location.href.split('#')[0].split('?')[0];
+      const shareUrl = `${base}#gas=${encodeURIComponent(gasUrl)}`;
+      if (copyTextToClipboard(shareUrl)) {
+        showToast('設定済み専用URLをコピーしました（ブックマーク推奨）', 'success');
+      } else {
+        showToast('URLのコピーに失敗しました', 'error');
+      }
     }
 
-    function buildConfiguredHtmlSource() {
-      const activeUrl = isValidGasWebAppUrl(gasUrl) ? gasUrl.trim() : DEFAULT_GAS_URL;
-      const clone = document.documentElement.cloneNode(true);
-      clone.querySelectorAll('div[id$="Modal"]').forEach(m => m.classList.add('hidden'));
-      const orderContainer = clone.querySelector('#orderListContainer');
-      if (orderContainer) orderContainer.innerHTML = '';
-      const toastContainer = clone.querySelector('#toastContainer');
-      if (toastContainer) toastContainer.innerHTML = '';
-
-      let html = '<!DOCTYPE html>\n' + clone.outerHTML;
-      html = html.replace(
+    function buildConfiguredHtmlString() {
+      const rawHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      if (!isValidGasWebAppUrl(gasUrl)) return rawHtml;
+      return rawHtml.replace(
         /const DEFAULT_GAS_URL = '[^']*';/,
-        () => `const DEFAULT_GAS_URL = '${activeUrl.replace(/'/g, "\\'")}';`
+        `const DEFAULT_GAS_URL = '${gasUrl.replace(/'/g, "\\'")}';`
       );
-      return html;
     }
 
     function downloadConfiguredHtml() {
-      const html = buildConfiguredHtmlSource();
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      if (!isValidGasWebAppUrl(gasUrl)) {
+        showToast('先にGAS WebアプリURLを保存してください', 'warning');
+        return;
+      }
+      const htmlStr = buildConfiguredHtmlString();
+      const blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'order_manager.html';
+      a.download = `受注管理システム_連携済_${getLocalTodayYMD()}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('URL固定済みのHTMLファイルを保存しました', 'success');
+      showToast('URL固定済みHTMLファイルを保存しました', 'success');
     }
 
     function copyConfiguredHtml() {
-      const html = buildConfiguredHtmlSource();
-      copyTextFallback(html);
-      showToast('URL固定済みのアプリ本体(HTML)をコピーしました', 'success');
+      const htmlStr = buildConfiguredHtmlString();
+      if (copyTextToClipboard(htmlStr)) {
+        showToast('アプリ本体(HTML)をクリップボードにコピーしました', 'success');
+      } else {
+        showToast('HTMLのコピーに失敗しました', 'error');
+      }
     }
 
     function copyGasScript() {
       const area = document.getElementById('gasScriptArea');
       if (!area) return;
-      copyTextFallback(area.value);
-      showToast('GASコード（コード.gs用）をコピーしました', 'success');
+      if (copyTextToClipboard(area.value)) {
+        showToast('GASコード（コード.gs用）をコピーしました', 'success');
+      } else {
+        area.select();
+        showToast('コピーに失敗しました。選択されたテキストを手動でコピーしてください', 'warning');
+      }
     }
 
     // =========================================================================
-    // 12. アプリケーション起動・自動取得制御
+    // 12. 請求書作成・プレビュー・印刷機能
     // =========================================================================
-    function runStartupAutoFetch() {
+    let invoiceSingleOrderId = null;
+
+    function getEndOfNextMonthYMD() {
+      const now = new Date();
+      const endNext = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+      const y = endNext.getFullYear();
+      const m = String(endNext.getMonth() + 1).padStart(2, '0');
+      const d = String(endNext.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function loadInvoiceProfile() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.INVOICE_PROFILE);
+        if (!raw) return;
+        const p = JSON.parse(raw);
+        if (p.senderName !== undefined) document.getElementById('invSenderName').value = p.senderName;
+        if (p.regNumber !== undefined) document.getElementById('invRegNumber').value = p.regNumber;
+        if (p.senderAddress !== undefined) document.getElementById('invSenderAddress').value = p.senderAddress;
+        if (p.bankInfo !== undefined) document.getElementById('invBankInfo').value = p.bankInfo;
+        if (p.remarks !== undefined) document.getElementById('invRemarks').value = p.remarks;
+      } catch (_) {}
+    }
+
+    function saveInvoiceProfile() {
+      try {
+        const profile = {
+          senderName: document.getElementById('invSenderName')?.value || '',
+          regNumber: document.getElementById('invRegNumber')?.value || '',
+          senderAddress: document.getElementById('invSenderAddress')?.value || '',
+          bankInfo: document.getElementById('invBankInfo')?.value || '',
+          remarks: document.getElementById('invRemarks')?.value || ''
+        };
+        localStorage.setItem(STORAGE_KEYS.INVOICE_PROFILE, JSON.stringify(profile));
+      } catch (_) {}
+    }
+
+    function populateInvoiceMonthOptions() {
+      const sel = document.getElementById('invoiceMonthSelect');
+      if (!sel) return;
+      const months = Array.from(new Set(
+        orders.map(o => normalizeClientDate(o.date).slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m))
+      )).sort().reverse();
+
+      const prev = sel.value;
+      sel.innerHTML = '<option value="all">すべての期間</option>' +
+        months.map(ym => {
+          const [y, m] = ym.split('-');
+          return `<option value="${ym}">${y}年${Number(m)}月度</option>`;
+        }).join('');
+
+      if (prev && (prev === 'all' || months.includes(prev))) {
+        sel.value = prev;
+      } else if (months.length > 0) {
+        sel.value = months[0];
+      }
+    }
+
+    function populateInvoiceTargetValues() {
+      const field = document.getElementById('invoiceTargetFieldSelect')?.value || 'consignor';
+      const valSel = document.getElementById('invoiceTargetValueSelect');
+      if (!valSel) return;
+
+      const values = Array.from(new Set(
+        orders.map(o => field === 'companyName' ? stripCompanyPrefix(o.companyName) : String(o[field] || '').trim()).filter(Boolean)
+      )).sort((a, b) => a.localeCompare(b, 'ja'));
+
+      const prev = valSel.value;
+      valSel.innerHTML = '<option value="all">すべて</option>' +
+        values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+
+      if (prev && (prev === 'all' || values.includes(prev))) {
+        valSel.value = prev;
+      } else if (values.length > 0) {
+        valSel.value = values[0];
+      }
+    }
+
+    function onInvoiceFilterChange(updateAutoFields = false) {
+      if (updateAutoFields && !invoiceSingleOrderId) {
+        const ym = document.getElementById('invoiceMonthSelect')?.value || 'all';
+        const targetVal = document.getElementById('invoiceTargetValueSelect')?.value || 'all';
+
+        const recipientEl = document.getElementById('invRecipientName');
+        const subjectEl = document.getElementById('invSubject');
+
+        if (recipientEl) {
+          recipientEl.value = targetVal !== 'all' ? `${targetVal} 御中` : 'お取引先様 御中';
+        }
+        if (subjectEl) {
+          const periodLabel = ym !== 'all'
+            ? `${ym.split('-')[0]}年${Number(ym.split('-')[1])}月度 `
+            : '';
+          subjectEl.value = `${periodLabel}業務委託費（取材・アテンド・ディレクター業務）`;
+        }
+      }
+      renderInvoicePreview();
+    }
+
+    function openInvoiceModal() {
+      invoiceSingleOrderId = null;
+      loadInvoiceProfile();
+      populateInvoiceMonthOptions();
+      populateInvoiceTargetValues();
+
+      document.getElementById('invoiceSingleNotice')?.classList.add('hidden');
+      document.getElementById('invoiceBatchControls')?.classList.remove('hidden');
+      const modeBadge = document.getElementById('invoiceTargetModeBadge');
+      if (modeBadge) {
+        modeBadge.textContent = '一括集計';
+        modeBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700';
+      }
+
+      const today = getLocalTodayYMD();
+      const invNumEl = document.getElementById('invNumber');
+      if (invNumEl && !invNumEl.value) {
+        invNumEl.value = `INV-${today.replace(/-/g, '')}-01`;
+      }
+      const issueEl = document.getElementById('invIssueDate');
+      if (issueEl && !issueEl.value) issueEl.value = today;
+      const dueEl = document.getElementById('invDueDate');
+      if (dueEl && !dueEl.value) dueEl.value = getEndOfNextMonthYMD();
+
+      onInvoiceFilterChange(true);
+      showModalById('invoiceModal');
+    }
+
+    function openInvoiceModalForOrder(orderId) {
+      const target = orders.find(o => o.id === orderId);
+      if (!target) return;
+
+      invoiceSingleOrderId = orderId;
+      loadInvoiceProfile();
+
+      document.getElementById('invoiceSingleNotice')?.classList.remove('hidden');
+      document.getElementById('invoiceBatchControls')?.classList.add('hidden');
+      const modeBadge = document.getElementById('invoiceTargetModeBadge');
+      if (modeBadge) {
+        modeBadge.textContent = '個別案件';
+        modeBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800';
+      }
+
+      const today = getLocalTodayYMD();
+      document.getElementById('invNumber').value = `INV-${target.id.replace(/[^A-Za-z0-9-]/g, '')}`;
+      document.getElementById('invIssueDate').value = today;
+      document.getElementById('invDueDate').value = getEndOfNextMonthYMD();
+
+      const clientName = target.consignor || target.client || stripCompanyPrefix(target.companyName) || 'お取引先様';
+      document.getElementById('invRecipientName').value = `${clientName} 御中`;
+      const dateDisp = target.date ? formatDateWithWeekday(target.date) : '';
+      document.getElementById('invSubject').value = `${dateDisp} ${target.storeName || ''} ${target.performerOrEvent || target.type || '業務委託費'}`.trim();
+
+      renderInvoicePreview();
+      showModalById('invoiceModal');
+    }
+
+    function switchInvoiceToBatchMode() {
+      invoiceSingleOrderId = null;
+      document.getElementById('invoiceSingleNotice')?.classList.add('hidden');
+      document.getElementById('invoiceBatchControls')?.classList.remove('hidden');
+      const modeBadge = document.getElementById('invoiceTargetModeBadge');
+      if (modeBadge) {
+        modeBadge.textContent = '一括集計';
+        modeBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700';
+      }
+      populateInvoiceMonthOptions();
+      populateInvoiceTargetValues();
+      onInvoiceFilterChange(true);
+    }
+
+    function closeInvoiceModal() {
+      hideModalById('invoiceModal');
+    }
+
+    function renderInvoicePreview() {
+      const area = document.getElementById('invoicePrintArea');
+      if (!area) return;
+
+      let targetOrders = [];
+      if (invoiceSingleOrderId) {
+        const found = orders.find(o => o.id === invoiceSingleOrderId);
+        if (found) targetOrders = [found];
+      } else {
+        const ym = document.getElementById('invoiceMonthSelect')?.value || 'all';
+        const st = document.getElementById('invoiceStatusSelect')?.value || 'confirmed';
+        const field = document.getElementById('invoiceTargetFieldSelect')?.value || 'consignor';
+        const val = document.getElementById('invoiceTargetValueSelect')?.value || 'all';
+
+        targetOrders = sortOrdersList(orders.filter(o => {
+          if (st === 'confirmed' && o.status !== 'confirmed') return false;
+          if (ym !== 'all' && normalizeClientDate(o.date).slice(0, 7) !== ym) return false;
+          if (val !== 'all') {
+            const ov = field === 'companyName' ? stripCompanyPrefix(o.companyName) : String(o[field] || '').trim();
+            if (ov !== val) return false;
+          }
+          return true;
+        }));
+      }
+
+      const recipientName = document.getElementById('invRecipientName')?.value || 'お取引先様 御中';
+      const subject = document.getElementById('invSubject')?.value || '業務委託費';
+      const invNumber = document.getElementById('invNumber')?.value || '';
+      const issueDate = document.getElementById('invIssueDate')?.value || '';
+      const dueDate = document.getElementById('invDueDate')?.value || '';
+      const remarks = document.getElementById('invRemarks')?.value || '振込手数料は貴社にてご負担をお願いいたします。';
+      const senderName = document.getElementById('invSenderName')?.value || '（発行元名称を左欄に入力してください）';
+      const regNumber = document.getElementById('invRegNumber')?.value.trim() || '';
+      const senderAddress = document.getElementById('invSenderAddress')?.value || '';
+      const bankInfo = document.getElementById('invBankInfo')?.value || '';
+
+      // 税率別集計（昼食代8%は8%軽減税率、それ以外は10%標準税率）
+      let base10Total = 0;
+      let base8Total = 0;
+      const lineRows = [];
+
+      targetOrders.forEach(o => {
+        const normD = normalizeClientDate(o.date);
+        const dateShort = normD ? `${Number(normD.slice(5, 7))}/${Number(normD.slice(8, 10))}` : '-';
+        const lunch8 = Number(o.lunch8Fee) || 0;
+        const totalEx = Number(o.billingAmount) || 0;
+        const item10Amount = Math.max(0, totalEx - lunch8);
+
+        const descParts = [
+          o.type ? `【${o.type}】` : '',
+          o.storeName || stripCompanyPrefix(o.companyName) || '',
+          o.performerOrEvent ? `（${o.performerOrEvent}）` : ''
+        ].filter(Boolean).join(' ');
+
+        if (item10Amount > 0 || lunch8 === 0) {
+          base10Total += item10Amount;
+          lineRows.push({
+            date: dateShort,
+            desc: descParts || '業務委託費',
+            taxRate: '10%',
+            qty: 1,
+            amount: item10Amount
+          });
+        }
+        if (lunch8 > 0) {
+          base8Total += lunch8;
+          lineRows.push({
+            date: dateShort,
+            desc: `${descParts} 昼食代（※軽減税率8%対象）`,
+            taxRate: '8%※',
+            qty: 1,
+            amount: lunch8
+          });
+        }
+      });
+
+      const tax10 = Math.floor(base10Total * 0.1);
+      const tax8 = Math.floor(base8Total * 0.08);
+      const subtotalEx = base10Total + base8Total;
+      const taxTotal = tax10 + tax8;
+      const grandTotal = subtotalEx + taxTotal;
+
+      const formatJPDate = ymd => {
+        if (!ymd) return '-';
+        const [y, m, d] = ymd.split('-');
+        return `${y}年${Number(m)}月${Number(d)}日`;
+      };
+
+      area.innerHTML = `
+        <div class="space-y-6">
+          <!-- タイトル & 書類番号・発行日 -->
+          <div class="flex items-start justify-between border-b-2 border-slate-800 pb-4">
+            <div>
+              <h2 class="text-2xl font-bold tracking-[0.25em] text-slate-900">御請求書</h2>
+              <p class="text-[11px] text-slate-500 mt-1">INVOICE</p>
+            </div>
+            <div class="text-right text-xs space-y-1">
+              <div><span class="text-slate-500">請求書番号：</span><span class="font-mono font-bold">${escapeHtml(invNumber)}</span></div>
+              <div><span class="text-slate-500">発行日：</span><span class="font-semibold">${escapeHtml(formatJPDate(issueDate))}</span></div>
+              <div><span class="text-slate-500">お支払期限：</span><span class="font-bold text-slate-900">${escapeHtml(formatJPDate(dueDate))}</span></div>
+            </div>
+          </div>
+
+          <!-- 宛名 & 発行元情報 -->
+          <div class="grid grid-cols-12 gap-6 items-start">
+            <div class="col-span-7 space-y-3">
+              <div class="border-b border-slate-400 pb-1.5">
+                <p class="text-lg font-bold text-slate-900">${escapeHtml(recipientName)}</p>
+              </div>
+              <p class="text-xs text-slate-600">下記の通り御請求申し上げます。</p>
+              <div class="text-xs">
+                <span class="font-bold text-slate-700">件名：</span>
+                <span class="font-semibold text-slate-900">${escapeHtml(subject)}</span>
+              </div>
+              <div class="bg-slate-100 border-y-2 border-slate-800 px-4 py-3 flex items-baseline justify-between">
+                <span class="text-xs font-bold text-slate-700">御請求金額（税込）</span>
+                <span class="text-2xl font-bold text-slate-900">${formatCurrency(grandTotal)}-</span>
+              </div>
+            </div>
+
+            <div class="col-span-5 text-xs space-y-1.5 bg-slate-50/70 p-3.5 rounded-lg border border-slate-200">
+              <p class="font-bold text-sm text-slate-900">${escapeHtml(senderName)}</p>
+              ${regNumber ? `<p class="text-[11px] font-mono text-slate-700">登録番号：${escapeHtml(regNumber)}</p>` : ''}
+              ${senderAddress ? `<p class="text-[11px] text-slate-600 whitespace-pre-line leading-relaxed">${escapeHtml(senderAddress)}</p>` : ''}
+            </div>
+          </div>
+
+          <!-- 明細テーブル -->
+          <div>
+            <table class="w-full text-xs border-collapse border border-slate-300">
+              <thead>
+                <tr class="bg-slate-800 text-white">
+                  <th class="border border-slate-300 px-2 py-2 text-center w-14">実施日</th>
+                  <th class="border border-slate-300 px-3 py-2 text-left">内容・案件明細</th>
+                  <th class="border border-slate-300 px-2 py-2 text-center w-14">税率</th>
+                  <th class="border border-slate-300 px-2 py-2 text-center w-12">数量</th>
+                  <th class="border border-slate-300 px-2.5 py-2 text-right w-24">単価(税抜)</th>
+                  <th class="border border-slate-300 px-2.5 py-2 text-right w-28">金額(税抜)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${lineRows.length > 0 ? lineRows.map(r => `
+                  <tr class="odd:bg-white even:bg-slate-50/60">
+                    <td class="border border-slate-300 px-2 py-1.5 text-center font-mono">${escapeHtml(r.date)}</td>
+                    <td class="border border-slate-300 px-3 py-1.5 text-slate-800">${escapeHtml(r.desc)}</td>
+                    <td class="border border-slate-300 px-2 py-1.5 text-center text-[11px]">${escapeHtml(r.taxRate)}</td>
+                    <td class="border border-slate-300 px-2 py-1.5 text-center">${r.qty}</td>
+                    <td class="border border-slate-300 px-2.5 py-1.5 text-right font-mono">${formatCurrency(r.amount)}</td>
+                    <td class="border border-slate-300 px-2.5 py-1.5 text-right font-mono font-semibold">${formatCurrency(r.amount)}</td>
+                  </tr>
+                `).join('') : `
+                  <tr>
+                    <td colspan="6" class="border border-slate-300 px-4 py-8 text-center text-slate-400">
+                      条件に一致する対象案件がありません（左側の抽出条件を変更してください）
+                    </td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+            ${base8Total > 0 ? `<p class="text-[10px] text-slate-500 mt-1">※印は軽減税率（8%）適用対象項目です。</p>` : ''}
+          </div>
+
+          <!-- 税率別内訳 & 合計欄 -->
+          <div class="grid grid-cols-12 gap-4 items-start">
+            <div class="col-span-7 text-[11px]">
+              <table class="w-full border-collapse border border-slate-300">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700">
+                    <th class="border border-slate-300 px-2 py-1 text-left">税率区分</th>
+                    <th class="border border-slate-300 px-2 py-1 text-right">対象額(税抜)</th>
+                    <th class="border border-slate-300 px-2 py-1 text-right">消費税額</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="border border-slate-300 px-2 py-1">10%対象</td>
+                    <td class="border border-slate-300 px-2 py-1 text-right font-mono">${formatCurrency(base10Total)}</td>
+                    <td class="border border-slate-300 px-2 py-1 text-right font-mono">${formatCurrency(tax10)}</td>
+                  </tr>
+                  ${base8Total > 0 ? `
+                    <tr>
+                      <td class="border border-slate-300 px-2 py-1">8%対象（軽減税率）</td>
+                      <td class="border border-slate-300 px-2 py-1 text-right font-mono">${formatCurrency(base8Total)}</td>
+                      <td class="border border-slate-300 px-2 py-1 text-right font-mono">${formatCurrency(tax8)}</td>
+                    </tr>
+                  ` : ''}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="col-span-5 text-xs">
+              <table class="w-full border-collapse border border-slate-300">
+                <tr>
+                  <th class="border border-slate-300 bg-slate-100 px-3 py-1.5 text-left font-semibold">小計（税抜）</th>
+                  <td class="border border-slate-300 px-3 py-1.5 text-right font-mono font-semibold">${formatCurrency(subtotalEx)}</td>
+                </tr>
+                <tr>
+                  <th class="border border-slate-300 bg-slate-100 px-3 py-1.5 text-left font-semibold">消費税合計</th>
+                  <td class="border border-slate-300 px-3 py-1.5 text-right font-mono font-semibold">${formatCurrency(taxTotal)}</td>
+                </tr>
+                <tr class="bg-slate-800 text-white">
+                  <th class="border border-slate-300 px-3 py-2 text-left font-bold">合計金額（税込）</th>
+                  <td class="border border-slate-300 px-3 py-2 text-right font-mono font-bold text-sm">${formatCurrency(grandTotal)}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 下部: お振込先・備考 -->
+        <div class="grid grid-cols-2 gap-4 pt-6 mt-6 border-t border-slate-300 text-xs">
+          <div class="border border-slate-300 rounded-lg p-3 bg-slate-50/60">
+            <p class="font-bold text-slate-800 mb-1">【お振込先口座】</p>
+            <p class="text-[11px] text-slate-700 whitespace-pre-line leading-relaxed">${escapeHtml(bankInfo || '（左側の「お振込先口座情報」に入力してください）')}</p>
+          </div>
+          <div class="border border-slate-300 rounded-lg p-3">
+            <p class="font-bold text-slate-800 mb-1">【備考】</p>
+            <p class="text-[11px] text-slate-700 whitespace-pre-line leading-relaxed">${escapeHtml(remarks)}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function printInvoice() {
+      document.body.classList.remove('print-mode-statement');
+      document.body.classList.add('print-mode-invoice');
+      const cleanup = () => {
+        document.body.classList.remove('print-mode-invoice');
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+      setTimeout(cleanup, 1500);
+    }
+
+    // =========================================================================
+    // 13. 支払明細書作成・プレビュー・印刷機能
+    // =========================================================================
+    function loadStatementProfile() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.STATEMENT_PROFILE);
+        if (!raw) return;
+        const p = JSON.parse(raw);
+        if (p.senderName !== undefined) document.getElementById('stmtSenderName').value = p.senderName;
+        if (p.senderAddress !== undefined) document.getElementById('stmtSenderAddress').value = p.senderAddress;
+        if (p.remarks !== undefined) document.getElementById('stmtRemarks').value = p.remarks;
+      } catch (_) {}
+    }
+
+    function saveStatementProfile() {
+      try {
+        const profile = {
+          senderName: document.getElementById('stmtSenderName')?.value || '',
+          senderAddress: document.getElementById('stmtSenderAddress')?.value || '',
+          remarks: document.getElementById('stmtRemarks')?.value || ''
+        };
+        localStorage.setItem(STORAGE_KEYS.STATEMENT_PROFILE, JSON.stringify(profile));
+      } catch (_) {}
+    }
+
+    function populateStatementOptions() {
+      const mSel = document.getElementById('statementMonthSelect');
+      if (mSel) {
+        const months = Array.from(new Set(
+          orders.map(o => normalizeClientDate(o.date).slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m))
+        )).sort().reverse();
+        const prev = mSel.value;
+        mSel.innerHTML = '<option value="all">すべての期間</option>' +
+          months.map(ym => {
+            const [y, m] = ym.split('-');
+            return `<option value="${ym}">${y}年${Number(m)}月度</option>`;
+          }).join('');
+        if (prev && (prev === 'all' || months.includes(prev))) {
+          mSel.value = prev;
+        } else if (months.length > 0) {
+          mSel.value = months[0];
+        }
+      }
+
+      const mgrSel = document.getElementById('statementManagerSelect');
+      if (mgrSel) {
+        const mgrs = Array.from(new Set(
+          orders.map(o => String(o.managerName || '').trim()).filter(Boolean)
+        )).sort((a, b) => a.localeCompare(b, 'ja'));
+        const prevMgr = mgrSel.value;
+        mgrSel.innerHTML = '<option value="all">すべての担当者（担当者別グループ集計）</option>' +
+          mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+        if (prevMgr && (prevMgr === 'all' || mgrs.includes(prevMgr))) {
+          mgrSel.value = prevMgr;
+        }
+      }
+    }
+
+    function onStatementFilterChange(updateAutoFields = false) {
+      const mgr = document.getElementById('statementManagerSelect')?.value || 'all';
+      const ym = document.getElementById('statementMonthSelect')?.value || 'all';
+      const modeBadge = document.getElementById('statementModeBadge');
+
+      if (modeBadge) {
+        if (mgr === 'all') {
+          modeBadge.textContent = '担当者別一覧';
+          modeBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700';
+        } else {
+          modeBadge.textContent = '個人別明細書';
+          modeBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700';
+        }
+      }
+
+      if (updateAutoFields) {
+        const periodLabel = ym !== 'all' ? `${ym.split('-')[0]}年${Number(ym.split('-')[1])}月度 ` : '';
+        document.getElementById('stmtRecipientName').value = mgr === 'all'
+          ? '担当者別 支払明細一覧'
+          : `${mgr} 様`;
+        document.getElementById('stmtSubject').value = `${periodLabel}業務委託 支払明細書`;
+      }
+
+      renderStatementPreview();
+    }
+
+    function openStatementModal() {
+      loadStatementProfile();
+      populateStatementOptions();
+
+      const today = getLocalTodayYMD();
+      const numEl = document.getElementById('stmtNumber');
+      if (numEl && !numEl.value) numEl.value = `PAY-${today.replace(/-/g, '')}-01`;
+      const issueEl = document.getElementById('stmtIssueDate');
+      if (issueEl && !issueEl.value) issueEl.value = today;
+      const payEl = document.getElementById('stmtPayDate');
+      if (payEl && !payEl.value) payEl.value = getEndOfNextMonthYMD();
+
+      onStatementFilterChange(true);
+      showModalById('statementModal');
+    }
+
+    function openStatementModalForOrder(orderId) {
+      const target = orders.find(o => o.id === orderId);
+      if (!target) return;
+
+      loadStatementProfile();
+      populateStatementOptions();
+
+      const ym = normalizeClientDate(target.date).slice(0, 7);
+      const mSel = document.getElementById('statementMonthSelect');
+      if (mSel && ym && Array.from(mSel.options).some(opt => opt.value === ym)) {
+        mSel.value = ym;
+      }
+
+      const mgrSel = document.getElementById('statementManagerSelect');
+      if (mgrSel && target.managerName && Array.from(mgrSel.options).some(opt => opt.value === target.managerName)) {
+        mgrSel.value = target.managerName;
+      }
+
+      const today = getLocalTodayYMD();
+      document.getElementById('stmtNumber').value = `PAY-${today.replace(/-/g, '')}-01`;
+      document.getElementById('stmtIssueDate').value = today;
+      document.getElementById('stmtPayDate').value = getEndOfNextMonthYMD();
+
+      onStatementFilterChange(true);
+      showModalById('statementModal');
+    }
+
+    function closeStatementModal() {
+      hideModalById('statementModal');
+    }
+
+    function renderStatementPreview() {
+      const area = document.getElementById('statementPrintArea');
+      if (!area) return;
+
+      const ym = document.getElementById('statementMonthSelect')?.value || 'all';
+      const st = document.getElementById('statementStatusSelect')?.value || 'confirmed';
+      const selectedMgr = document.getElementById('statementManagerSelect')?.value || 'all';
+      const showCheckCol = Boolean(document.getElementById('stmtShowCheckCol')?.checked);
+
+      const filtered = sortOrdersList(orders.filter(o => {
+        if (st === 'confirmed' && o.status !== 'confirmed') return false;
+        if (ym !== 'all' && normalizeClientDate(o.date).slice(0, 7) !== ym) return false;
+        if (selectedMgr !== 'all' && (o.managerName || '未定') !== selectedMgr) return false;
+        return true;
+      }));
+
+      const recipientName = document.getElementById('stmtRecipientName')?.value || (selectedMgr === 'all' ? '担当者別 支払明細一覧' : `${selectedMgr} 様`);
+      const subject = document.getElementById('stmtSubject')?.value || '業務委託 支払明細書';
+      const stmtNumber = document.getElementById('stmtNumber')?.value || '';
+      const issueDate = document.getElementById('stmtIssueDate')?.value || '';
+      const payDate = document.getElementById('stmtPayDate')?.value || '';
+      const remarks = document.getElementById('stmtRemarks')?.value || '内容をご確認のうえ、相違がある場合はご連絡ください。';
+      const senderName = document.getElementById('stmtSenderName')?.value || '';
+      const senderAddress = document.getElementById('stmtSenderAddress')?.value || '';
+
+      const formatJPDate = ymd => {
+        if (!ymd) return '-';
+        const [y, m, d] = ymd.split('-');
+        return `${y}年${Number(m)}月${Number(d)}日`;
+      };
+
+      // 担当者別にグループ化
+      const groupMap = new Map();
+      filtered.forEach(o => {
+        const key = o.managerName || '未定';
+        if (!groupMap.has(key)) groupMap.set(key, []);
+        groupMap.get(key).push(o);
+      });
+
+      let grandReward = 0;
+      let grandExpense = 0;
+      let grandSubEx = 0;
+      let grandTotalIn = 0;
+
+      const groupBlocksHtml = Array.from(groupMap.entries()).map(([mgrName, mgrOrders]) => {
+        let subReward = 0;
+        let subExpense = 0;
+        let subEx = 0;
+        let subIn = 0;
+
+        const rowsHtml = mgrOrders.map(o => {
+          const normD = normalizeClientDate(o.date);
+          const dateShort = normD ? `${Number(normD.slice(5, 7))}/${Number(normD.slice(8, 10))}` : '-';
+          const rew = Number(o.rewardAmount) || 0;
+          const exp = Number(o.payExpenseExclude) || 0;
+          const totEx = Number(o.payTotalExclude) || (rew + exp);
+          const totIn = Number(o.paymentAmount) || Math.round(totEx * 1.1);
+
+          subReward += rew;
+          subExpense += exp;
+          subEx += totEx;
+          subIn += totIn;
+
+          const venue = [stripCompanyPrefix(o.companyName), o.storeName].filter(Boolean).join(' ');
+
+          return `
+            <tr class="odd:bg-white even:bg-slate-50/50">
+              <td class="border border-slate-300 px-2 py-1.5 text-center font-mono">${escapeHtml(dateShort)}</td>
+              <td class="border border-slate-300 px-2 py-1.5 text-center">${escapeHtml(o.type || '-')}</td>
+              <td class="border border-slate-300 px-2.5 py-1.5 text-slate-800">
+                <div class="font-semibold">${escapeHtml(venue || '-')}</div>
+                ${o.performerOrEvent ? `<div class="text-[10px] text-slate-500">${escapeHtml(o.performerOrEvent)}</div>` : ''}
+              </td>
+              <td class="border border-slate-300 px-2 py-1.5 text-right font-mono">${formatCurrency(rew)}</td>
+              <td class="border border-slate-300 px-2 py-1.5 text-right font-mono">${formatCurrency(exp)}</td>
+              <td class="border border-slate-300 px-2 py-1.5 text-right font-mono">${formatCurrency(totEx)}</td>
+              <td class="border border-slate-300 px-2 py-1.5 text-right font-mono font-bold text-slate-900">${formatCurrency(totIn)}</td>
+              ${showCheckCol ? `<td class="border border-slate-300 px-2 py-1.5 text-center text-slate-400">☐</td>` : ''}
+            </tr>
+          `;
+        }).join('');
+
+        grandReward += subReward;
+        grandExpense += subExpense;
+        grandSubEx += subEx;
+        grandTotalIn += subIn;
+
+        return `
+          <div class="space-y-1.5">
+            ${selectedMgr === 'all' ? `
+              <div class="flex items-center justify-between bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-lg">
+                <span class="text-xs font-bold text-teal-900">担当：${escapeHtml(mgrName)}（${mgrOrders.length}件）</span>
+                <span class="text-xs font-bold text-teal-900">小計（税込）：${formatCurrency(subIn)}</span>
+              </div>
+            ` : ''}
+            <table class="w-full text-[11px] border-collapse border border-slate-300">
+              <thead>
+                <tr class="bg-slate-800 text-white">
+                  <th class="border border-slate-300 px-2 py-1.5 text-center w-12">実施日</th>
+                  <th class="border border-slate-300 px-2 py-1.5 text-center w-20">種別</th>
+                  <th class="border border-slate-300 px-2.5 py-1.5 text-left">企業・店舗 / 取材名</th>
+                  <th class="border border-slate-300 px-2 py-1.5 text-right w-20">支払報酬</th>
+                  <th class="border border-slate-300 px-2 py-1.5 text-right w-20">支払経費</th>
+                  <th class="border border-slate-300 px-2 py-1.5 text-right w-22">小計(税抜)</th>
+                  <th class="border border-slate-300 px-2 py-1.5 text-right w-24">支払総額(税込)</th>
+                  ${showCheckCol ? `<th class="border border-slate-300 px-1.5 py-1.5 text-center w-10">確認</th>` : ''}
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+                <tr class="bg-slate-100 font-bold text-slate-800">
+                  <td colspan="3" class="border border-slate-300 px-2.5 py-1.5 text-right">${escapeHtml(mgrName)} 合計（${mgrOrders.length}件）</td>
+                  <td class="border border-slate-300 px-2 py-1.5 text-right font-mono">${formatCurrency(subReward)}</td>
+                  <td class="border border-slate-300 px-2 py-1.5 text-right font-mono">${formatCurrency(subExpense)}</td>
+                  <td class="border border-slate-300 px-2 py-1.5 text-right font-mono">${formatCurrency(subEx)}</td>
+                  <td class="border border-slate-300 px-2 py-1.5 text-right font-mono text-teal-900">${formatCurrency(subIn)}</td>
+                  ${showCheckCol ? `<td class="border border-slate-300 px-1.5 py-1.5 text-center"></td>` : ''}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+      }).join('');
+
+      area.innerHTML = `
+        <div class="space-y-5">
+          <!-- タイトル & 明細書番号・発行日 -->
+          <div class="flex items-start justify-between border-b-2 border-teal-800 pb-3.5">
+            <div>
+              <h2 class="text-2xl font-bold tracking-[0.2em] text-slate-900">御支払明細書</h2>
+              <p class="text-[11px] text-slate-500 mt-1">PAYMENT STATEMENT</p>
+            </div>
+            <div class="text-right text-xs space-y-1">
+              <div><span class="text-slate-500">明細書番号：</span><span class="font-mono font-bold">${escapeHtml(stmtNumber)}</span></div>
+              <div><span class="text-slate-500">発行日：</span><span class="font-semibold">${escapeHtml(formatJPDate(issueDate))}</span></div>
+              <div><span class="text-slate-500">お支払予定日：</span><span class="font-bold text-slate-900">${escapeHtml(formatJPDate(payDate))}</span></div>
+            </div>
+          </div>
+
+          <!-- 宛名 & 合計ボックス -->
+          <div class="grid grid-cols-12 gap-5 items-start">
+            <div class="col-span-7 space-y-2.5">
+              <div class="border-b border-slate-400 pb-1">
+                <p class="text-lg font-bold text-slate-900">${escapeHtml(recipientName)}</p>
+              </div>
+              <div class="text-xs">
+                <span class="font-bold text-slate-700">件名：</span>
+                <span class="font-semibold text-slate-900">${escapeHtml(subject)}</span>
+              </div>
+              <div class="bg-teal-50/80 border-y-2 border-teal-800 px-4 py-2.5 flex items-baseline justify-between">
+                <span class="text-xs font-bold text-teal-950">御支払総額（税込）</span>
+                <span class="text-2xl font-bold text-teal-950">${formatCurrency(grandTotalIn)}-</span>
+              </div>
+            </div>
+
+            <div class="col-span-5 text-xs space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              ${senderName ? `<p class="font-bold text-sm text-slate-900">${escapeHtml(senderName)}</p>` : '<p class="text-slate-400 text-[11px]">（左欄で発行元会社名を入力可能）</p>'}
+              ${senderAddress ? `<p class="text-[11px] text-slate-600 whitespace-pre-line leading-relaxed">${escapeHtml(senderAddress)}</p>` : ''}
+            </div>
+          </div>
+
+          <!-- 担当者別明細ブロック一覧 -->
+          <div class="space-y-4">
+            ${groupBlocksHtml || `
+              <div class="border border-slate-300 rounded-lg p-8 text-center text-xs text-slate-400">
+                条件に一致する支払対象案件がありません（左側の抽出条件を変更してください）
+              </div>
+            `}
+          </div>
+
+          <!-- 総合計サマリー -->
+          ${filtered.length > 0 ? `
+            <div class="flex justify-end">
+              <table class="w-full sm:w-2/3 text-xs border-collapse border border-slate-400">
+                <tr class="bg-slate-100">
+                  <th class="border border-slate-300 px-3 py-1.5 text-left">支払報酬 合計（税抜）</th>
+                  <td class="border border-slate-300 px-3 py-1.5 text-right font-mono font-semibold">${formatCurrency(grandReward)}</td>
+                </tr>
+                <tr class="bg-slate-100">
+                  <th class="border border-slate-300 px-3 py-1.5 text-left">支払経費 合計（税抜）</th>
+                  <td class="border border-slate-300 px-3 py-1.5 text-right font-mono font-semibold">${formatCurrency(grandExpense)}</td>
+                </tr>
+                <tr>
+                  <th class="border border-slate-300 px-3 py-1.5 text-left">支払総額（税抜）</th>
+                  <td class="border border-slate-300 px-3 py-1.5 text-right font-mono font-semibold">${formatCurrency(grandSubEx)}</td>
+                </tr>
+                <tr class="bg-teal-800 text-white">
+                  <th class="border border-slate-300 px-3 py-2 text-left font-bold">総合計（税込 / ${filtered.length}件）</th>
+                  <td class="border border-slate-300 px-3 py-2 text-right font-mono font-bold text-sm">${formatCurrency(grandTotalIn)}</td>
+                </tr>
+              </table>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- 下部備考 -->
+        <div class="pt-5 mt-5 border-t border-slate-300 text-xs">
+          <div class="border border-slate-300 rounded-lg p-3 bg-slate-50/50">
+            <p class="font-bold text-slate-800 mb-1">【備考・連絡事項】</p>
+            <p class="text-[11px] text-slate-700 whitespace-pre-line leading-relaxed">${escapeHtml(remarks)}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function printStatement() {
+      document.body.classList.remove('print-mode-invoice');
+      document.body.classList.add('print-mode-statement');
+      const cleanup = () => {
+        document.body.classList.remove('print-mode-statement');
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+      setTimeout(cleanup, 1500);
+    }
+
+    // =========================================================================
+    // 14. アプリケーション初期化 & グローバルイベント登録
+    // =========================================================================
+    async function initApp() {
+      loadStateFromStorage();
+
+      gasUrl = resolveInitialGasUrl();
+      if (!isValidGasWebAppUrl(gasUrl)) {
+        const idbUrl = await loadGasUrlFromIdb();
+        if (isValidGasWebAppUrl(idbUrl)) {
+          gasUrl = idbUrl.trim();
+        }
+      }
+      if (isValidGasWebAppUrl(gasUrl)) {
+        persistGasUrlEverywhere(gasUrl);
+      }
+
+      populateAllDropdowns();
+      renderOrders();
+      updateEmbeddedUrlBadge();
+      setSyncIndicator(isValidGasWebAppUrl(gasUrl) ? '連携準備完了' : 'ローカル保存中', 'neutral');
+
+      // Escapeキーで開いているモーダルを閉じる
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          ALL_MODAL_IDS.forEach(id => hideModalById(id));
+        }
+      });
+
+      // 起動時の自動取得
       if (autoFetchEnabled && isValidGasWebAppUrl(gasUrl)) {
         fetchFromGoogleSheets(false);
       }
     }
 
-    async function initApp() {
-      // すべてのモーダルを確実に初期非表示へ統一
-      ALL_MODAL_IDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
-      });
-      document.body.style.overflow = '';
-
-      loadStateFromStorage();
-
-      let resolved = resolveInitialGasUrl();
-      if (!isValidGasWebAppUrl(resolved)) {
-        const idbUrl = await loadGasUrlFromIdb();
-        if (isValidGasWebAppUrl(idbUrl)) {
-          resolved = idbUrl;
-        }
-      }
-      gasUrl = resolved || '';
-      if (isValidGasWebAppUrl(gasUrl)) {
-        persistGasUrlEverywhere(gasUrl);
-      }
-
-      updateEmbeddedUrlBadge();
-      setSyncIndicator('');
-      populateAllDropdowns();
-      renderOrders();
-
-      document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') {
-          ALL_MODAL_IDS.forEach(hideModalById);
-        }
-      });
-
-      window.addEventListener('pageshow', () => {
-        if (Date.now() - lastAutoFetchAt > 15000) {
-          runStartupAutoFetch();
-        }
-      });
-
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && Date.now() - lastAutoFetchAt > 30000) {
-          const anyModalOpen = ALL_MODAL_IDS.some(id => {
-            const m = document.getElementById(id);
-            return m && !m.classList.contains('hidden');
-          });
-          if (!anyModalOpen) {
-            runStartupAutoFetch();
-          }
-        }
-      });
-
-      runStartupAutoFetch();
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-      initApp();
-    }
+    window.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
 </html>
