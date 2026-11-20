@@ -194,8 +194,8 @@
         <div class="ml-auto flex flex-wrap items-center justify-end gap-2 text-xs">
           <div class="hidden xl:flex items-center gap-3 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200/80">
             <span class="text-slate-500">件数: <strong id="summaryCount" class="text-slate-900">0</strong>件</span>
-            <span class="text-slate-500">請求税込: <strong id="summaryBilling" class="text-blue-700">¥0</strong></span>
-            <span class="text-slate-500">支払税込: <strong id="summaryPayment" class="text-slate-800">¥0</strong></span>
+            <span class="text-slate-500">請求税抜: <strong id="summaryBilling" class="text-blue-700">¥0</strong></span>
+            <span class="text-slate-500">支払税抜: <strong id="summaryPayment" class="text-slate-800">¥0</strong></span>
             <span class="text-slate-500">粗利: <strong id="summaryProfit" class="text-emerald-700">¥0</strong></span>
           </div>
 
@@ -2034,8 +2034,8 @@
 
     function updateSummaryHeader(list) {
       const validList = list.filter(o => o.status !== 'バラシ');
-      const billingTotal = validList.reduce((acc, o) => acc + toInt(o.billingIncl), 0);
-      const paymentTotal = validList.reduce((acc, o) => acc + toInt(o.payTotalIncl), 0);
+      const billingTotal = validList.reduce((acc, o) => acc + toInt(o.billingExcl), 0);
+      const paymentTotal = validList.reduce((acc, o) => acc + toInt(o.payTotalExcl), 0);
       const profitTotal = billingTotal - paymentTotal;
 
       document.getElementById('summaryCount').textContent = list.length;
